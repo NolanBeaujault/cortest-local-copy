@@ -1,0 +1,30 @@
+{
+  "patients": [
+    {
+      "id": 1,
+      "lastName": "Dupont",
+      "firstName": "Jean",
+      "address": "123 Rue Principale",
+      "neurologist": "Dr. Marie Lemoine",
+      "username": "jeandupont",
+      "password": "password123",
+      "tests": [
+        { "id": 101, "name": "Test lumière rapide", "status": "Completed" },
+        { "id": 102, "name": "Test audio", "status": "Pending" }
+      ]
+    },
+    {
+      "id": 2,
+      "lastName": "Martin",
+      "firstName": "Alice",
+      "address": "456 Avenue Centrale",
+      "neurologist": "Dr. Paul Arnaud",
+      "username": "alicemartin",
+      "password": "securepass456",
+      "tests": [
+        { "id": 103, "name": "Test lumière lente", "status": "Completed" },
+        { "id": 104, "name": "Test mouvement", "status": "Pending" }
+      ]
+    }
+  ]
+}

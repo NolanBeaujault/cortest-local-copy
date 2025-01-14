@@ -110,7 +110,7 @@ fun NavigationGraph(
         // Autres écrans sécurisés
         composable("calendar") {
             if (isAuthenticated) {
-                CalendarPage(navController = navController)
+                DemoPage(navController = navController)
             } else {
                 navController.navigate("login")
             }

@@ -12,35 +12,65 @@ import androidx.navigation.compose.rememberNavController
 import com.example.epilepsytestapp.ui.*
 import com.example.epilepsytestapp.ui.theme.AppTheme
 import android.content.Context
+import com.example.epilepsytestapp.model.Patient
+import kotlinx.coroutines.launch
+
+import androidx.compose.runtime.rememberCoroutineScope
+import loadPatientsFromNetwork
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // Charger les patients depuis le fichier JSON
-        val patients = loadPatientsFromJson(this).toMutableList()
-
         setContent {
-            EpilepsyTestApp(patients = patients, context = this)
+            val patients = remember { mutableStateListOf<Patient>() }
+            var isLoading by remember { mutableStateOf(true) }
+            val scope = rememberCoroutineScope()
+
+            // Charger les patients à partir du réseau
+            LaunchedEffect(Unit) {
+                scope.launch {
+                    val loadedPatients = loadPatientsFromNetwork()
+                    patients.addAll(loadedPatients)
+                    isLoading = false // Arrêter l'indicateur de chargement une fois les données chargées
+                }
+            }
+
+            EpilepsyTestApp(
+                patients = patients,
+                context = this,
+                isLoading = isLoading
+            )
         }
     }
 }
 
+
+
+
+
 @Composable
-fun EpilepsyTestApp(patients: MutableList<Patient>, context: Context) {
-    val navController = rememberNavController()
+fun EpilepsyTestApp(
+    patients: MutableList<Patient>,
+    context: Context,
+    isLoading: Boolean
+) {
+    if (isLoading) {
+        // Afficher un anneau de chargement
+        LoadingScreen()
+    } else {
+        val navController = rememberNavController()
+        var isAuthenticated by remember { mutableStateOf(false) }
 
-    // État pour gérer si l'utilisateur est authentifié
-    var isAuthenticated by remember { mutableStateOf(false) }
-
-    AppTheme {
-        NavigationGraph(
-            navController = navController,
-            patients = patients,
-            isAuthenticated = isAuthenticated,
-            onAuthenticated = { isAuthenticated = true },
-            onSavePatients = { savePatientsToJson(context, patients) } // Callback pour sauvegarder les patients
-        )
+        AppTheme {
+            NavigationGraph(
+                navController = navController,
+                patients = patients,
+                isAuthenticated = isAuthenticated,
+                onAuthenticated = { isAuthenticated = true },
+                onSavePatients = { savePatientsToJson(context, patients) }
+            )
+        }
     }
 }
 

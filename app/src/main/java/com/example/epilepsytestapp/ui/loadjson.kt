@@ -1,30 +1,12 @@
 package com.example.epilepsytestapp.ui
 
 import android.content.Context
+import com.example.epilepsytestapp.model.Patient
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import java.io.IOException // Ajout de l'import pour IOException
 import com.google.gson.JsonObject
 import java.io.File
-import android.content.SharedPreferences
-
-
-data class Patient(
-    val id: Int,
-    val lastName: String,
-    val firstName: String,
-    val address: String,
-    val neurologist: String,
-    val username: String,
-    val password: String,
-    val tests: List<Test> = emptyList()
-)
-
-data class Test(
-    val id: Int,
-    val name: String,
-    val status: String
-)
 
 
 

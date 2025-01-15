@@ -14,6 +14,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.example.epilepsytestapp.R
 import com.example.epilepsytestapp.ui.theme.AppTheme
+import com.example.epilepsytestapp.model.Patient
 
 
 @Composable
@@ -29,6 +30,7 @@ fun SignupScreen(
     var neurologist by remember { mutableStateOf(patient.neurologist) }
     var username by remember { mutableStateOf(patient.username) }
     var password by remember { mutableStateOf(patient.password) }
+    val tests by remember { mutableStateOf(patient.tests) }
 
     AppTheme {
         Column(
@@ -77,7 +79,8 @@ fun SignupScreen(
                         address = address,
                         neurologist = neurologist,
                         username = username,
-                        password = password
+                        password = password,
+                        tests = tests,
                     )
                     // Mettre à jour la liste des patients
                     val updatedPatients = patients.map {

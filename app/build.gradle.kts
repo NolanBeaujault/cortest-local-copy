@@ -1,6 +1,7 @@
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
+    id("org.jetbrains.kotlin.plugin.serialization") version "1.8.10" apply false
 }
 
 android {
@@ -98,4 +99,14 @@ dependencies {
     debugImplementation("androidx.compose.ui:ui-test-manifest:1.5.1")
 
     implementation ("com.google.android.material:material:1.11.0")
+
+    //Ktor
+    implementation ("com.squareup.retrofit2:retrofit:2.9.0")
+    implementation ("com.squareup.retrofit2:converter-gson:2.9.0")
+    implementation ("io.ktor:ktor-client-core:2.0.0")
+    implementation ("io.ktor:ktor-client-android:2.0.0")
+    implementation ("io.ktor:ktor-client-serialization:2.0.0")
+    implementation ("io.ktor:ktor-serialization-gson:2.0.0")
+
+    implementation("io.ktor:ktor-client-logging:2.3.4")
 }

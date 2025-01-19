@@ -109,4 +109,7 @@ dependencies {
     implementation ("io.ktor:ktor-serialization-gson:2.0.0")
 
     implementation("io.ktor:ktor-client-logging:2.3.4")
+
+    implementation ("com.itextpdf:itext7-core:7.2.5") // Exemple pour iText
+
 }

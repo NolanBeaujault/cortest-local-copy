@@ -135,6 +135,8 @@ fun LoginScreen(
                         val isValid = onNavigateToHome(username, password, rememberMe)
                         if (!isValid) {
                             errorMessage = "Identifiant ou mot de passe incorrect."
+                        } else {
+                            errorMessage = ""
                         }
                     } else {
                         errorMessage = "Veuillez remplir tous les champs."
@@ -146,6 +148,7 @@ fun LoginScreen(
             ) {
                 Text(text = "Connexion")
             }
+
             Spacer(modifier = Modifier.height(16.dp))
 
             TextButton(onClick = onNavigateToSignup) {

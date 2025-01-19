@@ -18,89 +18,163 @@ import kotlinx.coroutines.launch
 import androidx.compose.runtime.rememberCoroutineScope
 import loadPatientsFromNetwork
 
+import android.content.SharedPreferences
+
+import android.Manifest
+import android.content.pm.PackageManager
+import android.os.Build
+import android.widget.Toast
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.core.content.ContextCompat
+
 class MainActivity : ComponentActivity() {
+    private lateinit var sharedPreferences: SharedPreferences
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        sharedPreferences = getSharedPreferences("AppPrefs", Context.MODE_PRIVATE)
+
+        // Vérifier et demander les autorisations nécessaires
+        requestPermissionsIfNecessary()
 
         setContent {
             val patients = remember { mutableStateListOf<Patient>() }
             var isLoading by remember { mutableStateOf(true) }
             val scope = rememberCoroutineScope()
 
-            // Charger les patients à partir du réseau
+            // Vérifier si l'utilisateur est déjà connecté
+            var isAuthenticated by remember {
+                mutableStateOf(sharedPreferences.getBoolean("isLoggedIn", false))
+            }
+
+            val startDestination = when {
+                intent.getStringExtra("startScreen") == "test" -> "test"
+                isAuthenticated -> "home"
+                else -> "login"
+            }
+
             LaunchedEffect(Unit) {
                 scope.launch {
                     val loadedPatients = loadPatientsFromNetwork()
                     patients.addAll(loadedPatients)
-                    isLoading = false // Arrêter l'indicateur de chargement une fois les données chargées
+                    isLoading = false
                 }
             }
 
             EpilepsyTestApp(
                 patients = patients,
                 context = this,
-                isLoading = isLoading
+                isLoading = isLoading,
+                isAuthenticated = isAuthenticated,
+                startDestination = startDestination,
+                onAuthenticate = { isAuthenticated = true },
+                onRememberMe = { rememberMe ->
+                    sharedPreferences.edit().putBoolean("isLoggedIn", rememberMe).apply()
+                }
             )
         }
     }
+
+    private fun requestPermissionsIfNecessary() {
+        // Liste des permissions nécessaires
+        val permissions = mutableListOf(
+            Manifest.permission.CAMERA,
+            Manifest.permission.RECORD_AUDIO,
+        )
+
+        // Filtrer les permissions qui ne sont pas encore accordées
+        val permissionsToRequest = permissions.filter {
+            ContextCompat.checkSelfPermission(this, it) != PackageManager.PERMISSION_GRANTED
+        }
+
+        // Si des permissions doivent être demandées, les demander
+        if (permissionsToRequest.isNotEmpty()) {
+            requestPermissionsLauncher.launch(permissionsToRequest.toTypedArray())
+        }
+    }
+
+    private val requestPermissionsLauncher =
+        registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { permissions ->
+            // Vérifiez si toutes les autorisations ont été accordées
+            val allGranted = permissions.entries.all { it.value }
+            if (!allGranted) {
+                Toast.makeText(
+                    this,
+                    "Certaines autorisations sont nécessaires pour utiliser l'application.",
+                    Toast.LENGTH_LONG
+                ).show()
+            }
+        }
 }
-
-
-
 
 
 @Composable
 fun EpilepsyTestApp(
     patients: MutableList<Patient>,
     context: Context,
-    isLoading: Boolean
+    isLoading: Boolean,
+    isAuthenticated: Boolean,
+    startDestination: String,
+    onAuthenticate: () -> Unit,
+    onRememberMe: (Boolean) -> Unit
 ) {
     if (isLoading) {
-        // Afficher un anneau de chargement
         LoadingScreen()
     } else {
         val navController = rememberNavController()
-        var isAuthenticated by remember { mutableStateOf(false) }
 
         AppTheme {
             NavigationGraph(
                 navController = navController,
                 patients = patients,
                 isAuthenticated = isAuthenticated,
-                onAuthenticated = { isAuthenticated = true },
-                onSavePatients = { savePatientsToJson(context, patients) }
+                startDestination = startDestination, // Passez la destination initiale
+                onAuthenticated = onAuthenticate,
+                onSavePatients = { savePatientsToJson(context, patients) },
+                onRememberMe = onRememberMe
             )
         }
     }
 }
+
 
 @Composable
 fun NavigationGraph(
     navController: NavHostController,
     patients: MutableList<Patient>,
     isAuthenticated: Boolean,
+    startDestination: String,
     onAuthenticated: () -> Unit,
-    onSavePatients: () -> Unit
+    onSavePatients: () -> Unit,
+    onRememberMe: (Boolean) -> Unit
 ) {
-    val context = androidx.compose.ui.platform.LocalContext.current
-
     NavHost(
         navController = navController,
-        startDestination = "login"
+        startDestination = startDestination // Utiliser la destination initiale
     ) {
-        // Écran de connexion
         composable("login") {
             LoginScreen(
                 patients = patients,
                 onNavigateToSignup = { navController.navigate("signup") },
-                onNavigateToHome = { username, password ->
+                onNavigateToHome = { username, password, rememberMe ->
                     val isValid = patients.any { it.username == username && it.password == password }
                     if (isValid) {
                         onAuthenticated()
-                        navController.navigate("home")
+                        onRememberMe(rememberMe)
                     }
+                    isValid // Retourne si la connexion a réussi
                 }
             )
+        }
+
+
+        composable("home") {
+            if (isAuthenticated) {
+                HomePage(navController = navController)
+            } else {
+                navController.navigate("login")
+            }
         }
 
         // Écran de création ou modification de compte
@@ -128,16 +202,6 @@ fun NavigationGraph(
             )
         }*/
 
-        // Écran d'accueil
-        composable("home") {
-            if (isAuthenticated) {
-                HomePage(navController = navController)
-            } else {
-                navController.navigate("login")
-            }
-        }
-
-        // Autres écrans sécurisés
         composable("calendar") {
             if (isAuthenticated) {
                 CalendarPage(navController = navController)

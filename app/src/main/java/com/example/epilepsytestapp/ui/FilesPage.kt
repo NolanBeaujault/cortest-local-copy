@@ -30,11 +30,12 @@ import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
 import androidx.navigation.NavHostController
 import com.example.epilepsytestapp.R
+import com.example.epilepsytestapp.model.Patient
 import com.example.epilepsytestapp.ui.theme.AppTheme
 import java.io.File
 
 @Composable
-fun FilesPage(navController: NavHostController) {
+fun FilesPage(navController: NavHostController, patient: List<Patient>) {
     val context = LocalContext.current
     val activity = context as? ComponentActivity
     val pdfFiles = remember { mutableStateListOf<File>() }
@@ -65,9 +66,9 @@ fun FilesPage(navController: NavHostController) {
             Column(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(bottom = 70.dp) // Laisser de l'espace pour la barre de navigation
+                    .padding(bottom = 70.dp) // Espace pour la barre de navigation
             ) {
-                // Bandeau supérieur
+                // Rectangle bleu pâle en haut
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -80,25 +81,25 @@ fun FilesPage(navController: NavHostController) {
                         horizontalArrangement = Arrangement.SpaceBetween,
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(horizontal = 3.dp)
+                            .padding(horizontal = 3.dp) // Diminuer la marge horizontale pour éloigner les éléments
                     ) {
                         // Logo
                         Image(
                             painter = painterResource(id = R.mipmap.ic_brain_logo_foreground),
                             contentDescription = "Logo",
                             modifier = Modifier
-                                .fillMaxHeight()
-                                .padding(end = 16.dp)
+                                .fillMaxHeight()// Taille ajustée
+                                .padding(end = 16.dp) // Espace supplémentaire à droite du logo
                         )
 
-                        // Titre "Fichiers"
+                        // Titre
                         Text(
                             text = "Fichiers",
                             style = MaterialTheme.typography.displayLarge.copy(
                                 fontSize = 28.sp,
                                 color = MaterialTheme.colorScheme.onBackground
                             ),
-                            modifier = Modifier.padding(horizontal = 16.dp)
+                            modifier = Modifier.padding(horizontal = 16.dp) // Espace autour du titre
                         )
 
                         // Icône utilisateur
@@ -108,7 +109,19 @@ fun FilesPage(navController: NavHostController) {
                             modifier = Modifier
                                 .fillMaxHeight()
                                 .padding(start = 16.dp)
+                                .clickable {
+                                    // Supposons que le premier patient est sélectionné
+                                    val selectedPatientId = patient.firstOrNull()?.id
+
+                                    if (selectedPatientId != null) {
+                                        navController.navigate("profile/$selectedPatientId")
+                                    } else {
+                                        // Gérer le cas où aucun patient n'est disponible
+                                        println("Aucun patient sélectionné.")
+                                    }
+                                }
                         )
+
                     }
                 }
 
@@ -178,11 +191,9 @@ fun openPDF(context: Context, file: File) {
             val intent = Intent(Intent.ACTION_VIEW).apply {
                 setDataAndType(uri, "application/pdf")
                 addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-                `package` = "com.adobe.reader" // Identifiant du package Adobe Acrobat
             }
-            context.startActivity(intent)
 
-
+            // Vérifiez si une application PDF est disponible
             if (intent.resolveActivity(context.packageManager) != null) {
                 Log.d("FileProvider", "Intent trouvé. Lancement de l'application PDF.")
                 context.startActivity(Intent.createChooser(intent, "Ouvrir avec"))
@@ -198,15 +209,4 @@ fun openPDF(context: Context, file: File) {
         Log.e("FileProvider", "Erreur lors de l'ouverture du fichier PDF: ${e.message}")
         Toast.makeText(context, "Erreur: Impossible d'ouvrir le fichier PDF.", Toast.LENGTH_LONG).show()
     }
-}
-
-
-
-
-fun isPdfAppAvailable(context: Context): Boolean {
-    val intent = Intent(Intent.ACTION_VIEW).apply {
-        setDataAndType(Uri.parse("content://"), "application/pdf")
-    }
-    val activities = context.packageManager.queryIntentActivities(intent, PackageManager.MATCH_DEFAULT_ONLY)
-    return activities.isNotEmpty()
 }

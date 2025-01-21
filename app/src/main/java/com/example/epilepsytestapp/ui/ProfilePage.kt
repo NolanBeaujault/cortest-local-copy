@@ -1,36 +1,39 @@
 package com.example.epilepsytestapp.ui
 
-import android.content.Context
-import android.content.Intent
-import android.provider.Settings
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
+import coil.compose.AsyncImage
 import com.example.epilepsytestapp.R
 import com.example.epilepsytestapp.model.Patient
 import com.example.epilepsytestapp.ui.theme.AppTheme
 
 @Composable
-fun SettingsPage(navController: NavHostController, onLogout: () -> Unit, patients: List<Patient>) {
+fun ProfilePage(patients: List<Patient>, navController: NavHostController) {
+    // Sélectionnez le premier patient de la liste ou null si la liste est vide
+    val patient = patients.firstOrNull()
+
     AppTheme {
         Box(
             modifier = Modifier
                 .fillMaxSize()
                 .background(MaterialTheme.colorScheme.background)
-                .border(4.dp, Color(0xFF2B4765), RoundedCornerShape(1.dp))
+                .border(4.dp, Color(0xFF2B4765), RoundedCornerShape(1.dp)) // Bordure
         ) {
             Column(
                 modifier = Modifier
@@ -63,7 +66,7 @@ fun SettingsPage(navController: NavHostController, onLogout: () -> Unit, patient
 
                         // Titre
                         Text(
-                            text = "Paramètres",
+                            text = "Profil",
                             style = MaterialTheme.typography.displayLarge.copy(
                                 fontSize = 28.sp,
                                 color = MaterialTheme.colorScheme.onBackground
@@ -90,58 +93,87 @@ fun SettingsPage(navController: NavHostController, onLogout: () -> Unit, patient
                     }
                 }
 
-                Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(32.dp))
 
-                // Options des paramètres
-                Column(modifier = Modifier.fillMaxSize()) {
-                    // Accéder aux autorisations
-                    SettingsOption(
-                        text = "Gérer les autorisations",
-                        onClick = { openAppSettings(navController.context) }
+                // Photo de profil ou avatar
+                Box(
+                    modifier = Modifier
+                        .size(150.dp)
+                        .align(Alignment.CenterHorizontally)
+                        .border(2.dp, Color(0xFF004D61), CircleShape)
+                        .padding(4.dp)
+                ) {
+                    AsyncImage(
+                        model = R.mipmap.ic_profile_foreground, // Image par défaut si pas de photo
+                        contentDescription = "Photo de profil",
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .clip(CircleShape)
                     )
+                }
 
-                    // Déconnexion
-                    SettingsOption(
-                        text = "Déconnexion",
-                        onClick = {
-                            onLogout()
-                            navController.navigate("login") {
-                                popUpTo("login") { inclusive = true }
-                            }
-                        }
-                    )
+                Spacer(modifier = Modifier.height(24.dp))
+
+                // Informations du profil
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 24.dp)
+                ) {
+                    if (patient != null) {
+                        ProfileInfoRow(label = "Nom", value = patient.lastName)
+                        ProfileInfoRow(label = "Prénom", value = patient.firstName)
+                        ProfileInfoRow(label = "Adresse", value = patient.address)
+                        ProfileInfoRow(label = "Neurologue", value = patient.neurologist)
+                        ProfileInfoRow(label = "Identifiant", value = patient.username)
+                    } else {
+                        Text(
+                            text = "Aucun patient sélectionné",
+                            style = MaterialTheme.typography.bodyLarge.copy(
+                                fontSize = 18.sp,
+                                color = MaterialTheme.colorScheme.error
+                            ),
+                            modifier = Modifier.fillMaxWidth(),
+                            textAlign = TextAlign.Center
+                        )
+                    }
                 }
             }
 
-            // Barre de navigation en bas
+            // Barre de navigation
             NavigationBar(
                 navController = navController,
-                modifier = Modifier.align(Alignment.BottomCenter) // Fixe la barre en bas
+                modifier = Modifier.align(Alignment.BottomCenter)
             )
         }
     }
 }
 
+
 @Composable
-fun SettingsOption(text: String, onClick: () -> Unit) {
-    Text(
-        text = text,
+fun ProfileInfoRow(label: String, value: String) {
+    Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(16.dp)
-            .border(1.dp, Color.Gray, RoundedCornerShape(4.dp))
-            .clickable { onClick() }
-            .padding(12.dp),
-        style = MaterialTheme.typography.bodyLarge.copy(
-            textAlign = TextAlign.Start
+            .padding(vertical = 8.dp),
+        horizontalArrangement = Arrangement.SpaceBetween
+    ) {
+        Text(
+            text = "$label :",
+            style = MaterialTheme.typography.bodyLarge.copy(
+                fontSize = 16.sp,
+                color = MaterialTheme.colorScheme.onBackground
+            ),
+            modifier = Modifier.weight(1f)
         )
-    )
-}
-
-// Fonction pour ouvrir les paramètres de l'application
-fun openAppSettings(context: Context) {
-    val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
-        data = android.net.Uri.fromParts("package", context.packageName, null)
+        Text(
+            text = value,
+            style = MaterialTheme.typography.bodyLarge.copy(
+                fontSize = 16.sp,
+                color = MaterialTheme.colorScheme.onBackground
+            ),
+            textAlign = TextAlign.End,
+            modifier = Modifier.weight(2f)
+        )
     }
-    context.startActivity(intent)
 }

@@ -25,7 +25,11 @@ object RetrofitClient {
 suspend fun loadPatientsFromNetwork(): List<Patient> {
     return withContext(Dispatchers.IO) {
         try {
-            RetrofitClient.apiService.getPatients()
+            val patients = RetrofitClient.apiService.getPatients()
+            // Vérification des champs importants
+            patients.filter {
+                it.username.isNotEmpty() && it.password.isNotEmpty() && it.address.isNotEmpty()
+            }
         } catch (e: Exception) {
             e.printStackTrace()
             emptyList()

@@ -6,15 +6,16 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 data class Patient(
-    val id: Int,                      // Identifiant unique du patient
-    val lastName: String,             // Nom de famille du patient
-    val firstName: String,            // Prénom du patient
-    val address: String,              // Adresse du patient
-    val neurologist: String,          // Nom du neurologue du patient
-    val username: String,             // Nom d'utilisateur pour la connexion
-    val password: String,             // Mot de passe pour la connexion
-    val tests: List<Test> = emptyList() // Liste des tests associés au patient
+    val id: Int = 0,
+    val lastName: String = "",
+    val firstName: String = "",
+    val address: String = "",
+    val neurologist: String = "",
+    val username: String = "",
+    val password: String = "",
+    val tests: List<Test> = emptyList()
 )
+
 
 @Serializable
 data class Test(

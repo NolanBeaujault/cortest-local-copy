@@ -22,12 +22,14 @@ import android.content.SharedPreferences
 
 import android.Manifest
 import android.content.pm.PackageManager
-import android.os.Build
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.content.ContextCompat
 import android.content.Intent
 import android.net.Uri
+import android.util.Log
+import androidx.navigation.NavType
+import androidx.navigation.navArgument
 
 
 class MainActivity : ComponentActivity() {
@@ -46,7 +48,6 @@ class MainActivity : ComponentActivity() {
             var isLoading by remember { mutableStateOf(true) }
             val scope = rememberCoroutineScope()
 
-            // État de l'authentification
             var isAuthenticated by remember {
                 mutableStateOf(sharedPreferences.getBoolean("isLoggedIn", false))
             }
@@ -56,6 +57,11 @@ class MainActivity : ComponentActivity() {
                 isAuthenticated -> "home"
                 else -> "login"
             }
+
+            Log.d("MainActivity", "Intent startScreen: ${intent.getStringExtra("startScreen")}")
+            Log.d("MainActivity", "Start destination: $startDestination")
+
+
 
             // Charger les patients
             LaunchedEffect(Unit) {
@@ -89,70 +95,41 @@ class MainActivity : ComponentActivity() {
 
     // Fonction de demande de permissions
     private fun requestPermissionsIfNecessary() {
-        // Liste des permissions nécessaires
-        val permissions = mutableListOf(
+        val permissions = listOf(
             Manifest.permission.CAMERA,
             Manifest.permission.RECORD_AUDIO
         )
 
-        // Ajouter MANAGE_EXTERNAL_STORAGE pour Android 11+
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-            permissions.add(Manifest.permission.MANAGE_EXTERNAL_STORAGE)
-        } else {
-            permissions.add(Manifest.permission.READ_EXTERNAL_STORAGE)
-        }
-
-        // Filtrer les permissions qui ne sont pas encore accordées
-        val permissionsToRequest = permissions.filter {
+        val deniedPermissions = permissions.filter {
             ContextCompat.checkSelfPermission(this, it) != PackageManager.PERMISSION_GRANTED
         }
 
-        println("Permissions à demander : $permissionsToRequest") // Log des permissions demandées
-
-        // Si des permissions doivent être demandées, les demander
-        if (permissionsToRequest.isNotEmpty()) {
-            requestPermissionsLauncher.launch(permissionsToRequest.toTypedArray())
+        if (deniedPermissions.isNotEmpty()) {
+            // Demander les permissions manquantes
+            requestPermissionsLauncher.launch(deniedPermissions.toTypedArray())
         } else {
-            println("Toutes les permissions sont déjà accordées.")
-            requestStoragePermissionIfNeeded() // Demander l'accès au stockage si nécessaire
+            Log.i("MainActivity", "Toutes les permissions sont déjà accordées.")
         }
     }
 
-    // Demander l'accès au stockage pour Android 11+
-    private fun requestStoragePermissionIfNeeded() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R &&
-            ContextCompat.checkSelfPermission(this, Manifest.permission.MANAGE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
-            requestPermissionsLauncher.launch(arrayOf(Manifest.permission.MANAGE_EXTERNAL_STORAGE))
-        }
-    }
 
     // Lancer la demande de permissions et gérer les réponses
     private val requestPermissionsLauncher =
         registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { permissions ->
-            permissions.forEach { (permission, isGranted) ->
-                println("Permission $permission accordée : $isGranted") // Log de la permission
-            }
-
-            val deniedPermissions = permissions.filter { !it.value }
-            if (deniedPermissions.isNotEmpty()) {
+            val allGranted = permissions.values.all { it }
+            if (allGranted) {
+                Log.i("MainActivity", "Toutes les permissions nécessaires ont été accordées.")
+            } else {
+                val deniedPermissions = permissions.filter { !it.value }
+                Log.e("MainActivity", "Permissions refusées : $deniedPermissions")
                 Toast.makeText(
                     this,
                     "Certaines autorisations sont nécessaires pour utiliser l'application.",
                     Toast.LENGTH_LONG
                 ).show()
-            } else {
-                requestStoragePermissionIfNeeded() // Demander à nouveau les permissions de stockage si nécessaire
             }
         }
 
-    // Ouvrir les paramètres de l'application pour que l'utilisateur accorde les permissions
-    private fun openAppSettings() {
-        val intent = Intent(android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
-            data = Uri.fromParts("package", packageName, null)
-        }
-        startActivity(intent)
-    }
-}
 
 @Composable
 fun EpilepsyTestApp(
@@ -241,7 +218,7 @@ fun NavigationGraph(
 
         composable("home") {
             if (isAuthenticated) {
-                HomePage(navController = navController)
+                HomePage(navController = navController, patient = patients)
             } else {
                 navController.navigate("login") {
                     popUpTo("login") { inclusive = true } // Éviter de revenir en arrière
@@ -258,7 +235,8 @@ fun NavigationGraph(
                         navController.navigate("login") {
                             popUpTo("login") { inclusive = true } // Supprimer "settings" de la pile
                         }
-                    }
+                    },
+                    patients = patients
                 )
             } else {
                 navController.navigate("login")
@@ -275,7 +253,7 @@ fun NavigationGraph(
 
         composable("files") {
             if (isAuthenticated) {
-                FilesPage(navController = navController)
+                FilesPage(navController = navController, patient = patients)
             } else {
                 navController.navigate("login")
             }
@@ -288,6 +266,7 @@ fun NavigationGraph(
                 navController.navigate("login")
             }
         }
+
 
         composable("confirmation") {
             ConfirmationScreen(
@@ -311,5 +290,24 @@ fun NavigationGraph(
         composable("testEnregistre") {
             TestEnregistre(navController = navController)
         }
+
+        composable(
+            route = "profile/{patientId}",
+            arguments = listOf(navArgument("patientId") { type = NavType.IntType })
+        ) { backStackEntry ->
+            val patientId = backStackEntry.arguments?.getInt("patientId")
+            val patient = patients.find { it.id == patientId }
+
+            if (patient != null) {
+                ProfilePage(
+                    patients = patients,
+                    navController = navController
+                )
+            } else {
+                // Si le patient n'est pas trouvé, retourner à la page d'accueil
+                navController.popBackStack()
+            }
+        }
+
     }
-}
+}}

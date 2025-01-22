@@ -10,98 +10,75 @@ import java.io.File
 import java.io.FileOutputStream
 import java.io.IOException
 
-fun saveQuestionnaireAsPDF(context: Context, questionnaireData: List<String>, fileName: String): File? {
+fun saveQuestionnaireAsPDF(context: Context, questionnaireData: List<Pair<String, String>>, fileName: String): File? {
     val pdfDocument = PdfDocument()
     val pageInfo = PdfDocument.PageInfo.Builder(595, 842, 1).create()
     val page = pdfDocument.startPage(pageInfo)
 
-    var canvas = page.canvas
+    val canvas = page.canvas
     val paint = Paint().apply {
         textSize = 16f
         color = android.graphics.Color.BLACK
+        typeface = android.graphics.Typeface.create("candara", android.graphics.Typeface.NORMAL)
     }
-
     val titlePaint = Paint().apply {
         textSize = 24f
-        color = android.graphics.Color.BLUE
-        isFakeBoldText = true
-    }
-
-    val linePaint = Paint().apply {
-        color = android.graphics.Color.LTGRAY
-        strokeWidth = 2f
-    }
-
-    val sliderPaint = Paint().apply {
-        color = android.graphics.Color.GREEN
-        strokeWidth = 4f
+        color = android.graphics.Color.BLACK
+        typeface = android.graphics.Typeface.create("berlin-sans-fb", android.graphics.Typeface.BOLD)
     }
 
     // Titre
-    canvas.drawText("Questionnaire Post-test", 10f, 40f, titlePaint)
+    canvas.drawText("Questionnaire Post-test", 50f, 50f, titlePaint)
 
-    var yPosition = 80f
-    val lineHeight = 30f
-    val marginLeft = 10f
-    val sliderLength = 200f
+    var yPosition = 100f
 
-    for ((index, answer) in questionnaireData.withIndex()) {
-        // Dessiner la question
-        canvas.drawText("Question ${index + 1} :", marginLeft, yPosition, paint)
-        yPosition += lineHeight
-
-        // Réponse
-        if (answer.startsWith("Slider:")) {
-            // Dessiner un curseur pour représenter la réponse du slider
-            val sliderValue = answer.removePrefix("Slider:").toFloatOrNull() ?: 0f
-            val sliderPosition = marginLeft + (sliderValue / 5f) * sliderLength
-
-            // Barre du slider
-            canvas.drawLine(marginLeft, yPosition, marginLeft + sliderLength, yPosition, linePaint)
-            // Position du curseur
-            canvas.drawCircle(sliderPosition, yPosition, 8f, sliderPaint)
-            yPosition += lineHeight
-        } else {
-            // Réponse textuelle ou option choisie
-            canvas.drawText(answer, marginLeft + 20f, yPosition, paint)
-            yPosition += lineHeight
-        }
-
-        // Ligne séparatrice
-        canvas.drawLine(marginLeft, yPosition, pageInfo.pageWidth - marginLeft, yPosition, linePaint)
+    // Ajout des questions et réponses
+    for ((index, questionAndAnswer) in questionnaireData.withIndex()) {
+        val (question, answer) = questionAndAnswer
+        canvas.drawText("${index + 1}. $question", 50f, yPosition, paint)
         yPosition += 20f
 
-        // Gérer les débordements (nouvelle page)
-        if (yPosition > pageInfo.pageHeight - 120f) {
-            pdfDocument.finishPage(page)
-            val newPageInfo = PdfDocument.PageInfo.Builder(595, 842, pdfDocument.pages.size + 1).create()
-            val page = pdfDocument.startPage(newPageInfo)
-            canvas = page.canvas
-            yPosition = 40f
+        // Vérification si la réponse est une valeur numérique (curseur)
+        if (answer.toFloatOrNull() != null) {
+            val sliderStart = 50f
+            val sliderEnd = 550f
+            val sliderValue = answer.toFloat()
+            val sliderPosition = sliderStart + (sliderEnd - sliderStart) * (sliderValue / 5f)
+
+            // Dessin de la ligne pour le curseur
+            paint.strokeWidth = 3f
+            canvas.drawLine(sliderStart, yPosition, sliderEnd, yPosition, paint)
+
+            // Dessin du curseur
+            paint.strokeWidth = 0f
+            canvas.drawCircle(sliderPosition, yPosition, 8f, paint)
+
+            // Dessin de la valeur numérique sous le curseur
+            canvas.drawText("Valeur : $sliderValue", sliderPosition - 20f, yPosition + 20f, paint)
+            yPosition += 40f
+        } else {
+            // Réponse textuelle simple
+            canvas.drawText(answer, 70f, yPosition, paint)
+            yPosition += 30f
         }
     }
 
-    // Ajouter le logo en bas de la dernière page
-    val logoBitmap = BitmapFactory.decodeResource(context.resources, R.mipmap.ic_brain_logo_foreground)
-    val logoWidth = 80
-    val logoHeight = 80
-    val logoX = (pageInfo.pageWidth - logoWidth) / 2f
-    val logoY = pageInfo.pageHeight - 100f
+    // Réduction et affichage du logo
+    val logo = BitmapFactory.decodeResource(context.resources, R.mipmap.ic_brain_logo_foreground)
+    val scaledWidth = logo.width / 2 // Réduction à 50% de la largeur
+    val scaledHeight = logo.height / 2 // Réduction à 50% de la hauteur
+    val scaledLogo = Bitmap.createScaledBitmap(logo, scaledWidth, scaledHeight, true)
 
-    canvas.drawBitmap(
-        Bitmap.createScaledBitmap(logoBitmap, logoWidth, logoHeight, true),
-        logoX,
-        logoY,
-        null
-    )
+    val logoX = (pageInfo.pageWidth - scaledWidth) / 2f
+    val logoY = pageInfo.pageHeight - scaledHeight - 50f
+    canvas.drawBitmap(scaledLogo, logoX, logoY, null)
 
     pdfDocument.finishPage(page)
 
-    // Créer le répertoire de destination
+    // Enregistrement du fichier
     val directory = File(context.getExternalFilesDir(null), "EpilepsyTests")
     if (!directory.exists()) directory.mkdirs()
 
-    // Créer le fichier PDF
     val file = File(directory, "$fileName.pdf")
     return try {
         pdfDocument.writeTo(FileOutputStream(file))

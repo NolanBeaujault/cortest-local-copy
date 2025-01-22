@@ -23,7 +23,6 @@ class TestAppWidgetProvider : AppWidgetProvider() {
     }
 
     private fun createWidgetRemoteViews(context: Context): RemoteViews {
-        // Intent pour lancer l'activité principale
         val intent = Intent(context, MainActivity::class.java).apply {
             putExtra("startScreen", "test")
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
@@ -34,18 +33,11 @@ class TestAppWidgetProvider : AppWidgetProvider() {
             intent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
-        // Charger la mise en page du widget
         val remoteViews = RemoteViews(context.packageName, R.layout.widget_layout)
 
-        // Configurer l'action de clic sur le conteneur principal
         remoteViews.setOnClickPendingIntent(R.id.widget_container, pendingIntent)
-
-        // Définir les textes et les styles pour le widget
-        remoteViews.setTextViewText(R.id.widget_text, context.getString(R.string.widget_text)) // Texte principal
-        remoteViews.setTextColor(R.id.widget_text, context.getColor(R.color.button_text_color)) // Couleur du texte
-
-        // (Optionnel) Personnaliser les icônes si nécessaire
-        // Par exemple : changer dynamiquement l'icône ou la flèche si un état spécifique est requis
+        remoteViews.setTextViewText(R.id.widget_text, context.getString(R.string.widget_text))
+        remoteViews.setTextColor(R.id.widget_text, context.getColor(R.color.button_text_color))
 
         return remoteViews
     }

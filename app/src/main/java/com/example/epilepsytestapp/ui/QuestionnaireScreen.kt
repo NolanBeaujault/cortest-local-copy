@@ -1,10 +1,7 @@
-@file:OptIn(ExperimentalMaterial3Api::class)
-
 package com.example.epilepsytestapp.ui
 
 import android.widget.Toast
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -12,7 +9,6 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
@@ -25,11 +21,12 @@ import com.example.epilepsytestapp.pdf.saveQuestionnaireAsPDF
 fun PostTestQuestionnaireScreen(onSaveTest: () -> Unit) {
     val context = LocalContext.current
     val questionnaireAnswers = remember { mutableStateListOf<String>() }
+    val questionnaireDetails = remember { mutableStateListOf<Pair<String, String>>() }
 
-    // Initialiser les réponses pour chaque question
     val numQuestions = 7
     for (i in 0 until numQuestions) {
         if (questionnaireAnswers.size <= i) questionnaireAnswers.add("")
+        if (questionnaireDetails.size <= i) questionnaireDetails.add(Pair("Question ${i + 1}", ""))
     }
 
     Column(
@@ -51,28 +48,37 @@ fun PostTestQuestionnaireScreen(onSaveTest: () -> Unit) {
         )
 
         // Questions
-        QuestionSlider("Question n°1", onValueChange = { value -> questionnaireAnswers[0] = value.toString() })
-        QuestionSlider("Question n°2", onValueChange = { value -> questionnaireAnswers[1] = value.toString() })
-        QuestionOptions(
-            "Question n°3", listOf("Oui", "Non"),
-            onSelectionChange = { selection -> questionnaireAnswers[2] = selection }
-        )
-        QuestionInput("Question n°4", onInput = { answer -> questionnaireAnswers[3] = answer })
-        QuestionOptions(
-            "Question n°5", listOf("Option 1", "Option 2", "Option 3", "Option 4", "Option 5", "Option 6"),
-            onSelectionChange = { selection -> questionnaireAnswers[4] = selection }
-        )
-        QuestionSlider("Question n°6", onValueChange = { value -> questionnaireAnswers[5] = value.toString() })
-        QuestionSlider("Question n°7", onValueChange = { value -> questionnaireAnswers[6] = value.toString() })
+        repeat(numQuestions) { index ->
+            when (val questionNumber = index + 1) {
+                1, 2, 6, 7 -> QuestionSlider("Question n°$questionNumber", onValueChange = { value ->
+                    questionnaireAnswers[index] = value.toString()
+                    questionnaireDetails[index] = Pair("Question n°$questionNumber", "Valeur : $value")
+                })
+                3 -> QuestionOptions("Question n°3", listOf("Oui", "Non"), onSelectionChange = { selection ->
+                    questionnaireAnswers[2] = selection
+                    questionnaireDetails[2] = Pair("Question n°3", "Réponse : $selection")
+                })
+                4 -> QuestionInput("Question n°4", onInput = { answer ->
+                    questionnaireAnswers[3] = answer
+                    questionnaireDetails[3] = Pair("Question n°4", "Réponse : $answer")
+                })
+                5 -> QuestionOptions(
+                    "Question n°5", listOf("Option 1", "Option 2", "Option 3", "Option 4", "Option 5", "Option 6"),
+                    onSelectionChange = { selection ->
+                        questionnaireAnswers[4] = selection
+                        questionnaireDetails[4] = Pair("Question n°5", "Réponse : $selection")
+                    }
+                )
+            }
+        }
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        // Bouton Enregistrer
         Button(
             onClick = {
                 val pdfFile = saveQuestionnaireAsPDF(
                     context = context,
-                    questionnaireData = questionnaireAnswers,
+                    questionnaireData = questionnaireDetails, // Passez la liste directement
                     fileName = "Questionnaire_${System.currentTimeMillis()}"
                 )
                 if (pdfFile != null) {
@@ -93,9 +99,9 @@ fun PostTestQuestionnaireScreen(onSaveTest: () -> Unit) {
             )
         }
 
+
         Spacer(modifier = Modifier.height(16.dp))
 
-        // Logo en bas
         Image(
             painter = painterResource(id = R.mipmap.ic_brain_logo_foreground),
             contentDescription = "Logo",
@@ -111,7 +117,11 @@ fun PostTestQuestionnaireScreen(onSaveTest: () -> Unit) {
 fun QuestionInput(question: String, onInput: (String) -> Unit) {
     var inputValue by remember { mutableStateOf("") }
 
-    Column(modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp)) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 8.dp)
+    ) {
         Text(
             text = question,
             style = MaterialTheme.typography.bodyLarge,
@@ -214,9 +224,9 @@ fun QuestionSlider(question: String, onValueChange: (Float) -> Unit) {
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            for (i in 0..5) {
+            (0..5).forEach {
                 Text(
-                    text = "$i",
+                    text = "$it",
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.primary
                 )

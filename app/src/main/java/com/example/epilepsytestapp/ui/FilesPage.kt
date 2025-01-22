@@ -1,14 +1,13 @@
 package com.example.epilepsytestapp.ui
 
 import android.Manifest
+import android.content.ActivityNotFoundException
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
-import android.net.Uri
 import android.util.Log
 import android.widget.Toast
 import androidx.activity.ComponentActivity
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -190,8 +189,15 @@ fun openPDF(context: Context, file: File) {
 
             val intent = Intent(Intent.ACTION_VIEW).apply {
                 setDataAndType(uri, "application/pdf")
-                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_ACTIVITY_NO_HISTORY)
             }
+
+            try {
+                context.startActivity(Intent.createChooser(intent, "Ouvrir avec"))
+            } catch (e: ActivityNotFoundException) {
+                Toast.makeText(context, "Aucune application trouvée pour ouvrir ce fichier PDF.", Toast.LENGTH_LONG).show()
+            }
+
 
             // Vérifiez si une application PDF est disponible
             if (intent.resolveActivity(context.packageManager) != null) {

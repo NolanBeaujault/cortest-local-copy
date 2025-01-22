@@ -75,7 +75,7 @@ dependencies {
     implementation("androidx.camera:camera-video:1.4.1")
     implementation("androidx.camera:camera-camera2:1.4.1")
 
-
+    implementation ("androidx.media2:media2-session:1.3.0")
 
     // Coil pour le chargement d'images
     implementation("io.coil-kt:coil-compose:2.4.0")

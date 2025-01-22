@@ -1,12 +1,16 @@
+package com.example.epilepsytestapp.ui
+
+import android.content.Intent
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.*
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -20,13 +24,14 @@ fun ConfirmationScreen(
     onCancelTest: () -> Unit
 ) {
     AppTheme {
+        val context = LocalContext.current
         Box(
             modifier = Modifier
                 .fillMaxSize()
                 .background(MaterialTheme.colorScheme.background)
                 .padding(16.dp)
         ) {
-            // Titre
+            // Title
             Text(
                 text = "Arrêter\nle test\nen cours ?",
                 style = MaterialTheme.typography.headlineSmall.copy(
@@ -36,33 +41,32 @@ fun ConfirmationScreen(
                 ),
                 modifier = Modifier
                     .align(Alignment.TopCenter)
-                    .padding(top = 60.dp), // Titre placé plus haut
+                    .padding(top = 60.dp),
                 color = MaterialTheme.colorScheme.onBackground
             )
 
-            // Boutons d'action
+            // Action buttons
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
                     .align(Alignment.Center),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                Spacer(modifier = Modifier.height(80.dp)) // Plus d'espace entre le titre et les boutons
+                Spacer(modifier = Modifier.height(80.dp))
 
                 Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 32.dp),
-                    horizontalArrangement = Arrangement.SpaceEvenly // Espacement uniforme
+                    modifier = Modifier.align(Alignment.CenterHorizontally)
                 ) {
-                    // Bouton Oui (Check)
                     ImageClickableButton(
                         iconResId = R.mipmap.ic_check_foreground,
                         label = "Oui j'arrête\nle test",
-                        onClick = onStopTestConfirmed
+                        onClick = {
+                            val intent = Intent(context, MediaProjectionActivity::class.java)
+                            context.startActivity(intent)
+                            onStopTestConfirmed()
+                        }
                     )
-
-                    // Bouton Non (Close)
+                    Spacer(modifier = Modifier.width(16.dp)) // Space between buttons
                     ImageClickableButton(
                         iconResId = R.mipmap.ic_close_foreground,
                         label = "Non je continue\nle test",
@@ -71,7 +75,7 @@ fun ConfirmationScreen(
                 }
             }
 
-            // Logo en bas
+            // Bottom logo
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -82,7 +86,7 @@ fun ConfirmationScreen(
                 Image(
                     painter = painterResource(id = R.mipmap.ic_brain_logo_foreground),
                     contentDescription = "Logo",
-                    modifier = Modifier.size(140.dp) // Logo agrandi
+                    modifier = Modifier.size(140.dp)
                 )
             }
         }
@@ -95,16 +99,14 @@ fun ImageClickableButton(iconResId: Int, label: String, onClick: () -> Unit) {
         modifier = Modifier.padding(1.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        // Image cliquable
         Image(
             painter = painterResource(id = iconResId),
             contentDescription = label,
             modifier = Modifier
-                .size(140.dp) // Taille identique pour toutes les icônes
+                .size(140.dp)
                 .clickable { onClick() }
         )
-        Spacer(modifier = Modifier.height(4.dp)) // Moins d'espace entre l'image et le texte
-        // Texte sous l'image
+        Spacer(modifier = Modifier.height(4.dp))
         Text(
             text = label,
             style = MaterialTheme.typography.bodyLarge.copy(

@@ -1,8 +1,12 @@
 package com.example.epilepsytestapp.ui
 
+import android.content.Context
+import android.content.Intent
+import android.provider.Settings
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
@@ -11,15 +15,16 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
 import com.example.epilepsytestapp.R
+import com.example.epilepsytestapp.model.Patient
 import com.example.epilepsytestapp.ui.theme.AppTheme
 
-
 @Composable
-fun SettingsPage(navController: NavHostController) {
+fun SettingsPage(navController: NavHostController, onLogout: () -> Unit, patients: List<Patient>) {
     AppTheme {
         Box(
             modifier = Modifier
@@ -30,9 +35,9 @@ fun SettingsPage(navController: NavHostController) {
             Column(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(bottom = 70.dp)
+                    .padding(bottom = 70.dp) // Espace pour la barre de navigation
             ) {
-                // Barre supérieure
+                // Rectangle bleu pâle en haut
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -56,7 +61,7 @@ fun SettingsPage(navController: NavHostController) {
                                 .padding(end = 16.dp) // Espace supplémentaire à droite du logo
                         )
 
-                        // Titre "Home"
+                        // Titre
                         Text(
                             text = "Paramètres",
                             style = MaterialTheme.typography.displayLarge.copy(
@@ -71,8 +76,16 @@ fun SettingsPage(navController: NavHostController) {
                             painter = painterResource(id = R.mipmap.ic_user_foreground),
                             contentDescription = "Profil",
                             modifier = Modifier
-                                .fillMaxHeight() // Taille ajustée
-                                .padding(start = 16.dp) // Espace supplémentaire à gauche de l'icône
+                                .fillMaxHeight()
+                                .padding(start = 16.dp)
+                                .clickable {
+                                    val selectedPatientId = patients.firstOrNull()?.id
+                                    if (selectedPatientId != null) {
+                                        navController.navigate("profile/$selectedPatientId")
+                                    } else {
+                                        println("Aucun patient sélectionné.")
+                                    }
+                                }
                         )
                     }
                 }
@@ -80,35 +93,24 @@ fun SettingsPage(navController: NavHostController) {
                 Spacer(modifier = Modifier.height(16.dp))
 
                 // Options des paramètres
-                Text(
-                    text = "Informations de connexion",
-                    modifier = Modifier
-                        .padding(16.dp)
-                        .fillMaxWidth()
-                        .border(1.dp, Color.Gray)
-                        .padding(8.dp),
-                    style = MaterialTheme.typography.bodyLarge
-                )
+                Column(modifier = Modifier.fillMaxSize()) {
+                    // Accéder aux autorisations
+                    SettingsOption(
+                        text = "Gérer les autorisations",
+                        onClick = { openAppSettings(navController.context) }
+                    )
 
-                Text(
-                    text = "Autorisation caméra",
-                    modifier = Modifier
-                        .padding(16.dp)
-                        .fillMaxWidth()
-                        .border(1.dp, Color.Gray)
-                        .padding(8.dp),
-                    style = MaterialTheme.typography.bodyLarge
-                )
-
-                Text(
-                    text = "Déconnexion",
-                    modifier = Modifier
-                        .padding(16.dp)
-                        .fillMaxWidth()
-                        .border(1.dp, Color.Gray)
-                        .padding(8.dp),
-                    style = MaterialTheme.typography.bodyLarge
-                )
+                    // Déconnexion
+                    SettingsOption(
+                        text = "Déconnexion",
+                        onClick = {
+                            onLogout()
+                            navController.navigate("login") {
+                                popUpTo("login") { inclusive = true }
+                            }
+                        }
+                    )
+                }
             }
 
             // Barre de navigation en bas
@@ -118,4 +120,28 @@ fun SettingsPage(navController: NavHostController) {
             )
         }
     }
+}
+
+@Composable
+fun SettingsOption(text: String, onClick: () -> Unit) {
+    Text(
+        text = text,
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(16.dp)
+            .border(1.dp, Color.Gray, RoundedCornerShape(4.dp))
+            .clickable { onClick() }
+            .padding(12.dp),
+        style = MaterialTheme.typography.bodyLarge.copy(
+            textAlign = TextAlign.Start
+        )
+    )
+}
+
+// Fonction pour ouvrir les paramètres de l'application
+fun openAppSettings(context: Context) {
+    val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+        data = android.net.Uri.fromParts("package", context.packageName, null)
+    }
+    context.startActivity(intent)
 }

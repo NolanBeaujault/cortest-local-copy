@@ -1,6 +1,6 @@
 package com.example.epilepsytestapp
 
-import ConfirmationScreen
+
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -18,126 +18,219 @@ import kotlinx.coroutines.launch
 import androidx.compose.runtime.rememberCoroutineScope
 import loadPatientsFromNetwork
 
+import android.content.SharedPreferences
+import android.Manifest
+import android.content.pm.PackageManager
+import android.widget.Toast
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.core.content.ContextCompat
+import androidx.navigation.NavType
+import androidx.navigation.navArgument
+
+
+
 class MainActivity : ComponentActivity() {
+    private lateinit var sharedPreferences: SharedPreferences
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        sharedPreferences = getSharedPreferences("AppPrefs", Context.MODE_PRIVATE)
+
+        // Vérifier et demander les autorisations nécessaires
+        requestPermissionsIfNecessary()
 
         setContent {
             val patients = remember { mutableStateListOf<Patient>() }
             var isLoading by remember { mutableStateOf(true) }
             val scope = rememberCoroutineScope()
 
-            // Charger les patients à partir du réseau
+            var isAuthenticated by remember {
+                mutableStateOf(sharedPreferences.getBoolean("isLoggedIn", false))
+            }
+
+            val startDestination = when {
+                intent.getStringExtra("startScreen") == "test" -> "test"
+                isAuthenticated -> "home"
+                else -> "login"
+            }
+
             LaunchedEffect(Unit) {
                 scope.launch {
                     val loadedPatients = loadPatientsFromNetwork()
                     patients.addAll(loadedPatients)
-                    isLoading = false // Arrêter l'indicateur de chargement une fois les données chargées
+                    isLoading = false
                 }
             }
 
             EpilepsyTestApp(
                 patients = patients,
                 context = this,
-                isLoading = isLoading
+                isLoading = isLoading,
+                isAuthenticated = isAuthenticated,
+                startDestination = startDestination,
+                onAuthenticate = {
+                    isAuthenticated = true
+                    sharedPreferences.edit().putBoolean("isLoggedIn", true).apply()
+                },
+                onRememberMe = { rememberMe ->
+                    sharedPreferences.edit().putBoolean("isLoggedIn", rememberMe).apply()
+                },
+                onLogout = {
+                    isAuthenticated = false
+                    sharedPreferences.edit().putBoolean("isLoggedIn", false).apply()
+                }
             )
         }
     }
+
+    private fun requestPermissionsIfNecessary() {
+        val permissions = listOf(
+            Manifest.permission.CAMERA,
+            Manifest.permission.RECORD_AUDIO
+        )
+
+        val permissionsToRequest = permissions.filter {
+            ContextCompat.checkSelfPermission(this, it) != PackageManager.PERMISSION_GRANTED
+        }
+
+        if (permissionsToRequest.isNotEmpty()) {
+            requestPermissionsLauncher.launch(permissionsToRequest.toTypedArray())
+        }
+    }
+
+
+    private val requestPermissionsLauncher =
+        registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { permissions ->
+            val deniedPermissions = permissions.filter { !it.value }
+            if (deniedPermissions.isNotEmpty()) {
+                Toast.makeText(
+                    this,
+                    "Certaines autorisations (Caméra et Microphone) sont nécessaires pour utiliser certaines fonctionnalités de l'application.",
+                    Toast.LENGTH_LONG
+                ).show()
+            }
+        }
 }
 
 
-
-
-
-@Composable
+    @Composable
 fun EpilepsyTestApp(
     patients: MutableList<Patient>,
     context: Context,
-    isLoading: Boolean
+    isLoading: Boolean,
+    isAuthenticated: Boolean,
+    startDestination: String,
+    onAuthenticate: () -> Unit,
+    onRememberMe: (Boolean) -> Unit,
+    onLogout: () -> Unit
 ) {
+    val navController = rememberNavController()
+
     if (isLoading) {
-        // Afficher un anneau de chargement
         LoadingScreen()
     } else {
-        val navController = rememberNavController()
-        var isAuthenticated by remember { mutableStateOf(false) }
-
         AppTheme {
+            LaunchedEffect(startDestination) {
+                if (startDestination == "test") {
+                    navController.navigate("test") {
+                        popUpTo(0) { inclusive = true } // Supprimer toute la pile
+                    }
+                } else if (isAuthenticated) {
+                    navController.navigate("home") {
+                        popUpTo("login") { inclusive = true }
+                    }
+                } else {
+                    navController.navigate("login") {
+                        popUpTo("login") { inclusive = true }
+                    }
+                }
+            }
+
             NavigationGraph(
                 navController = navController,
                 patients = patients,
                 isAuthenticated = isAuthenticated,
-                onAuthenticated = { isAuthenticated = true },
-                onSavePatients = { savePatientsToJson(context, patients) }
+                startDestination = startDestination,
+                onAuthenticated = onAuthenticate,
+                onSavePatients = { savePatientsToJson(context, patients) },
+                onRememberMe = onRememberMe,
+                onLogout = {
+                    onLogout()
+                    navController.navigate("login") {
+                        popUpTo("login") { inclusive = true }
+                    }
+                }
             )
         }
     }
 }
+
 
 @Composable
 fun NavigationGraph(
     navController: NavHostController,
     patients: MutableList<Patient>,
     isAuthenticated: Boolean,
+    startDestination: String,
     onAuthenticated: () -> Unit,
-    onSavePatients: () -> Unit
+    onSavePatients: () -> Unit,
+    onRememberMe: (Boolean) -> Unit,
+    onLogout: () -> Unit
 ) {
-    val context = androidx.compose.ui.platform.LocalContext.current
-
     NavHost(
         navController = navController,
-        startDestination = "login"
+        startDestination = startDestination
     ) {
-        // Écran de connexion
         composable("login") {
             LoginScreen(
                 patients = patients,
                 onNavigateToSignup = { navController.navigate("signup") },
-                onNavigateToHome = { username, password ->
+                onNavigateToHome = { username, password, rememberMe ->
+                    // Validation des identifiants
                     val isValid = patients.any { it.username == username && it.password == password }
                     if (isValid) {
+                        // Mettre à jour l'état d'authentification
                         onAuthenticated()
-                        navController.navigate("home")
+                        onRememberMe(rememberMe)
+
+                        // Navigation vers la page d'accueil
+                        navController.navigate("home") {
+                            popUpTo("login") { inclusive = true } // Supprimer "login" de la pile
+                        }
                     }
+                    isValid
                 }
             )
         }
 
-        // Écran de création ou modification de compte
-        /*composable("signup") {
-            SignupScreen(
-                patient = Patient(
-                    id = patients.size + 1, // ID unique basé sur la taille actuelle
-                    lastName = "",
-                    firstName = "",
-                    address = "",
-                    neurologist = "",
-                    username = "",
-                    password = ""
-                ),
-                onSaveProfile = { updatedPatient ->
-                    val index = patients.indexOfFirst { it.id == updatedPatient.id }
-                    if (index != -1) {
-                        patients[index] = updatedPatient
-                    } else {
-                        patients.add(updatedPatient)
-                    }
-                    onSavePatients() // Sauvegarde des modifications
-                    navController.navigate("home")
-                }
-            )
-        }*/
-
-        // Écran d'accueil
         composable("home") {
             if (isAuthenticated) {
-                HomePage(navController = navController)
+                HomePage(navController = navController, patient = patients)
+            } else {
+                navController.navigate("login") {
+                    popUpTo("login") { inclusive = true } // Éviter de revenir en arrière
+                }
+            }
+        }
+
+        composable("settings") {
+            if (isAuthenticated) {
+                SettingsPage(
+                    navController = navController,
+                    onLogout = {
+                        onLogout()
+                        navController.navigate("login") {
+                            popUpTo("login") { inclusive = true } // Supprimer "settings" de la pile
+                        }
+                    },
+                    patients = patients
+                )
             } else {
                 navController.navigate("login")
             }
         }
 
-        // Autres écrans sécurisés
         composable("calendar") {
             if (isAuthenticated) {
                 CalendarPage(navController = navController)
@@ -148,15 +241,7 @@ fun NavigationGraph(
 
         composable("files") {
             if (isAuthenticated) {
-                FilesPage(navController = navController)
-            } else {
-                navController.navigate("login")
-            }
-        }
-
-        composable("settings") {
-            if (isAuthenticated) {
-                SettingsPage(navController = navController)
+                FilesPage(navController = navController, patient = patients)
             } else {
                 navController.navigate("login")
             }
@@ -170,7 +255,7 @@ fun NavigationGraph(
             }
         }
 
-        // Page de confirmation
+
         composable("confirmation") {
             ConfirmationScreen(
                 onStopTestConfirmed = {
@@ -182,7 +267,6 @@ fun NavigationGraph(
             )
         }
 
-        // Page du questionnaire post-test
         composable("questionnaire") {
             PostTestQuestionnaireScreen(
                 onSaveTest = {
@@ -191,9 +275,29 @@ fun NavigationGraph(
             )
         }
 
-        // Page test enregistré
         composable("testEnregistre") {
             TestEnregistre(navController = navController)
         }
+
+        composable(
+            route = "profile/{patientId}",
+            arguments = listOf(navArgument("patientId") { type = NavType.IntType })
+        ) { backStackEntry ->
+            val patientId = backStackEntry.arguments?.getInt("patientId")
+            val patient = patients.find { it.id == patientId }
+
+            if (patient != null) {
+                ProfilePage(
+                    patients = patients,
+                    navController = navController
+                )
+            } else {
+                // Si le patient n'est pas trouvé, retourner à la page d'accueil
+                navController.popBackStack()
+            }
+        }
+
     }
 }
+
+

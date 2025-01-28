@@ -38,11 +38,11 @@ fun TestScreen(navController: NavHostController) {
     )
 
     // État pour suivre la consigne actuelle
-    var currentInstructionIndex by remember { mutableStateOf(0) }
+    var currentInstructionIndex by remember { mutableIntStateOf(0) }
     val currentInstruction = instructions.getOrNull(currentInstructionIndex)
 
     // État pour gérer les erreurs de la caméra
-    var cameraError by remember { mutableStateOf(false) }
+    val cameraError by remember { mutableStateOf(false) }
 
     Box(modifier = Modifier.fillMaxSize()) {
         if (!cameraError) {

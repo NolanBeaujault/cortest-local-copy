@@ -1,7 +1,6 @@
 package com.example.epilepsytestapp.ui
 
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
@@ -23,18 +22,18 @@ import com.example.epilepsytestapp.ui.theme.AppTheme
 fun LoginScreen(
     patients: List<Patient>,
     onNavigateToSignup: () -> Unit,
-    onNavigateToHome: (String, String) -> Unit
+    onNavigateToHome: (String, String, Boolean) -> Boolean // Retourne un booléen pour indiquer succès ou échec
 ) {
     var username by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
+    var rememberMe by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf("") }
-    var isPasswordVisible by remember { mutableStateOf(false) } // Contrôle de la visibilité du mot de passe
+    var isPasswordVisible by remember { mutableStateOf(false) }
 
     AppTheme {
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .border(4.dp, Color(0xFF2B4765), RoundedCornerShape(1.dp))
                 .padding(16.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
@@ -58,7 +57,8 @@ fun LoginScreen(
             // Connexion
             Text(
                 text = "Connexion",
-                style = MaterialTheme.typography.headlineSmall
+                style = MaterialTheme.typography.headlineSmall,
+                color = MaterialTheme.colorScheme.primary
             )
             Spacer(modifier = Modifier.height(16.dp))
 
@@ -117,31 +117,41 @@ fun LoginScreen(
             Spacer(modifier = Modifier.height(32.dp))
 
             // Bouton de connexion
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Checkbox(
+                    checked = rememberMe,
+                    onCheckedChange = { rememberMe = it }
+                )
+                Text(text = "Rester connecté")
+            }
+            Spacer(modifier = Modifier.height(16.dp))
+
             Button(
                 onClick = {
                     if (username.isNotBlank() && password.isNotBlank()) {
-                        onNavigateToHome(username, password)
+                        val isValid = onNavigateToHome(username, password, rememberMe)
+                        if (!isValid) {
+                            errorMessage = "Identifiant ou mot de passe incorrect."
+                        } else {
+                            errorMessage = ""
+                        }
                     } else {
                         errorMessage = "Veuillez remplir tous les champs."
                     }
                 },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(56.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.primary,
-                    contentColor = MaterialTheme.colorScheme.onPrimary
-                ),
-                shape = RoundedCornerShape(50)
+                    .height(56.dp)
             ) {
-                Text(
-                    text = "Connexion",
-                    style = MaterialTheme.typography.labelLarge
-                )
+                Text(text = "Connexion")
             }
+
+
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Lien vers création de compte
             TextButton(onClick = onNavigateToSignup) {
                 Text(
                     text = "Créer un compte",
@@ -152,9 +162,6 @@ fun LoginScreen(
         }
     }
 }
-
-
-
 
 
 @Composable

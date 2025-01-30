@@ -10,6 +10,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -190,7 +191,7 @@ fun QuestionOptions(question: String, options: List<String>) {
 
 @Composable
 fun QuestionSlider(question: String) {
-    val sliderValue = remember { mutableStateOf(0f) } // Valeur initiale à 0
+    val sliderValue = remember { mutableFloatStateOf(0f) } // Valeur initiale à 0
 
     Column(
         modifier = Modifier
@@ -210,8 +211,8 @@ fun QuestionSlider(question: String) {
 
         // Curseur
         Slider(
-            value = sliderValue.value,
-            onValueChange = { sliderValue.value = it },
+            value = sliderValue.floatValue,
+            onValueChange = { sliderValue.floatValue = it },
             valueRange = 0f..5f, // Valeurs de 0 à 5
             steps = 4, // 5 étapes au total (0, 1, 2, 3, 4, 5)
             colors = SliderDefaults.colors(

@@ -174,10 +174,10 @@ fun NavigationBar(navController: NavHostController, modifier: Modifier = Modifie
                     .aspectRatio(1f) // Assure un rapport largeur/hauteur carré
             )
         }
-        IconButton(onClick = { navController.navigate("calendar") }) {
+        IconButton(onClick = { navController.navigate("demo") }) {
             Image(
-                painter = painterResource(id = R.mipmap.ic_calendar_foreground),
-                contentDescription = "Calendar",
+                painter = painterResource(id = R.mipmap.ic_demo_foreground),
+                contentDescription = "Demo",
                 modifier = Modifier
                     .fillMaxHeight()
                     .aspectRatio(1f)

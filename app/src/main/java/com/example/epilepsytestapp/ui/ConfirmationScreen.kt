@@ -11,14 +11,19 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.navigation.NavHostController
 import com.example.epilepsytestapp.R
 import com.example.epilepsytestapp.ui.theme.AppTheme
 
 @Composable
 fun ConfirmationScreen(
+    navController: NavHostController, // Ajout du NavController
     onStopTestConfirmed: () -> Unit,
     onCancelTest: () -> Unit
 ) {
+    val navBackStackEntry = navController.previousBackStackEntry
+    val origin = navBackStackEntry?.arguments?.getString("origin") ?: "home"
+
     AppTheme {
         Box(
             modifier = Modifier
@@ -36,7 +41,7 @@ fun ConfirmationScreen(
                 ),
                 modifier = Modifier
                     .align(Alignment.TopCenter)
-                    .padding(top = 60.dp), // Titre placé plus haut
+                    .padding(top = 60.dp),
                 color = MaterialTheme.colorScheme.onBackground
             )
 
@@ -47,13 +52,13 @@ fun ConfirmationScreen(
                     .align(Alignment.Center),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                Spacer(modifier = Modifier.height(80.dp)) // Plus d'espace entre le titre et les boutons
+                Spacer(modifier = Modifier.height(80.dp))
 
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(horizontal = 32.dp),
-                    horizontalArrangement = Arrangement.SpaceEvenly // Espacement uniforme
+                    horizontalArrangement = Arrangement.SpaceEvenly
                 ) {
                     // Bouton Oui (Check)
                     ImageClickableButton(
@@ -62,11 +67,11 @@ fun ConfirmationScreen(
                         onClick = onStopTestConfirmed
                     )
 
-                    // Bouton Non (Close)
+                    // Bouton Non (Retour à l'origine)
                     ImageClickableButton(
                         iconResId = R.mipmap.ic_close_foreground,
                         label = "Non je continue\nle test",
-                        onClick = onCancelTest
+                        onClick = { navController.navigate(origin) }
                     )
                 }
             }
@@ -82,12 +87,13 @@ fun ConfirmationScreen(
                 Image(
                     painter = painterResource(id = R.mipmap.ic_brain_logo_foreground),
                     contentDescription = "Logo",
-                    modifier = Modifier.size(140.dp) // Logo agrandi
+                    modifier = Modifier.size(140.dp)
                 )
             }
         }
     }
 }
+
 
 @Composable
 fun ImageClickableButton(iconResId: Int, label: String, onClick: () -> Unit) {

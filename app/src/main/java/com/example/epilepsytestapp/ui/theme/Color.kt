@@ -8,4 +8,4 @@ val PurpleGrey40 = Color(0xFF3700B3)
 val PurpleGrey80 = Color(0xFF6200EA)
 val Teal40 = Color(0xFF03DAC5)
 val Teal80 = Color(0xFF018786)
-
+val Blue40 = Color(0xFFD0EEED)

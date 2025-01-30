@@ -1,163 +1,131 @@
 package com.example.epilepsytestapp.ui
 
-import androidx.compose.foundation.background
+import android.content.Context
+import androidx.camera.core.CameraSelector
+import androidx.camera.lifecycle.ProcessCameraProvider
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
-import androidx.compose.material3.*
-import androidx.compose.material3.TextFieldDefaults.textFieldColors
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
+import androidx.compose.ui.viewinterop.AndroidView
+import androidx.core.content.ContextCompat
+import androidx.lifecycle.LifecycleOwner
+import com.example.epilepsytestapp.R
+import androidx.compose.ui.res.painterResource
+import androidx.compose.foundation.clickable
 import androidx.navigation.NavHostController
-import com.example.epilepsytestapp.ui.theme.PrimaryColor
-import com.example.epilepsytestapp.ui.theme.BackgroundColor
-import com.example.epilepsytestapp.ui.theme.TextColor
-import com.example.epilepsytestapp.ui.theme.ButtonTextColor
+import com.example.epilepsytestapp.ui.theme.Blue40
 
 
 @Composable
-fun DemoPage(navController: NavHostController) {
-    val step = remember { mutableStateOf(1) }
-    val name = remember { mutableStateOf("") }
-    val location = remember { mutableStateOf("") }
-    val codeWord = remember { mutableStateOf("") }
-    val feeling = remember { mutableStateOf("") }
+fun DemoScreen(navController: NavHostController) {
+    val context = LocalContext.current
+    val lifecycleOwner = LocalLifecycleOwner.current
 
-    Surface(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(BackgroundColor)
-    ) {
+    // Liste des consignes
+    val instructions = listOf(
+        "Quel est ton mot code ?",
+        "Qu'est ce que tu ressens ?",
+        "Lève les deux bras devant toi",
+        "Montre la main gauche à la caméra",
+        "Répète le mot Citron"
+    )
+
+    // État pour suivre la consigne actuelle
+    var currentInstructionIndex by remember { mutableStateOf(0) }
+    val currentInstruction = instructions.getOrNull(currentInstructionIndex)
+
+    // État pour gérer les erreurs de la caméra
+    var cameraError by remember { mutableStateOf(false) }
+
+    Box(modifier = Modifier.fillMaxSize()) {
+        if (!cameraError) {
+            // Affiche la caméra
+            CameraPreview(
+                context = context,
+                lifecycleOwner = lifecycleOwner,
+                modifier = Modifier.fillMaxSize()
+            )
+        } else {
+            // Affiche un message d'erreur
+            Text(
+                text = "Impossible d'accéder à la caméra",
+                color = Color.Red,
+                modifier = Modifier.align(Alignment.Center),
+                style = MaterialTheme.typography.bodyLarge
+            )
+        }
+
+        // Consignes affichées au centre de l'écran
+        currentInstruction?.let {
+            Text(
+                text = it,
+                modifier = Modifier
+                    .align(Alignment.Center)
+                    .padding(16.dp),
+                style = MaterialTheme.typography.headlineSmall.copy(color = Color.White),
+                maxLines = 2
+            )
+        }
+
+        // Flèche pointant vers le bouton suivant avec la légende
         Column(
             modifier = Modifier
-                .fillMaxSize()
-                .padding(16.dp),
+                .align(Alignment.BottomCenter)
+                .padding(bottom = 140.dp)
+                .fillMaxWidth(),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            // Header Title
+            // Texte
             Text(
-                text = "Démo de l'application",
-                style = MaterialTheme.typography.displayLarge.copy(
-                    fontSize = 24.sp,
-                    color = TextColor,
-                    textAlign = TextAlign.Center
-                ),
-                modifier = Modifier.padding(bottom = 24.dp)
+                text = "Passe à l'instruction suivante",
+                style = MaterialTheme.typography.headlineSmall.copy(color = Blue40),
+                modifier = Modifier.padding(bottom = 5.dp)
             )
 
-            when (step.value) {
-                1 -> DemoStep(
-                    question = "Quel est votre nom et où êtes-vous ?",
-                    value = name.value,
-                    onValueChange = { name.value = it },
-                    buttonText = "Suivant",
-                    onButtonClick = { step.value = 2 }
-                )
-                2 -> DemoStep(
-                    question = "Quel est votre mot code ?",
-                    value = codeWord.value,
-                    onValueChange = { codeWord.value = it },
-                    buttonText = "Suivant",
-                    onButtonClick = { step.value = 3 }
-                )
-                3 -> DemoStep(
-                    question = "Comment vous sentez-vous ?",
-                    value = feeling.value,
-                    onValueChange = { feeling.value = it },
-                    buttonText = "Suivant",
-                    onButtonClick = { step.value = 4 }
-                )
-                4 -> DemoFinalStep(
-                    onFinish = { step.value = 5 }
-                )
-                5 -> PostTestQuestionnaireScreen(onSaveTest = {})
-            }
-        }
-    }
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun DemoStep(
-    question: String,
-    value: String,
-    onValueChange: (String) -> Unit,
-    buttonText: String,
-    onButtonClick: () -> Unit
-) {
-    Column(
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        Text(
-            text = question,
-            style = MaterialTheme.typography.bodyLarge.copy(
-                fontSize = 18.sp,
-                color = TextColor,
-                textAlign = TextAlign.Center
-            ),
-            modifier = Modifier.padding(bottom = 16.dp)
-        )
-
-        TextField(
-            value = value,
-            onValueChange = onValueChange,
-            colors = textFieldColors(
-                containerColor = BackgroundColor,
-                focusedTextColor = TextColor,
-                focusedIndicatorColor = PrimaryColor,
-                unfocusedIndicatorColor = TextColor
-            ),
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(bottom = 24.dp)
-        )
-
-        Button(
-            onClick = onButtonClick,
-            colors = ButtonDefaults.buttonColors(PrimaryColor),
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(50.dp)
-        ) {
-            Text(
-                text = buttonText,
-                color = ButtonTextColor,
-                style = MaterialTheme.typography.labelLarge
+            // Flèche pointant vers le bas
+            Image(
+                painter = painterResource(id = R.mipmap.ic_arrow_foreground),
+                contentDescription = "Flèche vers le bouton suivant",
+                modifier = Modifier.size(110.dp) // Taille de la flèche
+                    .offset(x = 30.dp)
             )
         }
-    }
-}
 
-@Composable
-fun DemoFinalStep(onFinish: () -> Unit) {
-    Column(
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        Text(
-            text = "Levez les bras pendant quelques secondes.",
-            style = MaterialTheme.typography.bodyLarge.copy(
-                fontSize = 18.sp,
-                color = TextColor,
-                textAlign = TextAlign.Center
-            ),
-            modifier = Modifier.padding(bottom = 16.dp)
-        )
-
-        Button(
-            onClick = onFinish,
-            colors = ButtonDefaults.buttonColors(PrimaryColor),
+        // Images cliquables en bas de l'écran
+        Row(
             modifier = Modifier
+                .align(Alignment.BottomCenter)
                 .fillMaxWidth()
-                .height(50.dp)
+                .padding(15.dp),
+            horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            Text(
-                text = "Fin de test",
-                color = ButtonTextColor,
-                style = MaterialTheme.typography.labelLarge
+            // Image de croix
+            ImageClickable(
+                imageResId = R.mipmap.ic_close_foreground,
+                contentDescription = "Arrêter le test",
+                onClick = { navController.navigate("confirmation/demo") }
+            )
+
+            // Image de flèche
+            ImageClickable(
+                imageResId = R.mipmap.ic_next_foreground,
+                contentDescription = "Instruction suivante",
+                onClick = {
+                    if (currentInstructionIndex < instructions.size - 1) {
+                        currentInstructionIndex++
+                    } else {
+                        // Si on est à la dernière consigne, arrêter le test
+                        navController.navigate("confirmation")
+                    }
+                }
             )
         }
     }

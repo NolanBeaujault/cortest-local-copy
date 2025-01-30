@@ -108,9 +108,9 @@ fun NavigationGraph(
         }
 
         // Autres écrans sécurisés
-        composable("calendar") {
+        composable("demo") {
             if (isAuthenticated) {
-                DemoPage(navController = navController)
+                DemoScreen(navController = navController)
             } else {
                 navController.navigate("login")
             }
@@ -141,16 +141,21 @@ fun NavigationGraph(
         }
 
         // Page de confirmation
-        composable("confirmation") {
+        composable("confirmation/{origin}") { backStackEntry ->
+            val origin = backStackEntry.arguments?.getString("origin") ?: "home"
+
             ConfirmationScreen(
+                navController = navController,
                 onStopTestConfirmed = {
                     navController.navigate("questionnaire")
                 },
                 onCancelTest = {
-                    navController.navigate("test")
+                    navController.navigate(origin)
                 }
             )
         }
+
+
 
         // Page du questionnaire post-test
         composable("questionnaire") {
@@ -165,5 +170,6 @@ fun NavigationGraph(
         composable("testEnregistre") {
             TestEnregistre(navController = navController)
         }
+
     }
 }

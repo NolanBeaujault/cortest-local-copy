@@ -86,7 +86,7 @@ fun TestScreen(navController: NavHostController) {
             ImageClickable(
                 imageResId = R.mipmap.ic_close_foreground, // Remplacez par l'ID de votre image
                 contentDescription = "Arrêter le test",
-                onClick = { navController.navigate("confirmation") }
+                onClick = { navController.navigate("confirmation/test") }
             )
 
             // Image de flèche

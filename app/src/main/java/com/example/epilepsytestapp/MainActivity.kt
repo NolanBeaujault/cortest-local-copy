@@ -212,7 +212,8 @@ fun NavigationGraph(
                     navController.navigate("login") // Redirection vers la page de connexion après l'inscription
                 },
                 context = navController.context,
-                patients = patients
+                patients = patients,
+                onNavigateToLogin = { navController.navigate("login") }
             )
         }
 

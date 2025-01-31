@@ -103,7 +103,7 @@ fun LoginScreen(
                     .fillMaxWidth()
                     .height(56.dp)
             )
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(8.dp))
 
             // Message d'erreur
             if (errorMessage.isNotEmpty()) {
@@ -114,7 +114,7 @@ fun LoginScreen(
                     textAlign = TextAlign.Center
                 )
             }
-            Spacer(modifier = Modifier.height(32.dp))
+            Spacer(modifier = Modifier.height(20.dp))
 
             // Bouton de connexion
             Row(

@@ -204,6 +204,20 @@ fun NavigationGraph(
             )
         }
 
+        composable("signup") {
+            SignupScreen(
+                patient = Patient(id = 0, username = "", password = "", lastName = "", firstName = "", address = "", neurologist = "", tests = emptyList()),
+                onSaveProfile = { updatedPatient ->
+                    patients.add(updatedPatient) // Ajouter le patient à la liste
+                    navController.navigate("login") // Redirection vers la page de connexion après l'inscription
+                },
+                context = navController.context,
+                patients = patients,
+                onNavigateToLogin = { navController.navigate("login") }
+            )
+        }
+
+
         composable("home") {
             if (isAuthenticated) {
                 HomePage(navController = navController, patient = patients)

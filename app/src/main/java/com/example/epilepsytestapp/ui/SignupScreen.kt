@@ -1,6 +1,7 @@
 package com.example.epilepsytestapp.ui
 
 import android.content.Context
+import android.util.Log
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -16,6 +17,7 @@ import androidx.compose.ui.unit.dp
 import com.example.epilepsytestapp.R
 import com.example.epilepsytestapp.ui.theme.AppTheme
 import com.example.epilepsytestapp.model.Patient
+import com.google.firebase.auth.FirebaseAuth
 
 @Composable
 fun SignupScreen(
@@ -31,6 +33,15 @@ fun SignupScreen(
     var isPasswordVisible by remember { mutableStateOf(false) }
     var isConfirmPasswordVisible by remember { mutableStateOf(false) }
 
+    val firebaseAuth = remember { FirebaseAuth.getInstance() }
+
+    LaunchedEffect(Unit) {
+        if (firebaseAuth != null) {
+            Log.d("FirebaseAuthTest", "FirebaseAuth est prêt à être utilisé !")
+        } else {
+            Log.e("FirebaseAuthTest", "Erreur : FirebaseAuth est null")
+        }
+    }
 
     AppTheme {
         Column(
@@ -138,12 +149,20 @@ fun SignupScreen(
             Button(
                 onClick = {
                     if (password == confirmPassword) {
-                        val updatedPatient = patient.copy(username = email, password = password)
-                        val updatedPatients = patients.map { if (it.id == patient.id) updatedPatient else it }
-                        savePatientsToJson(context, updatedPatients)
-                        onSaveProfile(updatedPatient)
+                        firebaseAuth.createUserWithEmailAndPassword(email, password)
+                            .addOnCompleteListener { task ->
+                                if (task.isSuccessful) {
+                                    Log.d("Signup", "Inscription réussie : ${firebaseAuth.currentUser?.email}")
+                                    val updatedPatient = patient.copy(username = email, password = password)
+                                    val updatedPatients = patients.map { if (it.id == patient.id) updatedPatient else it }
+                                    savePatientsToJson(context, updatedPatients)
+                                    onSaveProfile(updatedPatient)
+                                } else {
+                                    Log.e("Signup", "Échec de l'inscription", task.exception)
+                                }
+                            }
                     } else {
-                        // Ajouter un message d'erreur si les mots de passe ne correspondent pas
+                        Log.e("Signup", "Les mots de passe ne correspondent pas")
                     }
                 },
                 shape = RoundedCornerShape(50),
@@ -154,6 +173,7 @@ fun SignupScreen(
             ) {
                 Text("S'inscrire", style = MaterialTheme.typography.labelLarge)
             }
+
 
             Spacer(modifier = Modifier.height(16.dp))
 

@@ -1,30 +1,29 @@
 package com.example.epilepsytestapp.ui
 
 import android.content.Context
+import android.media.MediaRecorder
+import android.util.Log
+import android.widget.Toast
 import androidx.camera.core.CameraSelector
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
+import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.viewinterop.AndroidView
-import androidx.core.content.ContextCompat
-import androidx.lifecycle.LifecycleOwner
-import com.example.epilepsytestapp.R
 import androidx.compose.ui.res.painterResource
-import androidx.compose.foundation.clickable
+import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
-
+import com.example.epilepsytestapp.R
+import java.io.File
 
 @Composable
-fun TestScreen(navController: NavHostController) {
+fun TestScreen(navController: NavHostController, mediaRecorder: MediaRecorder) {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
 
@@ -41,26 +40,20 @@ fun TestScreen(navController: NavHostController) {
     var currentInstructionIndex by remember { mutableIntStateOf(0) }
     val currentInstruction = instructions.getOrNull(currentInstructionIndex)
 
-    // État pour gérer les erreurs de la caméra
-    val cameraError by remember { mutableStateOf(false) }
+    // État pour suivre l'enregistrement
+    var isRecording by remember { mutableStateOf(false) }
+
+    // Lancement de l'enregistrement au démarrage de l'écran
+    LaunchedEffect(Unit) {
+        isRecording = startRecording(context, mediaRecorder)
+    }
 
     Box(modifier = Modifier.fillMaxSize()) {
-        if (!cameraError) {
-            // Affiche la caméra
-            CameraPreview(
-                context = context,
-                lifecycleOwner = lifecycleOwner,
-                modifier = Modifier.fillMaxSize()
-            )
-        } else {
-            // Affiche un message d'erreur
-            Text(
-                text = "Impossible d'accéder à la caméra",
-                color = Color.Red,
-                modifier = Modifier.align(Alignment.Center),
-                style = MaterialTheme.typography.bodyLarge
-            )
-        }
+        CameraPreview(
+            context = context,
+            lifecycleOwner = lifecycleOwner,
+            modifier = Modifier.fillMaxSize()
+        )
 
         // Consignes affichées au centre de l'écran
         currentInstruction?.let {
@@ -82,22 +75,29 @@ fun TestScreen(navController: NavHostController) {
                 .padding(15.dp),
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            // Image de croix
+            // Image de croix pour arrêter le test
             ImageClickable(
-                imageResId = R.mipmap.ic_close_foreground, // Remplacez par l'ID de votre image
+                imageResId = R.mipmap.ic_close_foreground,
                 contentDescription = "Arrêter le test",
-                onClick = { navController.navigate("confirmation") }
+                onClick = {
+                    if (isRecording) {
+                        isRecording = !stopRecordingWithoutStop(context, mediaRecorder)
+                    }
+                    navController.navigate("confirmation")
+                }
             )
 
-            // Image de flèche
+            // Image de flèche pour avancer
             ImageClickable(
-                imageResId = R.mipmap.ic_next_foreground, // Remplacez par l'ID de votre image
+                imageResId = R.mipmap.ic_next_foreground,
                 contentDescription = "Instruction suivante",
                 onClick = {
                     if (currentInstructionIndex < instructions.size - 1) {
                         currentInstructionIndex++
                     } else {
-                        // Si on est à la dernière consigne, arrêter le test
+                        if (isRecording) {
+                            isRecording = !stopRecordingWithoutStop(context, mediaRecorder)
+                        }
                         navController.navigate("confirmation")
                     }
                 }
@@ -105,7 +105,6 @@ fun TestScreen(navController: NavHostController) {
         }
     }
 }
-
 
 @Composable
 fun ImageClickable(
@@ -118,7 +117,7 @@ fun ImageClickable(
         painter = painterResource(id = imageResId),
         contentDescription = contentDescription,
         modifier = modifier
-            .size(180.dp) // Taille de l'image multipliée par 5
+            .size(180.dp)
             .padding(6.dp)
             .clickable(onClick = onClick)
     )
@@ -127,35 +126,78 @@ fun ImageClickable(
 @Composable
 fun CameraPreview(
     context: Context,
-    lifecycleOwner: LifecycleOwner,
+    lifecycleOwner: androidx.lifecycle.LifecycleOwner,
     modifier: Modifier = Modifier
 ) {
-    AndroidView(
+    androidx.compose.ui.viewinterop.AndroidView(
         factory = { ctx ->
             androidx.camera.view.PreviewView(ctx).apply {
                 val cameraProviderFuture = ProcessCameraProvider.getInstance(ctx)
-
                 cameraProviderFuture.addListener({
                     try {
                         val cameraProvider = cameraProviderFuture.get()
                         val cameraSelector = CameraSelector.DEFAULT_BACK_CAMERA
 
-                        // Préparation de l'objet Preview
                         val preview = androidx.camera.core.Preview.Builder().build()
-                        preview.surfaceProvider = this.surfaceProvider
+                        preview.setSurfaceProvider(this.surfaceProvider)
 
-                        // Lier la caméra à la PreviewView
                         cameraProvider.bindToLifecycle(
                             lifecycleOwner,
                             cameraSelector,
                             preview
                         )
                     } catch (e: Exception) {
-                        e.printStackTrace() // Gérer les erreurs ici
+                        Log.e("CameraPreview", "Erreur lors de l'initialisation de la caméra", e)
                     }
-                }, ContextCompat.getMainExecutor(ctx))
+                }, androidx.core.content.ContextCompat.getMainExecutor(ctx))
             }
         },
         modifier = modifier
     )
+}
+
+fun startRecording(context: Context, mediaRecorder: MediaRecorder): Boolean {
+    Log.d("TestScreen", "startRecording: Initializing recording")
+    val videosDirectory = File(context.getExternalFilesDir(null), "EpilepsyTests/Videos")
+    if (!videosDirectory.exists()) videosDirectory.mkdirs()
+
+    val outputFile = File(videosDirectory, "test_screen_record_${System.currentTimeMillis()}.mp4")
+    return try {
+        mediaRecorder.apply {
+            setAudioSource(MediaRecorder.AudioSource.MIC)
+            setVideoSource(MediaRecorder.VideoSource.SURFACE)
+            setOutputFormat(MediaRecorder.OutputFormat.MPEG_4)
+            setOutputFile(outputFile.absolutePath)
+            setVideoEncoder(MediaRecorder.VideoEncoder.H264)
+            setAudioEncoder(MediaRecorder.AudioEncoder.AAC)
+            setVideoSize(1280, 720)
+            setVideoFrameRate(30)
+            setVideoEncodingBitRate(5 * 1024 * 1024) // ✅ Qualité améliorée
+            prepare()
+            start()
+            Log.d("TestScreen", "Recording started at ${outputFile.absolutePath}")
+        }
+        true
+    } catch (e: Exception) {
+        Log.e("TestScreen", "startRecording: Exception caught", e)
+        false
+    }
+}
+
+
+
+fun stopRecordingWithoutStop(context: Context, mediaRecorder: MediaRecorder?): Boolean {
+    return try {
+        mediaRecorder?.apply {
+            reset() // Réinitialise le MediaRecorder
+            release() // Libère les ressources
+            Log.d("TestScreen", "stopRecordingWithoutStop: MediaRecorder resources released successfully")
+            Toast.makeText(context, "Recording stopped successfully", Toast.LENGTH_SHORT).show()
+        }
+        true
+    } catch (e: Exception) {
+        Log.e("TestScreen", "stopRecordingWithoutStop: Exception caught", e)
+        Toast.makeText(context, "Failed to stop recording: ${e.message}", Toast.LENGTH_SHORT).show()
+        false
+    }
 }

@@ -1,7 +1,7 @@
 package com.example.epilepsytestapp
 
-
 import android.os.Bundle
+import android.media.MediaRecorder
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.runtime.*
@@ -14,10 +14,8 @@ import com.example.epilepsytestapp.ui.theme.AppTheme
 import android.content.Context
 import com.example.epilepsytestapp.model.Patient
 import kotlinx.coroutines.launch
-
 import androidx.compose.runtime.rememberCoroutineScope
 import loadPatientsFromNetwork
-
 import android.content.SharedPreferences
 import android.Manifest
 import android.content.pm.PackageManager
@@ -27,10 +25,9 @@ import androidx.core.content.ContextCompat
 import androidx.navigation.NavType
 import androidx.navigation.navArgument
 
-
-
 class MainActivity : ComponentActivity() {
     private lateinit var sharedPreferences: SharedPreferences
+    private val mediaRecorder = MediaRecorder()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -79,7 +76,8 @@ class MainActivity : ComponentActivity() {
                 onLogout = {
                     isAuthenticated = false
                     sharedPreferences.edit().putBoolean("isLoggedIn", false).apply()
-                }
+                },
+                mediaRecorder = mediaRecorder
             )
         }
     }
@@ -87,7 +85,10 @@ class MainActivity : ComponentActivity() {
     private fun requestPermissionsIfNecessary() {
         val permissions = listOf(
             Manifest.permission.CAMERA,
-            Manifest.permission.RECORD_AUDIO
+            Manifest.permission.RECORD_AUDIO,
+            Manifest.permission.WRITE_EXTERNAL_STORAGE,
+            Manifest.permission.READ_EXTERNAL_STORAGE,
+            Manifest.permission.MANAGE_EXTERNAL_STORAGE
         )
 
         val permissionsToRequest = permissions.filter {
@@ -98,7 +99,6 @@ class MainActivity : ComponentActivity() {
             requestPermissionsLauncher.launch(permissionsToRequest.toTypedArray())
         }
     }
-
 
     private val requestPermissionsLauncher =
         registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { permissions ->
@@ -113,8 +113,7 @@ class MainActivity : ComponentActivity() {
         }
 }
 
-
-    @Composable
+@Composable
 fun EpilepsyTestApp(
     patients: MutableList<Patient>,
     context: Context,
@@ -123,7 +122,8 @@ fun EpilepsyTestApp(
     startDestination: String,
     onAuthenticate: () -> Unit,
     onRememberMe: (Boolean) -> Unit,
-    onLogout: () -> Unit
+    onLogout: () -> Unit,
+    mediaRecorder: MediaRecorder
 ) {
     val navController = rememberNavController()
 
@@ -160,11 +160,13 @@ fun EpilepsyTestApp(
                     navController.navigate("login") {
                         popUpTo("login") { inclusive = true }
                     }
-                }
+                },
+                mediaRecorder = mediaRecorder
             )
         }
     }
 }
+
 
 
 @Composable
@@ -176,7 +178,8 @@ fun NavigationGraph(
     onAuthenticated: () -> Unit,
     onSavePatients: () -> Unit,
     onRememberMe: (Boolean) -> Unit,
-    onLogout: () -> Unit
+    onLogout: () -> Unit,
+    mediaRecorder: MediaRecorder
 ) {
     NavHost(
         navController = navController,
@@ -216,7 +219,6 @@ fun NavigationGraph(
                 onNavigateToLogin = { navController.navigate("login") }
             )
         }
-
 
         composable("home") {
             if (isAuthenticated) {
@@ -263,12 +265,11 @@ fun NavigationGraph(
 
         composable("test") {
             if (isAuthenticated) {
-                TestScreen(navController = navController)
+                TestScreen(navController = navController, mediaRecorder = mediaRecorder)
             } else {
                 navController.navigate("login")
             }
         }
-
 
         composable("confirmation") {
             ConfirmationScreen(
@@ -313,5 +314,3 @@ fun NavigationGraph(
 
     }
 }
-
-

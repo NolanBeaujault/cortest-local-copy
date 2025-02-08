@@ -38,8 +38,10 @@ fun FilesPage(navController: NavHostController, patient: List<Patient>) {
     val context = LocalContext.current
     val activity = context as? ComponentActivity
     val pdfFiles = remember { mutableStateListOf<File>() }
+    val videoFiles = remember { mutableStateListOf<File>() }
+    var selectedTab by remember { mutableStateOf(0) }
 
-    // Charger les fichiers PDF à partir du répertoire interne
+    // Charger les fichiers PDF et vidéos à partir du répertoire interne
     LaunchedEffect(Unit) {
         if (ContextCompat.checkSelfPermission(context, Manifest.permission.READ_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
             activity?.let {
@@ -47,11 +49,24 @@ fun FilesPage(navController: NavHostController, patient: List<Patient>) {
             }
         }
 
-        val directory = File(context.getExternalFilesDir(null), "EpilepsyTests")
-        if (directory.exists()) {
-            val files = directory.listFiles { file -> file.extension == "pdf" }
+        val pdfDirectory = File(context.getExternalFilesDir(null), "EpilepsyTests")
+        val videoDirectory = File(context.getExternalFilesDir(null), "EpilepsyTests/Videos")
+        if (pdfDirectory.exists() && videoDirectory.exists()) {
             pdfFiles.clear()
-            pdfFiles.addAll(files?.toList() ?: emptyList())
+            videoFiles.clear()
+            val pdfFilesList = pdfDirectory.listFiles { file -> file.extension == "pdf" }
+            val videoFilesList = videoDirectory.listFiles { file -> file.extension == "mp4" }
+            pdfFiles.addAll(pdfFilesList?.toList() ?: emptyList())
+            videoFiles.addAll(videoFilesList?.toList() ?: emptyList())
+        } else {
+            if (!pdfDirectory.exists()) {
+                Log.e("FilesPage", "PDF Directory does not exist")
+                Toast.makeText(context, "PDF Directory does not exist", Toast.LENGTH_SHORT).show()
+            }
+            if (!videoDirectory.exists()) {
+                Log.e("FilesPage", "Video Directory does not exist")
+                Toast.makeText(context, "Video Directory does not exist", Toast.LENGTH_SHORT).show()
+            }
         }
     }
 
@@ -87,7 +102,7 @@ fun FilesPage(navController: NavHostController, patient: List<Patient>) {
                             painter = painterResource(id = R.mipmap.ic_brain_logo_foreground),
                             contentDescription = "Logo",
                             modifier = Modifier
-                                .fillMaxHeight()// Taille ajustée
+                                .fillMaxHeight() // Taille ajustée
                                 .padding(end = 16.dp) // Espace supplémentaire à droite du logo
                         )
 
@@ -120,8 +135,23 @@ fun FilesPage(navController: NavHostController, patient: List<Patient>) {
                                     }
                                 }
                         )
-
                     }
+                }
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                // Onglets pour les fichiers PDF et vidéos
+                TabRow(selectedTabIndex = selectedTab) {
+                    Tab(
+                        selected = selectedTab == 0,
+                        onClick = { selectedTab = 0 },
+                        text = { Text("PDF") }
+                    )
+                    Tab(
+                        selected = selectedTab == 1,
+                        onClick = { selectedTab = 1 },
+                        text = { Text("Vidéos") }
+                    )
                 }
 
                 Spacer(modifier = Modifier.height(16.dp))
@@ -132,33 +162,79 @@ fun FilesPage(navController: NavHostController, patient: List<Patient>) {
                         .fillMaxSize()
                         .padding(16.dp)
                 ) {
-                    Text(
-                        text = "Fichiers PDF enregistrés :",
-                        style = MaterialTheme.typography.headlineSmall.copy(
-                            color = MaterialTheme.colorScheme.onBackground,
-                            fontSize = 28.sp
-                        ),
-                    )
+                    when (selectedTab) {
+                        0 -> {
+                            Text(
+                                text = "Fichiers PDF enregistrés :",
+                                style = MaterialTheme.typography.headlineSmall.copy(
+                                    color = MaterialTheme.colorScheme.onBackground,
+                                    fontSize = 28.sp
+                                ),
+                            )
 
-                    Spacer(modifier = Modifier.height(16.dp))
+                            Spacer(modifier = Modifier.height(16.dp))
 
-                    // Affichage d'un message si aucun fichier PDF n'est trouvé
-                    if (pdfFiles.isEmpty()) {
-                        Text(text = "Aucun fichier PDF trouvé.", modifier = Modifier.padding(16.dp))
-                    } else {
-                        LazyColumn {
-                            items(pdfFiles) { file ->
-                                Text(
-                                    text = file.name,
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .clickable { openPDF(context, file) }
-                                        .padding(8.dp),
-                                    style = MaterialTheme.typography.headlineSmall.copy(
-                                        color = MaterialTheme.colorScheme.onBackground,
-                                        fontSize = 18.sp
-                                    )
-                                )
+                            // Affichage d'un message si aucun fichier PDF n'est trouvé
+                            if (pdfFiles.isEmpty()) {
+                                Text(text = "Aucun fichier PDF trouvé.", modifier = Modifier.padding(16.dp))
+                            } else {
+                                LazyColumn {
+                                    items(pdfFiles) { file ->
+                                        Text(
+                                            text = file.name,
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .clickable { openPDF(context, file) }
+                                                .padding(8.dp),
+                                            style = MaterialTheme.typography.headlineSmall.copy(
+                                                color = MaterialTheme.colorScheme.onBackground,
+                                                fontSize = 18.sp
+                                            )
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                        1 -> {
+                            Text(
+                                text = "Vidéos enregistrées :",
+                                style = MaterialTheme.typography.headlineSmall.copy(
+                                    color = MaterialTheme.colorScheme.onBackground,
+                                    fontSize = 28.sp
+                                ),
+                            )
+
+                            Spacer(modifier = Modifier.height(16.dp))
+
+                            // Affichage d'un message si aucune vidéo n'est trouvée
+                            if (videoFiles.isEmpty()) {
+                                Text(text = "Aucune vidéo trouvée.", modifier = Modifier.padding(16.dp))
+                            } else {
+                                LazyColumn {
+                                    items(videoFiles) { file ->
+                                        Column {
+                                            Text(
+                                                text = file.name,
+                                                modifier = Modifier
+                                                    .fillMaxWidth()
+                                                    .clickable { openVideo(context, file) }
+                                                    .padding(8.dp),
+                                                style = MaterialTheme.typography.headlineSmall.copy(
+                                                    color = MaterialTheme.colorScheme.onBackground,
+                                                    fontSize = 18.sp
+                                                )
+                                            )
+                                            Text(
+                                                text = "Emplacement: ${file.absolutePath}",
+                                                style = MaterialTheme.typography.bodyMedium.copy(
+                                                    color = MaterialTheme.colorScheme.onBackground,
+                                                    fontSize = 14.sp
+                                                ),
+                                                modifier = Modifier.padding(start = 8.dp, bottom = 12.dp)
+                                            )
+                                        }
+                                    }
+                                }
                             }
                         }
                     }
@@ -174,7 +250,6 @@ fun FilesPage(navController: NavHostController, patient: List<Patient>) {
     }
 }
 
-
 fun openPDF(context: Context, file: File) {
     try {
         if (file.exists()) {
@@ -182,7 +257,7 @@ fun openPDF(context: Context, file: File) {
 
             val uri = FileProvider.getUriForFile(
                 context,
-                "${context.packageName}.provider",
+                "${context.packageName}.provider",  // ✅ Utilisation correcte de l'autorité
                 file
             )
             Log.d("FileProvider", "URI générée: $uri")
@@ -192,21 +267,7 @@ fun openPDF(context: Context, file: File) {
                 addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_ACTIVITY_NO_HISTORY)
             }
 
-            try {
-                context.startActivity(Intent.createChooser(intent, "Ouvrir avec"))
-            } catch (e: ActivityNotFoundException) {
-                Toast.makeText(context, "Aucune application trouvée pour ouvrir ce fichier PDF.", Toast.LENGTH_LONG).show()
-            }
-
-
-            // Vérifiez si une application PDF est disponible
-            if (intent.resolveActivity(context.packageManager) != null) {
-                Log.d("FileProvider", "Intent trouvé. Lancement de l'application PDF.")
-                context.startActivity(Intent.createChooser(intent, "Ouvrir avec"))
-            } else {
-                Log.e("FileProvider", "Aucune application compatible trouvée pour ouvrir le fichier PDF.")
-                Toast.makeText(context, "Aucune application compatible pour ouvrir ce fichier PDF.", Toast.LENGTH_LONG).show()
-            }
+            context.startActivity(Intent.createChooser(intent, "Ouvrir avec"))
         } else {
             Log.e("FileProvider", "Le fichier PDF n'existe pas.")
             Toast.makeText(context, "Le fichier PDF n'existe pas.", Toast.LENGTH_LONG).show()
@@ -214,5 +275,39 @@ fun openPDF(context: Context, file: File) {
     } catch (e: Exception) {
         Log.e("FileProvider", "Erreur lors de l'ouverture du fichier PDF: ${e.message}")
         Toast.makeText(context, "Erreur: Impossible d'ouvrir le fichier PDF.", Toast.LENGTH_LONG).show()
+    }
+}
+
+fun openVideo(context: Context, file: File) {
+    try {
+        if (file.exists()) {
+            Log.d("FileProvider", "Chemin du fichier: ${file.absolutePath}")
+
+            val uri = FileProvider.getUriForFile(
+                context,
+                "${context.packageName}.provider",  // ✅ Utilisation correcte de l'autorité
+                file
+            )
+            Log.d("FileProvider", "URI générée: $uri")
+
+            val intent = Intent(Intent.ACTION_VIEW).apply {
+                setDataAndType(uri, "video/mp4")
+                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_ACTIVITY_NO_HISTORY)
+            }
+
+            if (intent.resolveActivity(context.packageManager) != null) {
+                Log.d("FileProvider", "Intent trouvé. Lancement de l'application vidéo.")
+                context.startActivity(Intent.createChooser(intent, "Ouvrir avec"))
+            } else {
+                Log.e("FileProvider", "Aucune application compatible trouvée pour ouvrir la vidéo.")
+                Toast.makeText(context, "Aucune application compatible pour ouvrir cette vidéo.", Toast.LENGTH_LONG).show()
+            }
+        } else {
+            Log.e("FileProvider", "La vidéo n'existe pas.")
+            Toast.makeText(context, "La vidéo n'existe pas.", Toast.LENGTH_LONG).show()
+        }
+    } catch (e: Exception) {
+        Log.e("FileProvider", "Erreur lors de l'ouverture de la vidéo: ${e.message}")
+        Toast.makeText(context, "Erreur: Impossible d'ouvrir la vidéo.", Toast.LENGTH_LONG).show()
     }
 }

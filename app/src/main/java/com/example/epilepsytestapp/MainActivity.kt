@@ -265,7 +265,7 @@ fun NavigationGraph(
 
         composable("test") {
             if (isAuthenticated) {
-                TestScreen(navController = navController, mediaRecorder = mediaRecorder)
+                TestScreen(navController = navController)
             } else {
                 navController.navigate("login")
             }

@@ -257,7 +257,7 @@ fun openPDF(context: Context, file: File) {
 
             val uri = FileProvider.getUriForFile(
                 context,
-                "${context.packageName}.provider",  // ✅ Utilisation correcte de l'autorité
+                "${context.packageName}.provider",  // Utilisation correcte de l'autorité
                 file
             )
             Log.d("FileProvider", "URI générée: $uri")
@@ -285,7 +285,7 @@ fun openVideo(context: Context, file: File) {
 
             val uri = FileProvider.getUriForFile(
                 context,
-                "${context.packageName}.provider",  // ✅ Utilisation correcte de l'autorité
+                "${context.packageName}.provider",  // Utilisation correcte de l'autorité
                 file
             )
             Log.d("FileProvider", "URI générée: $uri")

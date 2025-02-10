@@ -112,3 +112,20 @@ fun ImageClickableButton(iconResId: Int, label: String, onClick: () -> Unit) {
         )
     }
 }
+
+@Composable
+fun ImageClickable(
+    imageResId: Int,
+    contentDescription: String?,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Image(
+        painter = painterResource(id = imageResId),
+        contentDescription = contentDescription,
+        modifier = modifier
+            .size(180.dp)
+            .padding(6.dp)
+            .clickable(onClick = onClick)
+    )
+}

@@ -1,11 +1,16 @@
 package com.example.epilepsytestapp.ui
 
+import android.Manifest
 import android.content.Context
-import android.media.MediaRecorder
+import android.content.pm.PackageManager
+import android.graphics.Canvas
+import android.graphics.Paint
 import android.util.Log
+import android.view.View
 import android.widget.Toast
-import androidx.camera.core.CameraSelector
+import androidx.camera.core.*
 import androidx.camera.lifecycle.ProcessCameraProvider
+import androidx.camera.video.*
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -18,16 +23,32 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
+import androidx.core.content.ContextCompat
+import androidx.lifecycle.LifecycleOwner
 import androidx.navigation.NavHostController
 import com.example.epilepsytestapp.R
 import java.io.File
+import androidx.compose.ui.viewinterop.AndroidView
+
 
 @Composable
-fun TestScreen(navController: NavHostController, mediaRecorder: MediaRecorder) {
+fun TestScreen(navController: NavHostController) {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
 
-    // Liste des consignes
+    Log.d("TestScreen", "Vérification des permissions")
+    val hasPermissions = remember {
+        ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED &&
+                ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED
+    }
+
+    if (!hasPermissions) {
+        Log.e("TestScreen", "Permissions manquantes : caméra et/ou microphone")
+        Toast.makeText(context, "Permissions caméra et microphone requises", Toast.LENGTH_LONG).show()
+        navController.navigate("home")
+        return
+    }
+
     val instructions = listOf(
         "Regardez l'écran pendant 10 secondes.",
         "Fermez les yeux et détendez-vous.",
@@ -36,38 +57,30 @@ fun TestScreen(navController: NavHostController, mediaRecorder: MediaRecorder) {
         "Levez votre bras gauche."
     )
 
-    // État pour suivre la consigne actuelle
     var currentInstructionIndex by remember { mutableIntStateOf(0) }
     val currentInstruction = instructions.getOrNull(currentInstructionIndex)
-
-    // État pour suivre l'enregistrement
     var isRecording by remember { mutableStateOf(false) }
-
-    // Lancement de l'enregistrement au démarrage de l'écran
-    LaunchedEffect(Unit) {
-        isRecording = startRecording(context, mediaRecorder)
-    }
+    val videoCapture = remember { mutableStateOf<VideoCapture<Recorder>?>(null) }
+    val recording = remember { mutableStateOf<Recording?>(null) }
+    val overlayView = remember { CustomOverlayView(context) }
 
     Box(modifier = Modifier.fillMaxSize()) {
         CameraPreview(
             context = context,
             lifecycleOwner = lifecycleOwner,
+            videoCapture = videoCapture,
             modifier = Modifier.fillMaxSize()
         )
 
-        // Consignes affichées au centre de l'écran
-        currentInstruction?.let {
-            Text(
-                text = it,
-                modifier = Modifier
-                    .align(Alignment.Center)
-                    .padding(16.dp),
-                style = MaterialTheme.typography.headlineSmall.copy(color = Color.White),
-                maxLines = 2
-            )
+        AndroidView(
+            factory = { overlayView },
+            modifier = Modifier.fillMaxSize()
+        )
+
+        LaunchedEffect(currentInstruction) {
+            overlayView.setInstruction(currentInstruction ?: "")
         }
 
-        // Images cliquables en bas de l'écran
         Row(
             modifier = Modifier
                 .align(Alignment.BottomCenter)
@@ -75,28 +88,29 @@ fun TestScreen(navController: NavHostController, mediaRecorder: MediaRecorder) {
                 .padding(15.dp),
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            // Image de croix pour arrêter le test
             ImageClickable(
                 imageResId = R.mipmap.ic_close_foreground,
                 contentDescription = "Arrêter le test",
                 onClick = {
                     if (isRecording) {
-                        isRecording = !stopRecordingWithoutStop(context, mediaRecorder)
+                        stopRecording(context, recording)
+                        isRecording = false
                     }
                     navController.navigate("confirmation")
                 }
             )
 
-            // Image de flèche pour avancer
             ImageClickable(
                 imageResId = R.mipmap.ic_next_foreground,
                 contentDescription = "Instruction suivante",
                 onClick = {
                     if (currentInstructionIndex < instructions.size - 1) {
                         currentInstructionIndex++
+                        overlayView.setInstruction(instructions[currentInstructionIndex])
                     } else {
                         if (isRecording) {
-                            isRecording = !stopRecordingWithoutStop(context, mediaRecorder)
+                            stopRecording(context, recording)
+                            isRecording = false
                         }
                         navController.navigate("confirmation")
                     }
@@ -104,32 +118,44 @@ fun TestScreen(navController: NavHostController, mediaRecorder: MediaRecorder) {
             )
         }
     }
+
+    LaunchedEffect(videoCapture.value) {
+        videoCapture.value?.let {
+            Log.d("TestScreen", "Lancement de l'enregistrement vidéo")
+            recording.value = startRecording(context, it)
+            isRecording = true
+        }
+    }
 }
 
-@Composable
-fun ImageClickable(
-    imageResId: Int,
-    contentDescription: String?,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    Image(
-        painter = painterResource(id = imageResId),
-        contentDescription = contentDescription,
-        modifier = modifier
-            .size(180.dp)
-            .padding(6.dp)
-            .clickable(onClick = onClick)
-    )
+
+class CustomOverlayView(context: Context) : View(context) {
+    private var instructionText: String = ""
+    private val paint = Paint().apply {
+        color = android.graphics.Color.WHITE
+        textSize = 50f
+        textAlign = Paint.Align.CENTER
+    }
+
+    fun setInstruction(text: String) {
+        instructionText = text
+        invalidate()
+    }
+
+    override fun onDraw(canvas: Canvas) {
+        super.onDraw(canvas)
+        canvas.drawText(instructionText, width / 2f, height / 2f, paint)
+    }
 }
 
 @Composable
 fun CameraPreview(
     context: Context,
-    lifecycleOwner: androidx.lifecycle.LifecycleOwner,
+    lifecycleOwner: LifecycleOwner,
+    videoCapture: MutableState<VideoCapture<Recorder>?>,
     modifier: Modifier = Modifier
 ) {
-    androidx.compose.ui.viewinterop.AndroidView(
+    AndroidView(
         factory = { ctx ->
             androidx.camera.view.PreviewView(ctx).apply {
                 val cameraProviderFuture = ProcessCameraProvider.getInstance(ctx)
@@ -137,67 +163,75 @@ fun CameraPreview(
                     try {
                         val cameraProvider = cameraProviderFuture.get()
                         val cameraSelector = CameraSelector.DEFAULT_BACK_CAMERA
+                        val preview = Preview.Builder().build().also {
+                            it.setSurfaceProvider(this.surfaceProvider)
+                        }
 
-                        val preview = androidx.camera.core.Preview.Builder().build()
-                        preview.setSurfaceProvider(this.surfaceProvider)
+                        val recorder = Recorder.Builder()
+                            .setQualitySelector(QualitySelector.from(Quality.HD))
+                            .build()
+                        val videoCaptureUseCase = VideoCapture.withOutput(recorder)
 
+                        cameraProvider.unbindAll()
                         cameraProvider.bindToLifecycle(
-                            lifecycleOwner,
-                            cameraSelector,
-                            preview
+                            lifecycleOwner, cameraSelector, preview, videoCaptureUseCase
                         )
+                        videoCapture.value = videoCaptureUseCase
+                        Log.d("CameraPreview", "Caméra initialisée avec succès")
                     } catch (e: Exception) {
                         Log.e("CameraPreview", "Erreur lors de l'initialisation de la caméra", e)
                     }
-                }, androidx.core.content.ContextCompat.getMainExecutor(ctx))
+                }, ContextCompat.getMainExecutor(ctx))
             }
         },
         modifier = modifier
     )
 }
 
-fun startRecording(context: Context, mediaRecorder: MediaRecorder): Boolean {
-    Log.d("TestScreen", "startRecording: Initializing recording")
+fun startRecording(context: Context, videoCapture: VideoCapture<Recorder>): Recording? {
+    Log.d("TestScreen", "Démarrage de l'enregistrement")
+
+    val hasPermissions = ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED &&
+            ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED
+
+    if (!hasPermissions) {
+        Log.e("TestScreen", "Permissions insuffisantes pour enregistrer")
+        Toast.makeText(context, "Permissions non accordées", Toast.LENGTH_LONG).show()
+        return null
+    }
+
     val videosDirectory = File(context.getExternalFilesDir(null), "EpilepsyTests/Videos")
     if (!videosDirectory.exists()) videosDirectory.mkdirs()
 
     val outputFile = File(videosDirectory, "test_screen_record_${System.currentTimeMillis()}.mp4")
-    return try {
-        mediaRecorder.apply {
-            setAudioSource(MediaRecorder.AudioSource.MIC)
-            setVideoSource(MediaRecorder.VideoSource.SURFACE)
-            setOutputFormat(MediaRecorder.OutputFormat.MPEG_4)
-            setOutputFile(outputFile.absolutePath)
-            setVideoEncoder(MediaRecorder.VideoEncoder.H264)
-            setAudioEncoder(MediaRecorder.AudioEncoder.AAC)
-            setVideoSize(1280, 720)
-            setVideoFrameRate(30)
-            setVideoEncodingBitRate(5 * 1024 * 1024) // ✅ Qualité améliorée
-            prepare()
-            start()
-            Log.d("TestScreen", "Recording started at ${outputFile.absolutePath}")
+    val outputOptions = FileOutputOptions.Builder(outputFile).build()
+
+    return videoCapture.output.prepareRecording(context, outputOptions)
+        .withAudioEnabled()
+        .start(ContextCompat.getMainExecutor(context)) { recordEvent ->
+            when (recordEvent) {
+                is VideoRecordEvent.Start -> {
+                    Log.d("TestScreen", "Enregistrement démarré")
+                    Toast.makeText(context, "Enregistrement en cours", Toast.LENGTH_SHORT).show()
+                }
+                is VideoRecordEvent.Finalize -> {
+                    Log.d("TestScreen", "Enregistrement terminé : ${outputFile.absolutePath}")
+                    Toast.makeText(context, "Vidéo enregistrée", Toast.LENGTH_SHORT).show()
+                }
+            }
         }
-        true
-    } catch (e: Exception) {
-        Log.e("TestScreen", "startRecording: Exception caught", e)
-        false
-    }
 }
 
 
 
-fun stopRecordingWithoutStop(context: Context, mediaRecorder: MediaRecorder?): Boolean {
-    return try {
-        mediaRecorder?.apply {
-            reset() // Réinitialise le MediaRecorder
-            release() // Libère les ressources
-            Log.d("TestScreen", "stopRecordingWithoutStop: MediaRecorder resources released successfully")
-            Toast.makeText(context, "Recording stopped successfully", Toast.LENGTH_SHORT).show()
-        }
-        true
+fun stopRecording(context: Context, recording: MutableState<Recording?>) {
+    try {
+        recording.value?.stop()
+        recording.value = null
+        Log.d("TestScreen", "Enregistrement arrêté avec succès")
+        Toast.makeText(context, "Enregistrement arrêté", Toast.LENGTH_SHORT).show()
     } catch (e: Exception) {
-        Log.e("TestScreen", "stopRecordingWithoutStop: Exception caught", e)
-        Toast.makeText(context, "Failed to stop recording: ${e.message}", Toast.LENGTH_SHORT).show()
-        false
+        Log.e("TestScreen", "Erreur lors de l'arrêt de l'enregistrement", e)
+        Toast.makeText(context, "Erreur lors de l'arrêt de l'enregistrement", Toast.LENGTH_SHORT).show()
     }
 }

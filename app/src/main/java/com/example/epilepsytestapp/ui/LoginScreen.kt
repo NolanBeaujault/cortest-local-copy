@@ -1,6 +1,7 @@
 package com.example.epilepsytestapp.ui
 
 import android.util.Log
+import android.widget.Toast
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -9,6 +10,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
@@ -18,8 +20,6 @@ import androidx.navigation.NavController
 import com.example.epilepsytestapp.R
 import com.example.epilepsytestapp.network.FirebaseAuthManager
 import com.example.epilepsytestapp.ui.theme.AppTheme
-import kotlinx.coroutines.delay
-
 
 @Composable
 fun LoginScreen(
@@ -27,6 +27,7 @@ fun LoginScreen(
     onAuthenticated: () -> Unit,
     onNavigateToSignup: () -> Unit
 ) {
+    val context = LocalContext.current
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var errorMessage by remember { mutableStateOf("") }
@@ -120,7 +121,7 @@ fun LoginScreen(
             }
             Spacer(modifier = Modifier.height(20.dp))
 
-            // Bouton de connexion
+            // Rester connecté
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier.fillMaxWidth()
@@ -133,23 +134,27 @@ fun LoginScreen(
             }
             Spacer(modifier = Modifier.height(16.dp))
 
+            // Bouton de connexion
             Button(
                 onClick = {
-                    isLoading = true
-                    FirebaseAuthManager.login(email, password) { success, error ->
-                        isLoading = false
-                        if (success) {
-                            Log.d("LoginScreen", "Connexion réussie, redirection vers la page d'accueil")
-                            onAuthenticated()
-
-                            // Naviguer vers l'accueil après authentification
-                            navController.navigate("home") {
-                                popUpTo("login") { inclusive = true }
+                    if (email.isNotEmpty() && password.isNotEmpty()) {
+                        isLoading = true
+                        FirebaseAuthManager.login(email, password) { success, error ->
+                            isLoading = false
+                            if (success) {
+                                Log.d("LoginScreen", "Connexion réussie, redirection vers la page d'accueil")
+                                onAuthenticated()
+                                navController.navigate("home") {
+                                    popUpTo("login") { inclusive = true }
+                                }
+                            } else {
+                                errorMessage = error ?: "Échec de la connexion"
+                                Log.e("LoginScreen", "Erreur de connexion: $errorMessage")
                             }
-                        } else {
-                            errorMessage = error ?: "Échec de la connexion"
-                            Log.e("LoginScreen", "Erreur de connexion: $errorMessage")
                         }
+                    } else {
+                        errorMessage = "Email et mot de passe ne doivent pas être vides"
+                        Toast.makeText(context, errorMessage, Toast.LENGTH_SHORT).show()
                     }
                 },
                 modifier = Modifier
@@ -157,9 +162,12 @@ fun LoginScreen(
                     .height(56.dp),
                 enabled = !isLoading
             ) {
-                Text(if (isLoading) "Chargement..." else "Connexion")
+                if (isLoading) {
+                    CircularProgressIndicator(color = MaterialTheme.colorScheme.onPrimary)
+                } else {
+                    Text("Connexion")
+                }
             }
-
 
             Spacer(modifier = Modifier.height(16.dp))
 
@@ -173,7 +181,6 @@ fun LoginScreen(
         }
     }
 }
-
 
 @Composable
 fun CustomButton(text: String, onClick: () -> Unit) {
@@ -202,4 +209,3 @@ fun LoadingScreen() {
         )
     }
 }
-

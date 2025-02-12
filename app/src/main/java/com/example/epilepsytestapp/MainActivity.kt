@@ -92,7 +92,6 @@ class MainActivity : ComponentActivity() {
                     firebaseAuth.signOut()
                     sharedPreferences.edit().putBoolean("isLoggedIn", false).apply()
                 },
-                mediaRecorder = mediaRecorder
             )
         }
     }
@@ -137,8 +136,7 @@ fun EpilepsyTestApp(
     startDestination: String,
     onAuthenticate: () -> Unit,
     onRememberMe: (Boolean) -> Unit,
-    onLogout: () -> Unit,
-    mediaRecorder: MediaRecorder
+    onLogout: () -> Unit
 ) {
     val navController = rememberNavController()
 
@@ -177,7 +175,6 @@ fun EpilepsyTestApp(
                         popUpTo("login") { inclusive = true }
                     }
                 },
-                mediaRecorder = mediaRecorder
             )
         }
     }
@@ -194,8 +191,7 @@ fun NavigationGraph(
     onAuthenticated: () -> Unit,
     onSavePatients: () -> Unit,
     onRememberMe: (Boolean) -> Unit,
-    onLogout: () -> Unit,
-    mediaRecorder: MediaRecorder
+    onLogout: () -> Unit
 ) {
     NavHost(
         navController = navController,
@@ -236,10 +232,6 @@ fun NavigationGraph(
         composable("home") {
             if (isAuthenticated) {
                 HomePage(navController = navController, patient = patients)
-            } else {
-                navController.navigate("login") {
-                    popUpTo("login") { inclusive = true } // Éviter de revenir en arrière
-                }
             }
         }
 

@@ -25,10 +25,12 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.content.ContextCompat
 import androidx.navigation.NavType
 import androidx.navigation.navArgument
+import com.google.firebase.auth.FirebaseAuth
+
 
 class MainActivity : ComponentActivity() {
     private lateinit var sharedPreferences: SharedPreferences
-    private val mediaRecorder = MediaRecorder()
+    private val firebaseAuth: FirebaseAuth by lazy { FirebaseAuth.getInstance() }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -44,7 +46,14 @@ class MainActivity : ComponentActivity() {
             val scope = rememberCoroutineScope()
 
             var isAuthenticated by remember {
-                mutableStateOf(sharedPreferences.getBoolean("isLoggedIn", false))
+                mutableStateOf(firebaseAuth.currentUser != null)
+            }
+
+            LaunchedEffect(Unit) {
+                firebaseAuth.addAuthStateListener { auth ->
+                    isAuthenticated = auth.currentUser != null
+                    sharedPreferences.edit().putBoolean("isLoggedIn", isAuthenticated).apply()
+                }
             }
 
             val startDestination = when {
@@ -80,6 +89,7 @@ class MainActivity : ComponentActivity() {
                 },
                 onLogout = {
                     isAuthenticated = false
+                    firebaseAuth.signOut()
                     sharedPreferences.edit().putBoolean("isLoggedIn", false).apply()
                 },
                 mediaRecorder = mediaRecorder
@@ -191,27 +201,24 @@ fun NavigationGraph(
         navController = navController,
         startDestination = startDestination
     ) {
+        composable("home") {
+            if (isAuthenticated) {
+                HomePage(navController = navController, patient = patients)
+            } else {
+                navController.navigate("login") {
+                    popUpTo("home") { inclusive = true }
+                }
+            }
+        }
+
         composable("login") {
             LoginScreen(
-                patients = patients,
+                navController = navController,
                 onNavigateToSignup = { navController.navigate("signup") },
-                onNavigateToHome = { username, password, rememberMe ->
-                    // Validation des identifiants
-                    val isValid = patients.any { it.username == username && it.password == password }
-                    if (isValid) {
-                        // Mettre à jour l'état d'authentification
-                        onAuthenticated()
-                        onRememberMe(rememberMe)
-
-                        // Navigation vers la page d'accueil
-                        navController.navigate("home") {
-                            popUpTo("login") { inclusive = true } // Supprimer "login" de la pile
-                        }
-                    }
-                    isValid
-                }
+                onAuthenticated = { navController.navigate("home") }
             )
         }
+
 
         composable("signup") {
             SignupScreen(
@@ -243,7 +250,7 @@ fun NavigationGraph(
                     onLogout = {
                         onLogout()
                         navController.navigate("login") {
-                            popUpTo("login") { inclusive = true } // Supprimer "settings" de la pile
+                            popUpTo("settings") { inclusive = true } // Supprimer "settings" de la pile
                         }
                     },
                     patients = patients

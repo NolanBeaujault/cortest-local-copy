@@ -1,0 +1,30 @@
+{
+  "project_info": {
+    "project_number": "183720659293",
+    "firebase_url": "https://cortest-70b6e-default-rtdb.europe-west1.firebasedatabase.app",
+    "project_id": "cortest-70b6e",
+    "storage_bucket": "cortest-70b6e.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:183720659293:android:440eb41009cadc283e40b4",
+        "android_client_info": {
+          "package_name": "com.example.epilepsytestapp"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDsliGIJnV7g5Q8JkaC_9BZKsDPLSomBi8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

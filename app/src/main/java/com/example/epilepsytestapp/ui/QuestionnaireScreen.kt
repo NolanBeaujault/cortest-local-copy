@@ -15,7 +15,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.epilepsytestapp.R
-import com.example.epilepsytestapp.pdf.saveQuestionnaireAsPDF
+import com.example.epilepsytestapp.savefiles.saveQuestionnaireAsPDF
 
 @Composable
 fun PostTestQuestionnaireScreen(onSaveTest: () -> Unit) {

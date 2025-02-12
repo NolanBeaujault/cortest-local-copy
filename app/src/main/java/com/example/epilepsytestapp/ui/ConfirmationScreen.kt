@@ -1,6 +1,5 @@
 package com.example.epilepsytestapp.ui
 
-import android.content.Intent
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -10,7 +9,6 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -24,7 +22,6 @@ fun ConfirmationScreen(
     onCancelTest: () -> Unit
 ) {
     AppTheme {
-        val context = LocalContext.current
         Box(
             modifier = Modifier
                 .fillMaxSize()
@@ -61,8 +58,6 @@ fun ConfirmationScreen(
                         iconResId = R.mipmap.ic_check_foreground,
                         label = "Oui j'arrête\nle test",
                         onClick = {
-                            val intent = Intent(context, MediaProjectionActivity::class.java)
-                            context.startActivity(intent)
                             onStopTestConfirmed()
                         }
                     )
@@ -116,4 +111,21 @@ fun ImageClickableButton(iconResId: Int, label: String, onClick: () -> Unit) {
             )
         )
     }
+}
+
+@Composable
+fun ImageClickable(
+    imageResId: Int,
+    contentDescription: String?,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Image(
+        painter = painterResource(id = imageResId),
+        contentDescription = contentDescription,
+        modifier = modifier
+            .size(180.dp)
+            .padding(6.dp)
+            .clickable(onClick = onClick)
+    )
 }

@@ -1,7 +1,7 @@
 package com.example.epilepsytestapp
 
-
 import android.os.Bundle
+import android.media.MediaRecorder
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.runtime.*
@@ -14,10 +14,8 @@ import com.example.epilepsytestapp.ui.theme.AppTheme
 import android.content.Context
 import com.example.epilepsytestapp.model.Patient
 import kotlinx.coroutines.launch
-
 import androidx.compose.runtime.rememberCoroutineScope
 import loadPatientsFromNetwork
-
 import android.content.SharedPreferences
 import android.Manifest
 import android.content.pm.PackageManager
@@ -59,10 +57,14 @@ class MainActivity : ComponentActivity() {
             }
 
             val startDestination = when {
-                intent.getStringExtra("startScreen") == "test" -> "test"
+                intent.getStringExtra("startScreen") == "test" -> {
+                    Log.d("MainActivity", "Redirection vers 'test'")
+                    "test"
+                }
                 isAuthenticated -> "home"
                 else -> "login"
             }
+
 
             LaunchedEffect(Unit) {
                 scope.launch {
@@ -89,7 +91,8 @@ class MainActivity : ComponentActivity() {
                     isAuthenticated = false
                     firebaseAuth.signOut()
                     sharedPreferences.edit().putBoolean("isLoggedIn", false).apply()
-                }
+                },
+                mediaRecorder = mediaRecorder
             )
         }
     }
@@ -97,7 +100,10 @@ class MainActivity : ComponentActivity() {
     private fun requestPermissionsIfNecessary() {
         val permissions = listOf(
             Manifest.permission.CAMERA,
-            Manifest.permission.RECORD_AUDIO
+            Manifest.permission.RECORD_AUDIO,
+            Manifest.permission.WRITE_EXTERNAL_STORAGE,
+            Manifest.permission.READ_EXTERNAL_STORAGE,
+            Manifest.permission.MANAGE_EXTERNAL_STORAGE
         )
 
         val permissionsToRequest = permissions.filter {
@@ -108,7 +114,6 @@ class MainActivity : ComponentActivity() {
             requestPermissionsLauncher.launch(permissionsToRequest.toTypedArray())
         }
     }
-
 
     private val requestPermissionsLauncher =
         registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { permissions ->
@@ -123,8 +128,7 @@ class MainActivity : ComponentActivity() {
         }
 }
 
-
-    @Composable
+@Composable
 fun EpilepsyTestApp(
     patients: MutableList<Patient>,
     context: Context,
@@ -133,7 +137,8 @@ fun EpilepsyTestApp(
     startDestination: String,
     onAuthenticate: () -> Unit,
     onRememberMe: (Boolean) -> Unit,
-    onLogout: () -> Unit
+    onLogout: () -> Unit,
+    mediaRecorder: MediaRecorder
 ) {
     val navController = rememberNavController()
 
@@ -141,6 +146,23 @@ fun EpilepsyTestApp(
         LoadingScreen()
     } else {
         AppTheme {
+            LaunchedEffect(startDestination) {
+                Log.d("MainActivity", "startDestination = $startDestination")
+                if (startDestination == "test") {
+                    navController.navigate("test") {
+                        popUpTo(0) { inclusive = true } // Supprimer toute la pile
+                    }
+                } else if (isAuthenticated) {
+                    navController.navigate("home") {
+                        popUpTo("login") { inclusive = true }
+                    }
+                } else {
+                    navController.navigate("login") {
+                        popUpTo("login") { inclusive = true }
+                    }
+                }
+            }
+
             NavigationGraph(
                 navController = navController,
                 patients = patients,
@@ -154,11 +176,13 @@ fun EpilepsyTestApp(
                     navController.navigate("login") {
                         popUpTo("login") { inclusive = true }
                     }
-                }
+                },
+                mediaRecorder = mediaRecorder
             )
         }
     }
 }
+
 
 
 @Composable
@@ -170,7 +194,8 @@ fun NavigationGraph(
     onAuthenticated: () -> Unit,
     onSavePatients: () -> Unit,
     onRememberMe: (Boolean) -> Unit,
-    onLogout: () -> Unit
+    onLogout: () -> Unit,
+    mediaRecorder: MediaRecorder
 ) {
     NavHost(
         navController = navController,
@@ -206,6 +231,16 @@ fun NavigationGraph(
                 patients = patients,
                 onNavigateToLogin = { navController.navigate("login") }
             )
+        }
+
+        composable("home") {
+            if (isAuthenticated) {
+                HomePage(navController = navController, patient = patients)
+            } else {
+                navController.navigate("login") {
+                    popUpTo("login") { inclusive = true } // Éviter de revenir en arrière
+                }
+            }
         }
 
         composable("settings") {
@@ -248,7 +283,6 @@ fun NavigationGraph(
                 navController.navigate("login")
             }
         }
-
 
         composable("confirmation") {
             ConfirmationScreen(
@@ -293,5 +327,3 @@ fun NavigationGraph(
 
     }
 }
-
-

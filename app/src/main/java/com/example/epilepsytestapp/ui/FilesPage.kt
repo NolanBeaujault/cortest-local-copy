@@ -1,7 +1,6 @@
 package com.example.epilepsytestapp.ui
 
 import android.Manifest
-import android.content.ActivityNotFoundException
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
@@ -33,13 +32,17 @@ import com.example.epilepsytestapp.model.Patient
 import com.example.epilepsytestapp.ui.theme.AppTheme
 import java.io.File
 
+
 @Composable
 fun FilesPage(navController: NavHostController, patient: List<Patient>) {
     val context = LocalContext.current
     val activity = context as? ComponentActivity
-    val pdfFiles = remember { mutableStateListOf<File>() }
+    val questionnaireFiles = remember { mutableStateListOf<File>() }
+    val videoFiles = remember { mutableStateListOf<File>() }
+    val consigneFiles = remember { mutableStateListOf<File>() }
+    var selectedTab by remember { mutableStateOf(0) }
 
-    // Charger les fichiers PDF à partir du répertoire interne
+    // Charger les fichiers PDF (Questionnaires/Consignes) et vidéos
     LaunchedEffect(Unit) {
         if (ContextCompat.checkSelfPermission(context, Manifest.permission.READ_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
             activity?.let {
@@ -47,11 +50,22 @@ fun FilesPage(navController: NavHostController, patient: List<Patient>) {
             }
         }
 
-        val directory = File(context.getExternalFilesDir(null), "EpilepsyTests")
-        if (directory.exists()) {
-            val files = directory.listFiles { file -> file.extension == "pdf" }
-            pdfFiles.clear()
-            pdfFiles.addAll(files?.toList() ?: emptyList())
+        val questionnaireDirectory = File(context.getExternalFilesDir(null), "EpilepsyTests/Questionnaires")
+        val consigneDirectory = File(context.getExternalFilesDir(null), "EpilepsyTests/Consignes")
+        val videoDirectory = File(context.getExternalFilesDir(null), "EpilepsyTests/Videos")
+
+        questionnaireFiles.clear()
+        consigneFiles.clear()
+        videoFiles.clear()
+
+        if (questionnaireDirectory.exists()) {
+            questionnaireFiles.addAll(questionnaireDirectory.listFiles { file -> file.extension == "pdf" }?.toList() ?: emptyList())
+        }
+        if (consigneDirectory.exists()) {
+            consigneFiles.addAll(consigneDirectory.listFiles { file -> file.extension == "pdf" }?.toList() ?: emptyList())
+        }
+        if (videoDirectory.exists()) {
+            videoFiles.addAll(videoDirectory.listFiles { file -> file.extension == "mp4" }?.toList() ?: emptyList())
         }
     }
 
@@ -87,7 +101,7 @@ fun FilesPage(navController: NavHostController, patient: List<Patient>) {
                             painter = painterResource(id = R.mipmap.ic_brain_logo_foreground),
                             contentDescription = "Logo",
                             modifier = Modifier
-                                .fillMaxHeight()// Taille ajustée
+                                .fillMaxHeight() // Taille ajustée
                                 .padding(end = 16.dp) // Espace supplémentaire à droite du logo
                         )
 
@@ -109,19 +123,36 @@ fun FilesPage(navController: NavHostController, patient: List<Patient>) {
                                 .fillMaxHeight()
                                 .padding(start = 16.dp)
                                 .clickable {
-                                    // Supposons que le premier patient est sélectionné
                                     val selectedPatientId = patient.firstOrNull()?.id
-
                                     if (selectedPatientId != null) {
                                         navController.navigate("profile/$selectedPatientId")
                                     } else {
-                                        // Gérer le cas où aucun patient n'est disponible
                                         println("Aucun patient sélectionné.")
                                     }
                                 }
                         )
-
                     }
+                }
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                // Onglets pour les fichiers Questionnaire, Consignes, et Vidéos
+                TabRow(selectedTabIndex = selectedTab) {
+                    Tab(
+                        selected = selectedTab == 0,
+                        onClick = { selectedTab = 0 },
+                        text = { Text("Questionnaire") }
+                    )
+                    Tab(
+                        selected = selectedTab == 1,
+                        onClick = { selectedTab = 1 },
+                        text = { Text("Consignes") }
+                    )
+                    Tab(
+                        selected = selectedTab == 2,
+                        onClick = { selectedTab = 2 },
+                        text = { Text("Vidéos") }
+                    )
                 }
 
                 Spacer(modifier = Modifier.height(16.dp))
@@ -132,34 +163,28 @@ fun FilesPage(navController: NavHostController, patient: List<Patient>) {
                         .fillMaxSize()
                         .padding(16.dp)
                 ) {
-                    Text(
-                        text = "Fichiers PDF enregistrés :",
-                        style = MaterialTheme.typography.headlineSmall.copy(
-                            color = MaterialTheme.colorScheme.onBackground,
-                            fontSize = 28.sp
-                        ),
-                    )
-
-                    Spacer(modifier = Modifier.height(16.dp))
-
-                    // Affichage d'un message si aucun fichier PDF n'est trouvé
-                    if (pdfFiles.isEmpty()) {
-                        Text(text = "Aucun fichier PDF trouvé.", modifier = Modifier.padding(16.dp))
-                    } else {
-                        LazyColumn {
-                            items(pdfFiles) { file ->
-                                Text(
-                                    text = file.name,
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .clickable { openPDF(context, file) }
-                                        .padding(8.dp),
-                                    style = MaterialTheme.typography.headlineSmall.copy(
-                                        color = MaterialTheme.colorScheme.onBackground,
-                                        fontSize = 18.sp
-                                    )
-                                )
-                            }
+                    when (selectedTab) {
+                        0 -> {
+                            DisplayFileList(
+                                title = "Questionnaires enregistrés :",
+                                files = questionnaireFiles,
+                                context = context
+                            )
+                        }
+                        1 -> {
+                            DisplayFileList(
+                                title = "Consignes enregistrées :",
+                                files = consigneFiles,
+                                context = context
+                            )
+                        }
+                        2 -> {
+                            DisplayFileList(
+                                title = "Vidéos enregistrées :",
+                                files = videoFiles,
+                                context = context,
+                                isVideo = true
+                            )
                         }
                     }
                 }
@@ -174,6 +199,50 @@ fun FilesPage(navController: NavHostController, patient: List<Patient>) {
     }
 }
 
+@Composable
+fun DisplayFileList(
+    title: String,
+    files: List<File>,
+    context: Context,
+    isVideo: Boolean = false
+) {
+    Text(
+        text = title,
+        style = MaterialTheme.typography.headlineSmall.copy(
+            color = MaterialTheme.colorScheme.onBackground,
+            fontSize = 28.sp
+        ),
+    )
+
+    Spacer(modifier = Modifier.height(16.dp))
+
+    if (files.isEmpty()) {
+        Text(text = "Aucun fichier trouvé.", modifier = Modifier.padding(16.dp))
+    } else {
+        LazyColumn {
+            items(files) { file ->
+                Text(
+                    text = file.name,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable {
+                            if (isVideo) {
+                                openVideo(context, file)
+                            } else {
+                                openPDF(context, file)
+                            }
+                        }
+                        .padding(8.dp),
+                    style = MaterialTheme.typography.headlineSmall.copy(
+                        color = MaterialTheme.colorScheme.onBackground,
+                        fontSize = 18.sp
+                    )
+                )
+            }
+        }
+    }
+}
+
 
 fun openPDF(context: Context, file: File) {
     try {
@@ -182,7 +251,7 @@ fun openPDF(context: Context, file: File) {
 
             val uri = FileProvider.getUriForFile(
                 context,
-                "${context.packageName}.provider",
+                "${context.packageName}.provider",  // Utilisation correcte de l'autorité
                 file
             )
             Log.d("FileProvider", "URI générée: $uri")
@@ -192,21 +261,7 @@ fun openPDF(context: Context, file: File) {
                 addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_ACTIVITY_NO_HISTORY)
             }
 
-            try {
-                context.startActivity(Intent.createChooser(intent, "Ouvrir avec"))
-            } catch (e: ActivityNotFoundException) {
-                Toast.makeText(context, "Aucune application trouvée pour ouvrir ce fichier PDF.", Toast.LENGTH_LONG).show()
-            }
-
-
-            // Vérifiez si une application PDF est disponible
-            if (intent.resolveActivity(context.packageManager) != null) {
-                Log.d("FileProvider", "Intent trouvé. Lancement de l'application PDF.")
-                context.startActivity(Intent.createChooser(intent, "Ouvrir avec"))
-            } else {
-                Log.e("FileProvider", "Aucune application compatible trouvée pour ouvrir le fichier PDF.")
-                Toast.makeText(context, "Aucune application compatible pour ouvrir ce fichier PDF.", Toast.LENGTH_LONG).show()
-            }
+            context.startActivity(Intent.createChooser(intent, "Ouvrir avec"))
         } else {
             Log.e("FileProvider", "Le fichier PDF n'existe pas.")
             Toast.makeText(context, "Le fichier PDF n'existe pas.", Toast.LENGTH_LONG).show()
@@ -214,5 +269,39 @@ fun openPDF(context: Context, file: File) {
     } catch (e: Exception) {
         Log.e("FileProvider", "Erreur lors de l'ouverture du fichier PDF: ${e.message}")
         Toast.makeText(context, "Erreur: Impossible d'ouvrir le fichier PDF.", Toast.LENGTH_LONG).show()
+    }
+}
+
+fun openVideo(context: Context, file: File) {
+    try {
+        if (file.exists()) {
+            Log.d("FileProvider", "Chemin du fichier: ${file.absolutePath}")
+
+            val uri = FileProvider.getUriForFile(
+                context,
+                "${context.packageName}.provider",  // Utilisation correcte de l'autorité
+                file
+            )
+            Log.d("FileProvider", "URI générée: $uri")
+
+            val intent = Intent(Intent.ACTION_VIEW).apply {
+                setDataAndType(uri, "video/mp4")
+                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_ACTIVITY_NO_HISTORY)
+            }
+
+            if (intent.resolveActivity(context.packageManager) != null) {
+                Log.d("FileProvider", "Intent trouvé. Lancement de l'application vidéo.")
+                context.startActivity(Intent.createChooser(intent, "Ouvrir avec"))
+            } else {
+                Log.e("FileProvider", "Aucune application compatible trouvée pour ouvrir la vidéo.")
+                Toast.makeText(context, "Aucune application compatible pour ouvrir cette vidéo.", Toast.LENGTH_LONG).show()
+            }
+        } else {
+            Log.e("FileProvider", "La vidéo n'existe pas.")
+            Toast.makeText(context, "La vidéo n'existe pas.", Toast.LENGTH_LONG).show()
+        }
+    } catch (e: Exception) {
+        Log.e("FileProvider", "Erreur lors de l'ouverture de la vidéo: ${e.message}")
+        Toast.makeText(context, "Erreur: Impossible d'ouvrir la vidéo.", Toast.LENGTH_LONG).show()
     }
 }

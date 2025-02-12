@@ -2,6 +2,7 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     id("org.jetbrains.kotlin.plugin.serialization") version "1.8.10" apply false
+    alias(libs.plugins.google.gms.google.services)
 }
 
 android {
@@ -89,6 +90,7 @@ dependencies {
 
     // Coroutines
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3")
+    implementation(libs.firebase.auth)
 
     // Tests
     testImplementation("junit:junit:4.13.2")
@@ -111,5 +113,7 @@ dependencies {
     implementation("io.ktor:ktor-client-logging:2.3.4")
 
     implementation ("com.itextpdf:itext7-core:7.2.5") // Exemple pour iText
+
+    implementation("com.google.firebase:firebase-auth-ktx:22.2.0") // Pour Firebase
 
 }

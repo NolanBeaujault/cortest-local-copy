@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <paths xmlns:android="http://schemas.android.com/apk/res/android">
-    <external-files-path name="pdfs" path="EpilepsyTests/" />
+    <external-files-path name="questionnaires" path="EpilepsyTests/Questionnaires/" />
     <external-files-path name="videos" path="EpilepsyTests/Videos/" />
+    <external-files-path name="consignes" path="EpilepsyTests/Consignes/" />
 </paths>

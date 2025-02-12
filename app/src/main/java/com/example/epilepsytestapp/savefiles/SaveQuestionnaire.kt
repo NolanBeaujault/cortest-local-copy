@@ -1,4 +1,4 @@
-package com.example.epilepsytestapp.pdf
+package com.example.epilepsytestapp.savefiles
 
 import android.content.Context
 import android.graphics.Bitmap
@@ -76,7 +76,7 @@ fun saveQuestionnaireAsPDF(context: Context, questionnaireData: List<Pair<String
     pdfDocument.finishPage(page)
 
     // Enregistrement du fichier
-    val directory = File(context.getExternalFilesDir(null), "EpilepsyTests")
+    val directory = File(context.getExternalFilesDir(null), "EpilepsyTests/Questionnaires")
     if (!directory.exists()) directory.mkdirs()
 
     val file = File(directory, "$fileName.pdf")

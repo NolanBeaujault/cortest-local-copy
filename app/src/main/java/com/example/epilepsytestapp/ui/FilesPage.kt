@@ -1,7 +1,6 @@
 package com.example.epilepsytestapp.ui
 
 import android.Manifest
-import android.content.ActivityNotFoundException
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
@@ -33,15 +32,17 @@ import com.example.epilepsytestapp.model.Patient
 import com.example.epilepsytestapp.ui.theme.AppTheme
 import java.io.File
 
+
 @Composable
 fun FilesPage(navController: NavHostController, patient: List<Patient>) {
     val context = LocalContext.current
     val activity = context as? ComponentActivity
-    val pdfFiles = remember { mutableStateListOf<File>() }
+    val questionnaireFiles = remember { mutableStateListOf<File>() }
     val videoFiles = remember { mutableStateListOf<File>() }
+    val consigneFiles = remember { mutableStateListOf<File>() }
     var selectedTab by remember { mutableStateOf(0) }
 
-    // Charger les fichiers PDF et vidéos à partir du répertoire interne
+    // Charger les fichiers PDF (Questionnaires/Consignes) et vidéos
     LaunchedEffect(Unit) {
         if (ContextCompat.checkSelfPermission(context, Manifest.permission.READ_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
             activity?.let {
@@ -49,24 +50,22 @@ fun FilesPage(navController: NavHostController, patient: List<Patient>) {
             }
         }
 
-        val pdfDirectory = File(context.getExternalFilesDir(null), "EpilepsyTests")
+        val questionnaireDirectory = File(context.getExternalFilesDir(null), "EpilepsyTests/Questionnaires")
+        val consigneDirectory = File(context.getExternalFilesDir(null), "EpilepsyTests/Consignes")
         val videoDirectory = File(context.getExternalFilesDir(null), "EpilepsyTests/Videos")
-        if (pdfDirectory.exists() && videoDirectory.exists()) {
-            pdfFiles.clear()
-            videoFiles.clear()
-            val pdfFilesList = pdfDirectory.listFiles { file -> file.extension == "pdf" }
-            val videoFilesList = videoDirectory.listFiles { file -> file.extension == "mp4" }
-            pdfFiles.addAll(pdfFilesList?.toList() ?: emptyList())
-            videoFiles.addAll(videoFilesList?.toList() ?: emptyList())
-        } else {
-            if (!pdfDirectory.exists()) {
-                Log.e("FilesPage", "PDF Directory does not exist")
-                Toast.makeText(context, "PDF Directory does not exist", Toast.LENGTH_SHORT).show()
-            }
-            if (!videoDirectory.exists()) {
-                Log.e("FilesPage", "Video Directory does not exist")
-                Toast.makeText(context, "Video Directory does not exist", Toast.LENGTH_SHORT).show()
-            }
+
+        questionnaireFiles.clear()
+        consigneFiles.clear()
+        videoFiles.clear()
+
+        if (questionnaireDirectory.exists()) {
+            questionnaireFiles.addAll(questionnaireDirectory.listFiles { file -> file.extension == "pdf" }?.toList() ?: emptyList())
+        }
+        if (consigneDirectory.exists()) {
+            consigneFiles.addAll(consigneDirectory.listFiles { file -> file.extension == "pdf" }?.toList() ?: emptyList())
+        }
+        if (videoDirectory.exists()) {
+            videoFiles.addAll(videoDirectory.listFiles { file -> file.extension == "mp4" }?.toList() ?: emptyList())
         }
     }
 
@@ -124,13 +123,10 @@ fun FilesPage(navController: NavHostController, patient: List<Patient>) {
                                 .fillMaxHeight()
                                 .padding(start = 16.dp)
                                 .clickable {
-                                    // Supposons que le premier patient est sélectionné
                                     val selectedPatientId = patient.firstOrNull()?.id
-
                                     if (selectedPatientId != null) {
                                         navController.navigate("profile/$selectedPatientId")
                                     } else {
-                                        // Gérer le cas où aucun patient n'est disponible
                                         println("Aucun patient sélectionné.")
                                     }
                                 }
@@ -140,16 +136,21 @@ fun FilesPage(navController: NavHostController, patient: List<Patient>) {
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                // Onglets pour les fichiers PDF et vidéos
+                // Onglets pour les fichiers Questionnaire, Consignes, et Vidéos
                 TabRow(selectedTabIndex = selectedTab) {
                     Tab(
                         selected = selectedTab == 0,
                         onClick = { selectedTab = 0 },
-                        text = { Text("PDF") }
+                        text = { Text("Questionnaire") }
                     )
                     Tab(
                         selected = selectedTab == 1,
                         onClick = { selectedTab = 1 },
+                        text = { Text("Consignes") }
+                    )
+                    Tab(
+                        selected = selectedTab == 2,
+                        onClick = { selectedTab = 2 },
                         text = { Text("Vidéos") }
                     )
                 }
@@ -164,78 +165,26 @@ fun FilesPage(navController: NavHostController, patient: List<Patient>) {
                 ) {
                     when (selectedTab) {
                         0 -> {
-                            Text(
-                                text = "Fichiers PDF enregistrés :",
-                                style = MaterialTheme.typography.headlineSmall.copy(
-                                    color = MaterialTheme.colorScheme.onBackground,
-                                    fontSize = 28.sp
-                                ),
+                            DisplayFileList(
+                                title = "Questionnaires enregistrés :",
+                                files = questionnaireFiles,
+                                context = context
                             )
-
-                            Spacer(modifier = Modifier.height(16.dp))
-
-                            // Affichage d'un message si aucun fichier PDF n'est trouvé
-                            if (pdfFiles.isEmpty()) {
-                                Text(text = "Aucun fichier PDF trouvé.", modifier = Modifier.padding(16.dp))
-                            } else {
-                                LazyColumn {
-                                    items(pdfFiles) { file ->
-                                        Text(
-                                            text = file.name,
-                                            modifier = Modifier
-                                                .fillMaxWidth()
-                                                .clickable { openPDF(context, file) }
-                                                .padding(8.dp),
-                                            style = MaterialTheme.typography.headlineSmall.copy(
-                                                color = MaterialTheme.colorScheme.onBackground,
-                                                fontSize = 18.sp
-                                            )
-                                        )
-                                    }
-                                }
-                            }
                         }
                         1 -> {
-                            Text(
-                                text = "Vidéos enregistrées :",
-                                style = MaterialTheme.typography.headlineSmall.copy(
-                                    color = MaterialTheme.colorScheme.onBackground,
-                                    fontSize = 28.sp
-                                ),
+                            DisplayFileList(
+                                title = "Consignes enregistrées :",
+                                files = consigneFiles,
+                                context = context
                             )
-
-                            Spacer(modifier = Modifier.height(16.dp))
-
-                            // Affichage d'un message si aucune vidéo n'est trouvée
-                            if (videoFiles.isEmpty()) {
-                                Text(text = "Aucune vidéo trouvée.", modifier = Modifier.padding(16.dp))
-                            } else {
-                                LazyColumn {
-                                    items(videoFiles) { file ->
-                                        Column {
-                                            Text(
-                                                text = file.name,
-                                                modifier = Modifier
-                                                    .fillMaxWidth()
-                                                    .clickable { openVideo(context, file) }
-                                                    .padding(8.dp),
-                                                style = MaterialTheme.typography.headlineSmall.copy(
-                                                    color = MaterialTheme.colorScheme.onBackground,
-                                                    fontSize = 18.sp
-                                                )
-                                            )
-                                            Text(
-                                                text = "Emplacement: ${file.absolutePath}",
-                                                style = MaterialTheme.typography.bodyMedium.copy(
-                                                    color = MaterialTheme.colorScheme.onBackground,
-                                                    fontSize = 14.sp
-                                                ),
-                                                modifier = Modifier.padding(start = 8.dp, bottom = 12.dp)
-                                            )
-                                        }
-                                    }
-                                }
-                            }
+                        }
+                        2 -> {
+                            DisplayFileList(
+                                title = "Vidéos enregistrées :",
+                                files = videoFiles,
+                                context = context,
+                                isVideo = true
+                            )
                         }
                     }
                 }
@@ -249,6 +198,51 @@ fun FilesPage(navController: NavHostController, patient: List<Patient>) {
         }
     }
 }
+
+@Composable
+fun DisplayFileList(
+    title: String,
+    files: List<File>,
+    context: Context,
+    isVideo: Boolean = false
+) {
+    Text(
+        text = title,
+        style = MaterialTheme.typography.headlineSmall.copy(
+            color = MaterialTheme.colorScheme.onBackground,
+            fontSize = 28.sp
+        ),
+    )
+
+    Spacer(modifier = Modifier.height(16.dp))
+
+    if (files.isEmpty()) {
+        Text(text = "Aucun fichier trouvé.", modifier = Modifier.padding(16.dp))
+    } else {
+        LazyColumn {
+            items(files) { file ->
+                Text(
+                    text = file.name,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable {
+                            if (isVideo) {
+                                openVideo(context, file)
+                            } else {
+                                openPDF(context, file)
+                            }
+                        }
+                        .padding(8.dp),
+                    style = MaterialTheme.typography.headlineSmall.copy(
+                        color = MaterialTheme.colorScheme.onBackground,
+                        fontSize = 18.sp
+                    )
+                )
+            }
+        }
+    }
+}
+
 
 fun openPDF(context: Context, file: File) {
     try {

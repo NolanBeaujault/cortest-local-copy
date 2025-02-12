@@ -1,53 +1,37 @@
 package com.example.epilepsytestapp.ui
 
-import android.Manifest
 import android.content.Context
-import android.content.pm.PackageManager
 import android.graphics.Canvas
 import android.graphics.Paint
 import android.util.Log
 import android.view.View
-import android.widget.Toast
 import androidx.camera.core.*
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.video.*
-import androidx.compose.foundation.Image
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.material3.*
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.LifecycleOwner
 import androidx.navigation.NavHostController
 import com.example.epilepsytestapp.R
-import java.io.File
-import androidx.compose.ui.viewinterop.AndroidView
-
+import com.example.epilepsytestapp.savefiles.saveTestInstructionsAsPDF
+import com.example.epilepsytestapp.savefiles.startRecording
+import com.example.epilepsytestapp.savefiles.stopRecording
+import kotlinx.coroutines.delay
 
 @Composable
 fun TestScreen(navController: NavHostController) {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
-
-    Log.d("TestScreen", "Vérification des permissions")
-    val hasPermissions = remember {
-        ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED &&
-                ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED
-    }
-
-    if (!hasPermissions) {
-        Log.e("TestScreen", "Permissions manquantes : caméra et/ou microphone")
-        Toast.makeText(context, "Permissions caméra et microphone requises", Toast.LENGTH_LONG).show()
-        navController.navigate("home")
-        return
-    }
 
     val instructions = listOf(
         "Regardez l'écran pendant 10 secondes.",
@@ -59,10 +43,23 @@ fun TestScreen(navController: NavHostController) {
 
     var currentInstructionIndex by remember { mutableIntStateOf(0) }
     val currentInstruction = instructions.getOrNull(currentInstructionIndex)
+
     var isRecording by remember { mutableStateOf(false) }
     val videoCapture = remember { mutableStateOf<VideoCapture<Recorder>?>(null) }
     val recording = remember { mutableStateOf<Recording?>(null) }
-    val overlayView = remember { CustomOverlayView(context) }
+
+    // Liste pour sauvegarder les consignes et le temps écoulé
+    val instructionsLog = remember { mutableListOf<Pair<String, Int>>() }
+
+    // Timer pour suivre le temps écoulé, initialisé à 0 au début
+    var elapsedTime by remember { mutableStateOf(0) }
+
+    LaunchedEffect(isRecording) {
+        while (isRecording) {
+            delay(1000L) // Mise à jour toutes les secondes
+            elapsedTime++  // Le temps s'incrémente chaque seconde
+        }
+    }
 
     Box(modifier = Modifier.fillMaxSize()) {
         CameraPreview(
@@ -72,15 +69,28 @@ fun TestScreen(navController: NavHostController) {
             modifier = Modifier.fillMaxSize()
         )
 
-        AndroidView(
-            factory = { overlayView },
-            modifier = Modifier.fillMaxSize()
-        )
-
-        LaunchedEffect(currentInstruction) {
-            overlayView.setInstruction(currentInstruction ?: "")
+        // Instructions affichées à l'écran
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+        ) {
+            // Instructions affichées aux 2/3 de l'écran
+            Box(
+                modifier = Modifier
+                    .fillMaxHeight(1 / 3f) // Place le texte à 2/3 de la hauteur de l'écran
+                    .align(Alignment.BottomCenter)
+                    .padding(bottom = 16.dp) // Ajuste l'écart si nécessaire
+            ) {
+                Text(
+                    text = currentInstruction ?: "",
+                    style = MaterialTheme.typography.headlineSmall.copy(fontSize = 28.sp), // Utilise la police CandaraBold
+                    color = MaterialTheme.colorScheme.background,
+                    modifier = Modifier.padding(horizontal = 16.dp) // Ajuste le padding horizontal si besoin
+                )
+            }
         }
 
+        // Boutons en bas
         Row(
             modifier = Modifier
                 .align(Alignment.BottomCenter)
@@ -96,6 +106,11 @@ fun TestScreen(navController: NavHostController) {
                         stopRecording(context, recording)
                         isRecording = false
                     }
+                    // Ajout de la dernière consigne et du temps avant de quitter
+                    instructionsLog.add(Pair(currentInstruction ?: "", elapsedTime))
+
+                    // Sauvegarde du PDF des consignes avant de quitter
+                    saveTestInstructionsAsPDF(context, instructionsLog, elapsedTime)
                     navController.navigate("confirmation")
                 }
             )
@@ -105,13 +120,20 @@ fun TestScreen(navController: NavHostController) {
                 contentDescription = "Instruction suivante",
                 onClick = {
                     if (currentInstructionIndex < instructions.size - 1) {
+                        // Ajout de la consigne et du temps à la liste
+                        instructionsLog.add(Pair(currentInstruction ?: "", elapsedTime))
+
                         currentInstructionIndex++
-                        overlayView.setInstruction(instructions[currentInstructionIndex])
                     } else {
                         if (isRecording) {
                             stopRecording(context, recording)
                             isRecording = false
                         }
+                        // Ajout de la dernière consigne et du temps avant de quitter
+                        instructionsLog.add(Pair(currentInstruction ?: "", elapsedTime))
+
+                        // Sauvegarde du PDF des consignes avant de quitter
+                        saveTestInstructionsAsPDF(context, instructionsLog, elapsedTime)
                         navController.navigate("confirmation")
                     }
                 }
@@ -121,12 +143,14 @@ fun TestScreen(navController: NavHostController) {
 
     LaunchedEffect(videoCapture.value) {
         videoCapture.value?.let {
-            Log.d("TestScreen", "Lancement de l'enregistrement vidéo")
             recording.value = startRecording(context, it)
             isRecording = true
+            elapsedTime = 0 // Réinitialise le timer au début de l'enregistrement
         }
     }
 }
+
+
 
 
 class CustomOverlayView(context: Context) : View(context) {
@@ -147,6 +171,7 @@ class CustomOverlayView(context: Context) : View(context) {
         canvas.drawText(instructionText, width / 2f, height / 2f, paint)
     }
 }
+
 
 @Composable
 fun CameraPreview(
@@ -188,50 +213,3 @@ fun CameraPreview(
     )
 }
 
-fun startRecording(context: Context, videoCapture: VideoCapture<Recorder>): Recording? {
-    Log.d("TestScreen", "Démarrage de l'enregistrement")
-
-    val hasPermissions = ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED &&
-            ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED
-
-    if (!hasPermissions) {
-        Log.e("TestScreen", "Permissions insuffisantes pour enregistrer")
-        Toast.makeText(context, "Permissions non accordées", Toast.LENGTH_LONG).show()
-        return null
-    }
-
-    val videosDirectory = File(context.getExternalFilesDir(null), "EpilepsyTests/Videos")
-    if (!videosDirectory.exists()) videosDirectory.mkdirs()
-
-    val outputFile = File(videosDirectory, "test_screen_record_${System.currentTimeMillis()}.mp4")
-    val outputOptions = FileOutputOptions.Builder(outputFile).build()
-
-    return videoCapture.output.prepareRecording(context, outputOptions)
-        .withAudioEnabled()
-        .start(ContextCompat.getMainExecutor(context)) { recordEvent ->
-            when (recordEvent) {
-                is VideoRecordEvent.Start -> {
-                    Log.d("TestScreen", "Enregistrement démarré")
-                    Toast.makeText(context, "Enregistrement en cours", Toast.LENGTH_SHORT).show()
-                }
-                is VideoRecordEvent.Finalize -> {
-                    Log.d("TestScreen", "Enregistrement terminé : ${outputFile.absolutePath}")
-                    Toast.makeText(context, "Vidéo enregistrée", Toast.LENGTH_SHORT).show()
-                }
-            }
-        }
-}
-
-
-
-fun stopRecording(context: Context, recording: MutableState<Recording?>) {
-    try {
-        recording.value?.stop()
-        recording.value = null
-        Log.d("TestScreen", "Enregistrement arrêté avec succès")
-        Toast.makeText(context, "Enregistrement arrêté", Toast.LENGTH_SHORT).show()
-    } catch (e: Exception) {
-        Log.e("TestScreen", "Erreur lors de l'arrêt de l'enregistrement", e)
-        Toast.makeText(context, "Erreur lors de l'arrêt de l'enregistrement", Toast.LENGTH_SHORT).show()
-    }
-}

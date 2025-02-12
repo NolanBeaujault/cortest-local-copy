@@ -19,6 +19,7 @@ import loadPatientsFromNetwork
 import android.content.SharedPreferences
 import android.Manifest
 import android.content.pm.PackageManager
+import android.util.Log
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.content.ContextCompat
@@ -47,10 +48,14 @@ class MainActivity : ComponentActivity() {
             }
 
             val startDestination = when {
-                intent.getStringExtra("startScreen") == "test" -> "test"
+                intent.getStringExtra("startScreen") == "test" -> {
+                    Log.d("MainActivity", "Redirection vers 'test'")
+                    "test"
+                }
                 isAuthenticated -> "home"
                 else -> "login"
             }
+
 
             LaunchedEffect(Unit) {
                 scope.launch {
@@ -132,6 +137,7 @@ fun EpilepsyTestApp(
     } else {
         AppTheme {
             LaunchedEffect(startDestination) {
+                Log.d("MainActivity", "startDestination = $startDestination")
                 if (startDestination == "test") {
                     navController.navigate("test") {
                         popUpTo(0) { inclusive = true } // Supprimer toute la pile

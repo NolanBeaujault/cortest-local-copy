@@ -9,6 +9,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
@@ -18,6 +19,7 @@ import com.example.epilepsytestapp.R
 import com.example.epilepsytestapp.ui.theme.AppTheme
 import com.example.epilepsytestapp.model.Patient
 import com.google.firebase.auth.FirebaseAuth
+import androidx.compose.ui.unit.sp
 
 @Composable
 fun SignupScreen(
@@ -91,7 +93,27 @@ fun SignupScreen(
             )
             Spacer(modifier = Modifier.height(8.dp))
 
-            // Mot de passe
+            fun getPasswordErrors(password: String): List<String> {
+                val errors = mutableListOf<String>()
+
+                if (password.length < 6) errors.add("Au moins 6 caractères requis")
+                if (password.length > 4096) errors.add("Maximum 4096 caractères")
+                if (!password.any { it.isDigit() }) errors.add("Au moins un chiffre requis")
+                if (!password.any { "!@#\$%^&*(),.?\":{}|<>".contains(it) }) errors.add("Au moins un caractère spécial requis")
+
+                return errors
+            }
+
+// Vérification de la correspondance des mots de passe
+            val passwordErrors = getPasswordErrors(password)
+            val isPasswordValid = passwordErrors.isEmpty()
+            val isConfirmPasswordValid = confirmPassword == password && isPasswordValid
+
+// Déterminer la couleur de la bordure en fonction de la validité du mot de passe
+            val passwordBorderColor = if (isPasswordValid) MaterialTheme.colorScheme.primary else Color.Red
+            val confirmPasswordBorderColor = if (isConfirmPasswordValid) MaterialTheme.colorScheme.primary else Color.Red
+
+// Champ de saisie du mot de passe
             OutlinedTextField(
                 value = password,
                 onValueChange = { password = it },
@@ -109,16 +131,26 @@ fun SignupScreen(
                 },
                 shape = RoundedCornerShape(50),
                 colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = MaterialTheme.colorScheme.primary,
-                    unfocusedBorderColor = MaterialTheme.colorScheme.primary,
+                    focusedBorderColor = passwordBorderColor,
+                    unfocusedBorderColor = passwordBorderColor,
                 ),
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(56.dp)
             )
+
+// Affichage des erreurs sous le champ du mot de passe
+            if (passwordErrors.isNotEmpty()) {
+                Column(modifier = Modifier.fillMaxWidth()) {
+                    passwordErrors.forEach { error ->
+                        Text(text="-$error",color=Color.Red, fontSize = 10.sp,modifier=Modifier.padding(start=15.dp,top=15.dp))
+                    }
+                }
+            }
+
             Spacer(modifier = Modifier.height(8.dp))
 
-            // Vérification du mot de passe
+// Champ de vérification du mot de passe
             OutlinedTextField(
                 value = confirmPassword,
                 onValueChange = { confirmPassword = it },
@@ -136,14 +168,24 @@ fun SignupScreen(
                 },
                 shape = RoundedCornerShape(50),
                 colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = MaterialTheme.colorScheme.primary,
-                    unfocusedBorderColor = MaterialTheme.colorScheme.primary,
+                    focusedBorderColor = confirmPasswordBorderColor,
+                    unfocusedBorderColor = confirmPasswordBorderColor,
                 ),
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(56.dp)
             )
-            Spacer(modifier = Modifier.height(36.dp))
+            if (!isConfirmPasswordValid) {
+                Column(modifier = Modifier.fillMaxWidth()) {
+                    Text(
+                        text = "Les mots de passe ne correspondent pas",
+                        color = Color.Red,
+                        fontSize = 10.sp,
+                        modifier = Modifier.padding(start = 15.dp, top = 15.dp)
+                    )
+                }
+            }
+            Spacer(modifier = Modifier.height(30.dp))
 
             // Bouton d'inscription
             Button(

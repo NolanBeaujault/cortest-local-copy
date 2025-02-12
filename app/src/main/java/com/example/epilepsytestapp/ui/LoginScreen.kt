@@ -1,5 +1,6 @@
 package com.example.epilepsytestapp.ui
 
+import android.util.Log
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -13,22 +14,25 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.navigation.NavController
 import com.example.epilepsytestapp.R
-import com.example.epilepsytestapp.model.Patient
+import com.example.epilepsytestapp.network.FirebaseAuthManager
 import com.example.epilepsytestapp.ui.theme.AppTheme
+import kotlinx.coroutines.delay
 
 
 @Composable
 fun LoginScreen(
-    patients: List<Patient>,
-    onNavigateToSignup: () -> Unit,
-    onNavigateToHome: (String, String, Boolean) -> Boolean // Retourne un booléen pour indiquer succès ou échec
+    navController: NavController,
+    onAuthenticated: () -> Unit,
+    onNavigateToSignup: () -> Unit
 ) {
-    var username by remember { mutableStateOf("") }
+    var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
-    var rememberMe by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf("") }
     var isPasswordVisible by remember { mutableStateOf(false) }
+    var isLoading by remember { mutableStateOf(false) }
+    var rememberMe by remember { mutableStateOf(false) }
 
     AppTheme {
         Column(
@@ -64,9 +68,9 @@ fun LoginScreen(
 
             // Identifiant
             OutlinedTextField(
-                value = username,
-                onValueChange = { username = it },
-                label = { Text("Identifiant") },
+                value = email,
+                onValueChange = { email = it },
+                label = { Text("Email") },
                 shape = RoundedCornerShape(50),
                 colors = OutlinedTextFieldDefaults.colors(
                     focusedBorderColor = MaterialTheme.colorScheme.primary,
@@ -131,22 +135,29 @@ fun LoginScreen(
 
             Button(
                 onClick = {
-                    if (username.isNotBlank() && password.isNotBlank()) {
-                        val isValid = onNavigateToHome(username, password, rememberMe)
-                        if (!isValid) {
-                            errorMessage = "Identifiant ou mot de passe incorrect."
+                    isLoading = true
+                    FirebaseAuthManager.login(email, password) { success, error ->
+                        isLoading = false
+                        if (success) {
+                            Log.d("LoginScreen", "Connexion réussie, redirection vers la page d'accueil")
+                            onAuthenticated()
+
+                            // Naviguer vers l'accueil après authentification
+                            navController.navigate("home") {
+                                popUpTo("login") { inclusive = true }
+                            }
                         } else {
-                            errorMessage = ""
+                            errorMessage = error ?: "Échec de la connexion"
+                            Log.e("LoginScreen", "Erreur de connexion: $errorMessage")
                         }
-                    } else {
-                        errorMessage = "Veuillez remplir tous les champs."
                     }
                 },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(56.dp)
+                    .height(56.dp),
+                enabled = !isLoading
             ) {
-                Text(text = "Connexion")
+                Text(if (isLoading) "Chargement..." else "Connexion")
             }
 
 

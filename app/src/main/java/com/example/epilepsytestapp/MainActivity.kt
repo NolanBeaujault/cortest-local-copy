@@ -20,6 +20,7 @@ class MainActivity : ComponentActivity() {
         // Charger les patients depuis le fichier JSON
         val patients = loadPatientsFromJson(this).toMutableList()
 
+
         setContent {
             EpilepsyTestApp(patients = patients, context = this)
         }
@@ -107,8 +108,8 @@ fun NavigationGraph(
             }
         }
 
-        // Autres écrans sécurisés
-        composable("demo") {
+        // Page Demo
+        composable("demo/{currentInstructionIndex}") {
             if (isAuthenticated) {
                 DemoScreen(navController = navController)
             } else {
@@ -132,7 +133,8 @@ fun NavigationGraph(
             }
         }
 
-        composable("test") {
+        // Test
+        composable("test/{currentInstructionIndex}") {
             if (isAuthenticated) {
                 TestScreen(navController = navController)
             } else {
@@ -140,17 +142,17 @@ fun NavigationGraph(
             }
         }
 
-        // Page de confirmation
-        composable("confirmation/{origin}") { backStackEntry ->
-            val origin = backStackEntry.arguments?.getString("origin") ?: "home"
 
+        // Page de confirmation
+        composable("confirmation/{currentInstructionIndex}") { backStackEntry ->
+            val currentInstructionIndex = backStackEntry.arguments?.getString("currentInstructionIndex")?.toIntOrNull() ?: 0
             ConfirmationScreen(
                 navController = navController,
+                currentInstructionIndex = currentInstructionIndex, // Passer l'index ici
                 onStopTestConfirmed = {
-                    navController.navigate("questionnaire")
-                },
-                onCancelTest = {
-                    navController.navigate(origin)
+                    navController.navigate("questionnaire") {
+                        popUpTo("homepage") { inclusive = false }
+                    }
                 }
             )
         }

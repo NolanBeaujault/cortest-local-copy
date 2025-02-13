@@ -28,6 +28,7 @@ fun TestScreen(navController: NavHostController) {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
 
+
     // Liste des consignes
     val instructions = listOf(
         "Regardez l'écran pendant 10 secondes.",
@@ -86,7 +87,7 @@ fun TestScreen(navController: NavHostController) {
             ImageClickable(
                 imageResId = R.mipmap.ic_close_foreground, // Remplacez par l'ID de votre image
                 contentDescription = "Arrêter le test",
-                onClick = { navController.navigate("confirmation/test") }
+                onClick = { navController.navigate("confirmation/${currentInstructionIndex}") }
             )
 
             // Image de flèche

@@ -111,7 +111,7 @@ fun DemoScreen(navController: NavHostController) {
             ImageClickable(
                 imageResId = R.mipmap.ic_close_foreground,
                 contentDescription = "Arrêter le test",
-                onClick = { navController.navigate("confirmation/demo") }
+                onClick = { navController.navigate("confirmation/${currentInstructionIndex}") }
             )
 
             // Image de flèche

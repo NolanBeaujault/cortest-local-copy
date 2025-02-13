@@ -17,12 +17,12 @@ import com.example.epilepsytestapp.ui.theme.AppTheme
 
 @Composable
 fun ConfirmationScreen(
-    navController: NavHostController, // Ajout du NavController
+    navController: NavHostController,
     onStopTestConfirmed: () -> Unit,
-    onCancelTest: () -> Unit
+    currentInstructionIndex: Int
 ) {
-    val navBackStackEntry = navController.previousBackStackEntry
-    val origin = navBackStackEntry?.arguments?.getString("origin") ?: "home"
+    // Récupérer l'index de l'instruction depuis la navigation
+    val currentInstructionIndex = navController.previousBackStackEntry?.arguments?.getInt("currentInstructionIndex") ?: 0
 
     AppTheme {
         Box(
@@ -71,7 +71,10 @@ fun ConfirmationScreen(
                     ImageClickableButton(
                         iconResId = R.mipmap.ic_close_foreground,
                         label = "Non je continue\nle test",
-                        onClick = { navController.navigate(origin) }
+                        onClick = {
+                            navController.popBackStack()
+                            navController.navigate("test/$currentInstructionIndex") // Ou "demo/$currentInstructionIndex" selon le cas
+                        }
                     )
                 }
             }
@@ -95,6 +98,7 @@ fun ConfirmationScreen(
 }
 
 
+
 @Composable
 fun ImageClickableButton(iconResId: Int, label: String, onClick: () -> Unit) {
     Column(
@@ -106,10 +110,10 @@ fun ImageClickableButton(iconResId: Int, label: String, onClick: () -> Unit) {
             painter = painterResource(id = iconResId),
             contentDescription = label,
             modifier = Modifier
-                .size(140.dp) // Taille identique pour toutes les icônes
+                .size(140.dp)
                 .clickable { onClick() }
         )
-        Spacer(modifier = Modifier.height(4.dp)) // Moins d'espace entre l'image et le texte
+        Spacer(modifier = Modifier.height(4.dp))
         // Texte sous l'image
         Text(
             text = label,

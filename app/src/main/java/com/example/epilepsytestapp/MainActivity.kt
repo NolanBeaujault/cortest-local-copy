@@ -49,6 +49,18 @@ class MainActivity : ComponentActivity() {
                 mutableStateOf(firebaseAuth.currentUser != null)
             }
 
+            val lastScreen = sharedPreferences.getString("lastScreen","login") ?: "login"
+            val startDestination = remember{
+                mutableStateOf(
+                    when{
+                        intent.getStringExtra("startScreen") == "test" -> "test"
+                        isAuthenticated && lastScreen == "infoPerso" -> "infoPerso"
+                        isAuthenticated -> "home"
+                        else -> "login"
+                    }
+                )
+            }
+
             LaunchedEffect(Unit) {
                 firebaseAuth.addAuthStateListener { auth ->
                     isAuthenticated = auth.currentUser != null
@@ -56,14 +68,6 @@ class MainActivity : ComponentActivity() {
                 }
             }
 
-            val startDestination = when {
-                intent.getStringExtra("startScreen") == "test" -> {
-                    Log.d("MainActivity", "Redirection vers 'test'")
-                    "test"
-                }
-                isAuthenticated -> "home"
-                else -> "login"
-            }
 
 
             LaunchedEffect(Unit) {
@@ -79,7 +83,7 @@ class MainActivity : ComponentActivity() {
                 context = this,
                 isLoading = isLoading,
                 isAuthenticated = isAuthenticated,
-                startDestination = startDestination,
+                startDestination = startDestination.value,
                 onAuthenticate = {
                     isAuthenticated = true
                     sharedPreferences.edit().putBoolean("isLoggedIn", true).apply()
@@ -220,14 +224,21 @@ fun NavigationGraph(
             SignupScreen(
                 patient = Patient(id = 0, username = "", password = "", lastName = "", firstName = "", address = "", neurologist = "", tests = emptyList()),
                 onSaveProfile = { updatedPatient ->
-                    patients.add(updatedPatient) // Ajouter le patient à la liste
-                    navController.navigate("login") // Redirection vers la page de connexion après l'inscription
+                    patients.add(updatedPatient)
+                    navController.navigate("infoPerso")
                 },
                 context = navController.context,
                 patients = patients,
-                onNavigateToLogin = { navController.navigate("login") }
+                onNavigateToLogin = { navController.navigate("login") },
+                navController = navController
             )
         }
+
+        composable("infoPerso") {
+            Log.d("NavigationGraph", "InfoPersoScreen ajouté au graph")
+            InfoPersoScreen(navController = navController)
+        }
+
 
         composable("home") {
             if (isAuthenticated) {
@@ -316,6 +327,5 @@ fun NavigationGraph(
                 navController.popBackStack()
             }
         }
-
     }
 }

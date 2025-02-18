@@ -20,6 +20,7 @@ import com.example.epilepsytestapp.ui.theme.AppTheme
 import com.example.epilepsytestapp.model.Patient
 import com.google.firebase.auth.FirebaseAuth
 import androidx.compose.ui.unit.sp
+import androidx.navigation.NavController
 
 @Composable
 fun SignupScreen(
@@ -27,7 +28,8 @@ fun SignupScreen(
     onSaveProfile: (Patient) -> Unit,
     context: Context,
     patients: List<Patient>,
-    onNavigateToLogin : () -> Unit
+    onNavigateToLogin : () -> Unit,
+    navController: NavController
 ) {
     var email by remember { mutableStateOf(patient.username) }
     var password by remember { mutableStateOf("") }
@@ -191,19 +193,17 @@ fun SignupScreen(
             Button(
                 onClick = {
                     if (password == confirmPassword) {
-                        firebaseAuth.createUserWithEmailAndPassword(email, password)
-                            .addOnCompleteListener { task ->
+                        firebaseAuth.createUserWithEmailAndPassword(email, password).addOnCompleteListener { task ->
                                 if (task.isSuccessful) {
                                     Log.d("Signup", "Inscription réussie : ${firebaseAuth.currentUser?.email}")
-                                    val updatedPatient = patient.copy(username = email, password = password)
-                                    val updatedPatients = patients.map { if (it.id == patient.id) updatedPatient else it }
-                                    savePatientsToJson(context, updatedPatients)
-                                    onSaveProfile(updatedPatient)
-                                } else {
+                                    navController.navigate("infoPerso"){launchSingleTop=true}
+                                }
+                                else {
                                     Log.e("Signup", "Échec de l'inscription", task.exception)
                                 }
                             }
-                    } else {
+                    }
+                    else {
                         Log.e("Signup", "Les mots de passe ne correspondent pas")
                     }
                 },

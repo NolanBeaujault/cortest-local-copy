@@ -36,6 +36,7 @@ fun SignupScreen(
     var confirmPassword by remember { mutableStateOf("") }
     var isPasswordVisible by remember { mutableStateOf(false) }
     var isConfirmPasswordVisible by remember { mutableStateOf(false) }
+    var isLoading by remember { mutableStateOf(false) }
 
     val firebaseAuth = remember { FirebaseAuth.getInstance() }
 
@@ -193,8 +194,10 @@ fun SignupScreen(
             Button(
                 onClick = {
                     if (password == confirmPassword) {
+                        isLoading = true
                         firebaseAuth.createUserWithEmailAndPassword(email, password).addOnCompleteListener { task ->
-                                if (task.isSuccessful) {
+                            isLoading = false
+                            if (task.isSuccessful) {
                                     Log.d("Signup", "Inscription réussie : ${firebaseAuth.currentUser?.email}")
                                     navController.navigate("infoPerso"){launchSingleTop=true}
                                 }
@@ -208,13 +211,18 @@ fun SignupScreen(
                     }
                 },
                 shape = RoundedCornerShape(50),
+                enabled = !isLoading,
                 colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(56.dp)
+
             ) {
+                if (isLoading) {
+                    CircularProgressIndicator()
+                } else{
                 Text("S'inscrire", style = MaterialTheme.typography.labelLarge)
-            }
+            }}
 
 
             Spacer(modifier = Modifier.height(16.dp))

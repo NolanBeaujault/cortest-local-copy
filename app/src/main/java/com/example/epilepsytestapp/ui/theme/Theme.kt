@@ -25,6 +25,9 @@ val BackgroundColor = Color(0xFFF8F8F8)
 val TextColor = Color(0xFF2B4765)
 val ButtonTextColor = Color(0xFFFFFFFF)
 
+// ✅ Ajout de la nouvelle couleur
+val LightBlueColor = Color(0xFFD0EEED)
+
 // Palette de couleurs claires
 val LightColorScheme = lightColorScheme(
     primary = PrimaryColor,
@@ -32,7 +35,10 @@ val LightColorScheme = lightColorScheme(
     background = BackgroundColor,
     onBackground = TextColor,
     surface = BackgroundColor,
-    onSurface = TextColor
+    onSurface = TextColor,
+
+    // ✅ Ajout dans le thème
+    surfaceVariant = LightBlueColor
 )
 
 // Typographie personnalisée
@@ -58,6 +64,8 @@ val AppTypography = Typography(
         fontSize = 16.sp,
         color = ButtonTextColor
     )
+
+
 )
 
 // Thème principal

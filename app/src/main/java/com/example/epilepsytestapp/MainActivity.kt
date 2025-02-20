@@ -1,7 +1,6 @@
 package com.example.epilepsytestapp
 
 import android.os.Bundle
-import android.media.MediaRecorder
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.runtime.*
@@ -167,7 +166,6 @@ fun EpilepsyTestApp(
                 isAuthenticated = isAuthenticated,
                 startDestination = startDestination,
                 onAuthenticated = onAuthenticate,
-                onSavePatients = { savePatientsToJson(context, patients) },
                 onRememberMe = onRememberMe,
                 onLogout = {
                     onLogout()
@@ -189,7 +187,6 @@ fun NavigationGraph(
     isAuthenticated: Boolean,
     startDestination: String,
     onAuthenticated: () -> Unit,
-    onSavePatients: () -> Unit,
     onRememberMe: (Boolean) -> Unit,
     onLogout: () -> Unit
 ) {
@@ -215,24 +212,17 @@ fun NavigationGraph(
             )
         }
 
-
         composable("signup") {
             SignupScreen(
                 patient = Patient(id = 0, username = "", password = "", lastName = "", firstName = "", address = "", neurologist = "", tests = emptyList()),
                 onSaveProfile = { updatedPatient ->
-                    patients.add(updatedPatient) // Ajouter le patient à la liste
-                    navController.navigate("login") // Redirection vers la page de connexion après l'inscription
+                    patients.add(updatedPatient)
+                    navController.navigate("login")
                 },
                 context = navController.context,
                 patients = patients,
                 onNavigateToLogin = { navController.navigate("login") }
             )
-        }
-
-        composable("home") {
-            if (isAuthenticated) {
-                HomePage(navController = navController, patient = patients)
-            }
         }
 
         composable("settings") {
@@ -242,7 +232,7 @@ fun NavigationGraph(
                     onLogout = {
                         onLogout()
                         navController.navigate("login") {
-                            popUpTo("settings") { inclusive = true } // Supprimer "settings" de la pile
+                            popUpTo("settings") { inclusive = true }
                         }
                     },
                     patients = patients
@@ -312,10 +302,25 @@ fun NavigationGraph(
                     navController = navController
                 )
             } else {
-                // Si le patient n'est pas trouvé, retourner à la page d'accueil
                 navController.popBackStack()
             }
         }
 
+        // Ajout des nouveaux écrans de configuration des tests
+        composable("testConfigScreen") {
+            if (isAuthenticated) {
+                TestConfigurationScreen(navController = navController)
+            } else {
+                navController.navigate("login")
+            }
+        }
+
+        composable("recapScreen") {
+            if (isAuthenticated) {
+                RecapScreen(navController = navController)
+            } else {
+                navController.navigate("login")
+            }
+        }
     }
 }

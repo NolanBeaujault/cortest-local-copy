@@ -110,6 +110,15 @@ fun SettingsPage(navController: NavHostController, onLogout: () -> Unit, patient
                             }
                         }
                     )
+
+                    // Ajout d'une nouvelle option de paramètre
+                    SettingsOption(
+                        text = "Modifier la catégorisation",
+                        onClick = {
+                            navController.navigate("testConfigScreen")
+                        }
+                    )
+
                 }
             }
 

@@ -197,7 +197,6 @@ fun SignupScreen(
                                     Log.d("Signup", "Inscription réussie : ${firebaseAuth.currentUser?.email}")
                                     val updatedPatient = patient.copy(username = email, password = password)
                                     val updatedPatients = patients.map { if (it.id == patient.id) updatedPatient else it }
-                                    savePatientsToJson(context, updatedPatients)
                                     onSaveProfile(updatedPatient)
                                 } else {
                                     Log.e("Signup", "Échec de l'inscription", task.exception)

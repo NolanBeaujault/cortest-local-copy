@@ -1,6 +1,5 @@
 package com.example.epilepsytestapp.ui
 
-
 import android.util.Log
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -19,7 +18,6 @@ import com.example.epilepsytestapp.R
 import com.example.epilepsytestapp.category.loadCategoriesFromNetwork
 import com.example.epilepsytestapp.ui.theme.AppTheme
 import kotlinx.coroutines.launch
-
 
 @Composable
 fun TestConfigurationScreen(navController: NavController) {
@@ -85,6 +83,7 @@ fun TestConfigurationScreen(navController: NavController) {
         }
     }
 }
+
 
 @Composable
 fun CategoryItem(

@@ -6,65 +6,95 @@ import kotlinx.coroutines.withContext
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import retrofit2.http.GET
-
-
+import com.google.gson.GsonBuilder
 import com.google.gson.annotations.SerializedName
+import com.google.gson.reflect.TypeToken
 
-data class Test(
-    val id_test: Int,
-    val consigne: String
+// ✅ Modèle pour un test individuel
+data class NetworkTest(
+    @SerializedName("id_test") val idTest: Double?, // Certains ID sont en float
+    val consigne: String,
+    val nom: String // Ajout du champ "nom" pour récupérer le nom du test
 )
 
-data class Category(
-    @SerializedName("id_category") val id: Int,
-    val tests: Map<String, Test>? // Il est important que ce soit nullable, car certains tests peuvent être manquants
+// ✅ Modèle pour une catégorie contenant plusieurs tests
+data class NetworkCategory(
+    @SerializedName("id_category") val idCategory: Double?,
+    val nom: String, // Nom de la catégorie
+    val tests: List<NetworkTest> // Liste des tests correctement extraits
 )
 
-typealias CategoriesResponse = Map<String, Category>
-
+// ✅ Définition de la réponse complète
+typealias CategoriesResponse = Map<String, Any>
 
 interface ApiService {
-    @GET("categories") // Mettre l'URL correcte de l'API
-    suspend fun getCategories(): CategoriesResponse
+    @GET("categories")
+    suspend fun getCategories(): retrofit2.Response<Map<String, Any>> // Réponse sous forme d'une Map générique
 }
 
 object RetrofitClient {
     private const val BASE_URL = "http://pi-nolan.its-tps.fr:2880/"
 
     val apiService: ApiService by lazy {
+        val gson = GsonBuilder().setLenient().create()
         Retrofit.Builder()
             .baseUrl(BASE_URL)
-            .addConverterFactory(GsonConverterFactory.create())
+            .addConverterFactory(GsonConverterFactory.create(gson))
             .build()
             .create(ApiService::class.java)
     }
 }
 
+// ✅ Fonction pour charger les catégories et tests
 suspend fun loadCategoriesFromNetwork(): Map<String, List<String>> {
     return withContext(Dispatchers.IO) {
         try {
-            // Charger les catégories depuis l'API
-            val categories = RetrofitClient.apiService.getCategories()
-            Log.d("TestConfig", "Catégories chargées : $categories")
+            Log.d("NetworkCategory", "🔄 Lancement du chargement des catégories...")
 
-            // Pour chaque catégorie, récupérer les noms des tests (les clés des Map)
-            val testsByCategory = categories.mapValues { (_, category) ->
-                // Vérifier que les tests existent et ne sont pas nuls
-                val tests = category.tests ?: emptyMap()
-                Log.d("TestConfig", "Tests pour la catégorie ${category.id}: $tests")
+            val response = RetrofitClient.apiService.getCategories()
 
-                // Extraire les noms des tests
-                tests.keys.toList()
+            if (!response.isSuccessful) {
+                Log.e("NetworkCategory", "❌ Erreur HTTP : ${response.code()}")
+                return@withContext emptyMap()
             }
 
-            // Afficher les résultats
-            Log.d("TestConfig", "Tests par catégorie: $testsByCategory")
+            val rawJson = response.body()
+            Log.d("NetworkCategory", "📨 Réponse brute reçue : $rawJson")
 
-            testsByCategory
+            if (rawJson.isNullOrEmpty()) {
+                Log.e("NetworkCategory", "⚠ Réponse vide de l'API")
+                return@withContext emptyMap()
+            }
+
+            val gson = GsonBuilder().setLenient().create()
+            val jsonString = gson.toJson(rawJson)
+
+            // ✅ Conversion en Map générique
+            val type = object : TypeToken<Map<String, Map<String, Any>>>() {}.type
+            val parsedData: Map<String, Map<String, Any>> = gson.fromJson(jsonString, type)
+
+            // ✅ Extraction des catégories et tests
+            val categories = parsedData.mapValues { (categoryKey, categoryData) ->
+                val testsList = mutableListOf<String>()
+
+                // Parcourir les objets de la catégorie
+                categoryData.forEach { (key, value) ->
+                    if (key == "id_category") return@forEach // Ignorer l'ID de la catégorie
+
+                    if (value is Map<*, *>) {
+                        val testName = value["nom"] as? String ?: "Nom inconnu" // ✅ Récupération du nom
+                        testsList.add(testName)
+                    }
+                }
+
+                testsList // ✅ On renvoie directement une liste de noms de tests
+            }
+
+            Log.d("NetworkCategory", "✅ Catégories et tests chargés avec succès : $categories")
+            return@withContext categories
         } catch (e: Exception) {
-            e.printStackTrace()
-            emptyMap() // Retourner une carte vide en cas d'erreur
+            Log.e("NetworkCategory", "❌ Erreur lors du chargement des catégories : ${e.message}", e)
+            emptyMap()
         }
     }
 }
-

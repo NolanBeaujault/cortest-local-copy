@@ -1,7 +1,7 @@
 package com.example.epilepsytestapp.ui
 
-import android.content.Context
-import androidx.compose.foundation.Image
+
+import android.util.Log
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -11,37 +11,37 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.rotate
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.example.epilepsytestapp.R
+import com.example.epilepsytestapp.category.loadCategoriesFromNetwork
 import com.example.epilepsytestapp.ui.theme.AppTheme
 import kotlinx.coroutines.launch
+
 
 @Composable
 fun TestConfigurationScreen(navController: NavController) {
     val selectedTests = remember { mutableStateMapOf<String, MutableSet<String>>() }
     val selectedTestsGlobal = remember { mutableStateOf(mutableSetOf<String>()) }
     val scrollState = rememberScrollState()
-    val context = LocalContext.current
     val categories = remember { mutableStateOf<Map<String, List<String>>>(emptyMap()) }
     val loading = remember { mutableStateOf(true) }
     val coroutineScope = rememberCoroutineScope()
 
-    // Charger les catégories et tests depuis le fichier JSON
     LaunchedEffect(Unit) {
-        // Lancer un appel réseau pour récupérer les catégories
         coroutineScope.launch {
+            Log.d("TestConfig", "Chargement des catégories depuis l'API...")
             try {
-                categories.value = loadCategoriesFromJson(context)
-                loading.value = false
+                val loadedCategories = loadCategoriesFromNetwork()
+                categories.value = loadedCategories
+                Log.d("TestConfig", "Catégories chargées avec succès: $loadedCategories")
             } catch (e: Exception) {
-                // Gérer l'erreur, par exemple, afficher un message d'erreur
+                Log.e("TestConfig", "Erreur lors du chargement des catégories: ${e.message}")
                 e.printStackTrace()
-                loading.value = false
             }
+            loading.value = false
         }
     }
 
@@ -53,7 +53,6 @@ fun TestConfigurationScreen(navController: NavController) {
                 .verticalScroll(scrollState),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            // Titre
             Text(
                 text = "Configuration des tests",
                 style = MaterialTheme.typography.displayLarge,
@@ -62,27 +61,18 @@ fun TestConfigurationScreen(navController: NavController) {
             )
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Si les données sont en cours de chargement, afficher un indicateur de chargement
             if (loading.value) {
                 CircularProgressIndicator()
             } else {
-                // Liste des catégories et tests
-                categories.value.forEach { (categoryName, tests) ->
-                    CategoryItem(categoryName, tests, selectedTests, selectedTestsGlobal)
+                Log.d("TestConfig", "Affichage des catégories et tests...")
+                categories.value.forEach { (categoryName, testList) ->
+                    Log.d("TestConfig", "Catégorie: $categoryName, Nombre de tests: ${testList.size}")
+                    CategoryItem(categoryName, testList, selectedTests, selectedTestsGlobal)
                 }
             }
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Logo
-            Image(
-                painter = painterResource(id = R.mipmap.ic_brain_logo_foreground),
-                contentDescription = "Logo",
-                modifier = Modifier.size(80.dp)
-            )
-            Spacer(modifier = Modifier.height(16.dp))
-
-            // Boutons
             CustomButton(text = "Suivant") {
                 val filteredTests = selectedTests.mapValues { it.value.toList() }
                 navController.currentBackStackEntry?.savedStateHandle?.set("selectedTests", filteredTests)
@@ -99,7 +89,7 @@ fun TestConfigurationScreen(navController: NavController) {
 @Composable
 fun CategoryItem(
     title: String,
-    tests: List<String>,
+    tests: List<String>, // Une liste de noms de tests
     selectedTests: MutableMap<String, MutableSet<String>>,
     selectedTestsGlobal: MutableState<MutableSet<String>>
 ) {
@@ -134,26 +124,24 @@ fun CategoryItem(
             )
         }
 
+        // Liste des tests (noms des tests)
         Column(modifier = Modifier.padding(start = 16.dp)) {
-            tests.forEach { testName ->
+            tests.forEach { testName ->  // Afficher le nom du test
                 val isChecked = selectedTests[title]?.contains(testName) ?: false
 
-                // ✅ Afficher uniquement les tests cochés si la catégorie est fermée
                 if (isExpanded || isChecked) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Checkbox(
                             checked = isChecked,
                             onCheckedChange = { checked ->
-                                selectedTests[title] = selectedTests.getOrDefault(title, mutableSetOf()).toMutableSet().apply {
+                                selectedTests[title] = selectedTests.getOrDefault(title, mutableSetOf()).apply {
                                     if (checked) add(testName) else remove(testName)
                                 }
-
-                                // Mise à jour de selectedTestsGlobal pour assurer la recomposition
                                 selectedTestsGlobal.value = selectedTests.values.flatten().toMutableSet()
                             }
                         )
                         Text(
-                            text = testName,
+                            text = testName,  // Affichage du nom du test
                             style = MaterialTheme.typography.bodyLarge,
                             color = MaterialTheme.colorScheme.primary
                         )

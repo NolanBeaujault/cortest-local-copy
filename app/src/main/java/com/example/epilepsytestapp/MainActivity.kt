@@ -14,7 +14,6 @@ import android.content.Context
 import com.example.epilepsytestapp.model.Patient
 import kotlinx.coroutines.launch
 import androidx.compose.runtime.rememberCoroutineScope
-import loadPatientsFromNetwork
 import android.content.SharedPreferences
 import android.Manifest
 import android.content.pm.PackageManager
@@ -24,6 +23,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.content.ContextCompat
 import androidx.navigation.NavType
 import androidx.navigation.navArgument
+import com.example.epilepsytestapp.network.loadPatientsFromNetwork
 import com.google.firebase.auth.FirebaseAuth
 
 

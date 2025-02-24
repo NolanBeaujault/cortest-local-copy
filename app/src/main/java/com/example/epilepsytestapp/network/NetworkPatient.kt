@@ -1,3 +1,5 @@
+package com.example.epilepsytestapp.network
+
 import com.example.epilepsytestapp.model.Patient
 import retrofit2.http.GET
 import retrofit2.Retrofit

@@ -20,6 +20,7 @@ import com.example.epilepsytestapp.ui.theme.AppTheme
 import com.example.epilepsytestapp.model.Patient
 import com.google.firebase.auth.FirebaseAuth
 import androidx.compose.ui.unit.sp
+import androidx.navigation.NavController
 
 @Composable
 fun SignupScreen(
@@ -27,13 +28,15 @@ fun SignupScreen(
     onSaveProfile: (Patient) -> Unit,
     context: Context,
     patients: List<Patient>,
-    onNavigateToLogin : () -> Unit
+    onNavigateToLogin : () -> Unit,
+    navController: NavController
 ) {
     var email by remember { mutableStateOf(patient.username) }
     var password by remember { mutableStateOf("") }
     var confirmPassword by remember { mutableStateOf("") }
     var isPasswordVisible by remember { mutableStateOf(false) }
     var isConfirmPasswordVisible by remember { mutableStateOf(false) }
+    var isLoading by remember { mutableStateOf(false) }
 
     val firebaseAuth = remember { FirebaseAuth.getInstance() }
 
@@ -191,29 +194,35 @@ fun SignupScreen(
             Button(
                 onClick = {
                     if (password == confirmPassword) {
-                        firebaseAuth.createUserWithEmailAndPassword(email, password)
-                            .addOnCompleteListener { task ->
-                                if (task.isSuccessful) {
+                        isLoading = true
+                        firebaseAuth.createUserWithEmailAndPassword(email, password).addOnCompleteListener { task ->
+                            isLoading = false
+                            if (task.isSuccessful) {
                                     Log.d("Signup", "Inscription réussie : ${firebaseAuth.currentUser?.email}")
-                                    val updatedPatient = patient.copy(username = email, password = password)
-                                    val updatedPatients = patients.map { if (it.id == patient.id) updatedPatient else it }
-                                    onSaveProfile(updatedPatient)
-                                } else {
+                                    navController.navigate("infoPerso"){launchSingleTop=true}
+                                }
+                                else {
                                     Log.e("Signup", "Échec de l'inscription", task.exception)
                                 }
                             }
-                    } else {
+                    }
+                    else {
                         Log.e("Signup", "Les mots de passe ne correspondent pas")
                     }
                 },
                 shape = RoundedCornerShape(50),
+                enabled = !isLoading,
                 colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(56.dp)
+
             ) {
+                if (isLoading) {
+                    CircularProgressIndicator()
+                } else{
                 Text("S'inscrire", style = MaterialTheme.typography.labelLarge)
-            }
+            }}
 
 
             Spacer(modifier = Modifier.height(16.dp))

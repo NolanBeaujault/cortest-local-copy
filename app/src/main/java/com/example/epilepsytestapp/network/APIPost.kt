@@ -9,7 +9,8 @@ data class RegisterRequest(
     val nom: String,
     val prenom: String,
     val adresse: String,
-    val neurologue: String
+    val neurologue: String,
+    val date_naissance: String
 )
 
 // Interface Retrofit

@@ -2,6 +2,7 @@ package com.example.epilepsytestapp.ui
 
 import RegisterRequest
 import RetrofitInstance
+import android.app.DatePickerDialog
 import android.util.Log
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
@@ -18,6 +19,8 @@ import com.example.epilepsytestapp.R
 import com.example.epilepsytestapp.ui.theme.AppTheme
 import com.google.firebase.auth.FirebaseAuth
 import kotlinx.coroutines.launch
+import java.text.SimpleDateFormat
+import java.util.*
 
 @Composable
 fun InfoPersoScreen(navController: NavHostController) {
@@ -25,6 +28,7 @@ fun InfoPersoScreen(navController: NavHostController) {
     var prenom by remember { mutableStateOf("") }
     var adresse by remember { mutableStateOf("") }
     var neurologue by remember { mutableStateOf("") }
+    var date_naissance by remember { mutableStateOf("") }
 
     var isLoading by remember { mutableStateOf(false) }
     val coroutineScope = rememberCoroutineScope()
@@ -33,13 +37,27 @@ fun InfoPersoScreen(navController: NavHostController) {
     val currentUser = firebaseAuth.currentUser
     val userId = currentUser?.uid ?: ""
 
+    val calendar = Calendar.getInstance()
+    val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+
+    val datePickerDialog = DatePickerDialog(
+        navController.context,
+        { _, year, month, dayOfMonth ->
+            val selectedDate = Calendar.getInstance().apply {
+                set(year, month, dayOfMonth)
+            }
+            date_naissance = dateFormat.format(selectedDate.time)
+        },
+        calendar.get(Calendar.YEAR),
+        calendar.get(Calendar.MONTH),
+        calendar.get(Calendar.DAY_OF_MONTH))
+
     AppTheme {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(16.dp),
+        Column (
+            modifier = Modifier.fillMaxSize().padding(16.dp),
             horizontalAlignment = Alignment.CenterHorizontally
-        ) {
+        )
+        {
             Text(
                 text = "CORTEST",
                 style = MaterialTheme.typography.displayLarge,
@@ -67,103 +85,90 @@ fun InfoPersoScreen(navController: NavHostController) {
 
             OutlinedTextField(
                 value = nom,
-                onValueChange = { nom = it },
-                label = { Text("Nom") },
+                onValueChange = {nom = it},
+                label = { Text("Nom")},
                 shape = RoundedCornerShape(50),
                 colors = OutlinedTextFieldDefaults.colors(
                     focusedBorderColor = MaterialTheme.colorScheme.primary,
                     unfocusedBorderColor = MaterialTheme.colorScheme.primary
                 ),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(56.dp)
+                modifier = Modifier.fillMaxWidth().height(56.dp)
             )
 
             Spacer(modifier = Modifier.height(12.dp))
 
             OutlinedTextField(
                 value = prenom,
-                onValueChange = { prenom = it },
-                label = { Text("Prénom") },
+                onValueChange = {prenom = it},
+                label = { Text("Prénom")},
                 shape = RoundedCornerShape(50),
                 colors = OutlinedTextFieldDefaults.colors(
                     focusedBorderColor = MaterialTheme.colorScheme.primary,
                     unfocusedBorderColor = MaterialTheme.colorScheme.primary
                 ),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(56.dp)
+                modifier = Modifier.fillMaxWidth().height(56.dp)
             )
 
             Spacer(modifier = Modifier.height(12.dp))
 
             OutlinedTextField(
                 value = adresse,
-                onValueChange = { adresse = it },
-                label = { Text("Adresse") },
+                onValueChange = {adresse = it},
+                label = { Text("Adresse")},
                 shape = RoundedCornerShape(50),
                 colors = OutlinedTextFieldDefaults.colors(
                     focusedBorderColor = MaterialTheme.colorScheme.primary,
                     unfocusedBorderColor = MaterialTheme.colorScheme.primary
                 ),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(56.dp)
+                modifier = Modifier.fillMaxWidth().height(56.dp)
             )
 
             Spacer(modifier = Modifier.height(12.dp))
 
             OutlinedTextField(
                 value = neurologue,
-                onValueChange = { neurologue = it },
-                label = { Text("Neurologue") },
+                onValueChange = {neurologue = it},
+                label = { Text("Neurologue")},
                 shape = RoundedCornerShape(50),
                 colors = OutlinedTextFieldDefaults.colors(
                     focusedBorderColor = MaterialTheme.colorScheme.primary,
                     unfocusedBorderColor = MaterialTheme.colorScheme.primary
                 ),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(56.dp)
+                modifier = Modifier.fillMaxWidth().height(56.dp)
             )
 
             Spacer(modifier = Modifier.height(20.dp))
 
+
             Button(
                 onClick = {
-                    if (nom.isNotEmpty() && prenom.isNotEmpty() && adresse.isNotEmpty() && neurologue.isNotEmpty()) {
+                    if (userId.isNotEmpty()){
                         isLoading = true
                         coroutineScope.launch {
                             try {
-                                val request = RegisterRequest(userId, nom, prenom, adresse, neurologue)
+                                val request = RegisterRequest(userId,nom,prenom,adresse,neurologue, date_naissance)
                                 RetrofitInstance.api.registerUser(request)
-                                Log.d("API", "✅ Utilisateur enregistré avec succès")
-
-                                // 🔄 Redirection vers ConfigScreen après l'enregistrement
-                                navController.navigate("testConfigScreen") {
-                                    popUpTo("infoPerso") { inclusive = true }
-                                }
-                            } catch (e: Exception) {
-                                Log.e("API", "❌ Erreur lors de l'envoi : ${e.message}")
-                            } finally {
+                                Log.d("API","Utilisateur enregistré avec suucès")
+                                isLoading = false
+                                navController.navigate("home")
+                            } catch (e: Exception){
+                                Log.e("API","Erreur lors de l'envoi : ${e.message}")
                                 isLoading = false
                             }
                         }
-                    } else {
-                        Log.e("API", "⚠ Veuillez remplir tous les champs")
                     }
+                    else { Log.e("API","Utilisateur non authentifié")}
                 },
                 shape = RoundedCornerShape(50),
                 colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(56.dp),
+                modifier = Modifier.fillMaxWidth().height(56.dp),
                 enabled = !isLoading
             ) {
-                if (isLoading) {
+                if (isLoading){
                     CircularProgressIndicator()
-                } else {
-                    Text("Envoyer et configurer les tests", style = MaterialTheme.typography.labelLarge)
+                }
+                else {
+                    Text("Envoyer", style = MaterialTheme.typography.labelLarge)
                 }
             }
         }

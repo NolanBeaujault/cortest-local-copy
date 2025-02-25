@@ -116,7 +116,7 @@ fun CategoryItem(
                 contentDescription = "Expand",
                 modifier = Modifier
                     .size(20.dp)
-                    .rotate(if (isExpanded) 180f else 0f) // 🔄 Rotation de l'icône
+                    .rotate(if (isExpanded) 90f else 0f) // 🔄 Rotation de l'icône
             )
         }
 

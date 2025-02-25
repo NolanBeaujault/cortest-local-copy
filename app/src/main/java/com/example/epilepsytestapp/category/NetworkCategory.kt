@@ -7,31 +7,15 @@ import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import retrofit2.http.GET
 import com.google.gson.GsonBuilder
-import com.google.gson.annotations.SerializedName
 import com.google.gson.reflect.TypeToken
 
-// ✅ Modèle pour un test individuel
-data class NetworkTest(
-    @SerializedName("id_test") val idTest: Double?, // Certains ID sont en float
-    val consigne: String,
-    val nom: String // Ajout du champ "nom" pour récupérer le nom du test
-)
-
-// ✅ Modèle pour une catégorie contenant plusieurs tests
-data class NetworkCategory(
-    @SerializedName("id_category") val idCategory: Double?,
-    val nom: String, // Nom de la catégorie
-    val tests: List<NetworkTest> // Liste des tests correctement extraits
-)
-
-// ✅ Définition de la réponse complète
-typealias CategoriesResponse = Map<String, Any>
-
+// ✅ Interface API
 interface ApiService {
     @GET("categories")
-    suspend fun getCategories(): retrofit2.Response<Map<String, Any>> // Réponse sous forme d'une Map générique
+    suspend fun getCategories(): retrofit2.Response<Map<String, Any>>
 }
 
+// ✅ Initialisation du client Retrofit
 object RetrofitClient {
     private const val BASE_URL = "http://pi-nolan.its-tps.fr:2880/"
 
@@ -73,25 +57,30 @@ suspend fun loadCategoriesFromNetwork(): Map<String, List<String>> {
             val type = object : TypeToken<Map<String, Map<String, Any>>>() {}.type
             val parsedData: Map<String, Map<String, Any>> = gson.fromJson(jsonString, type)
 
+            // ✅ Initialisation du Map final
+            val categoriesMap = mutableMapOf<String, List<String>>()
+
             // ✅ Extraction des catégories et tests
-            val categories = parsedData.mapValues { (categoryKey, categoryData) ->
+            parsedData.forEach { (_, categoryData) ->
+                val categoryName = categoryData["nom"] as? String ?: "Catégorie inconnue"
                 val testsList = mutableListOf<String>()
 
-                // Parcourir les objets de la catégorie
+                // ✅ Parcourir les objets de la catégorie
                 categoryData.forEach { (key, value) ->
-                    if (key == "id_category") return@forEach // Ignorer l'ID de la catégorie
+                    if (key == "id_category" || key == "nom") return@forEach // Ignorer l'ID et le nom de la catégorie
 
                     if (value is Map<*, *>) {
-                        val testName = value["nom"] as? String ?: "Nom inconnu" // ✅ Récupération du nom
+                        val testName = value["nom"] as? String ?: "Test inconnu"
                         testsList.add(testName)
                     }
                 }
 
-                testsList // ✅ On renvoie directement une liste de noms de tests
+                // ✅ Ajout à la Map finale avec le bon nom de catégorie
+                categoriesMap[categoryName] = testsList
             }
 
-            Log.d("NetworkCategory", "✅ Catégories et tests chargés avec succès : $categories")
-            return@withContext categories
+            Log.d("NetworkCategory", "✅ Catégories et tests chargés avec succès : $categoriesMap")
+            return@withContext categoriesMap
         } catch (e: Exception) {
             Log.e("NetworkCategory", "❌ Erreur lors du chargement des catégories : ${e.message}", e)
             emptyMap()

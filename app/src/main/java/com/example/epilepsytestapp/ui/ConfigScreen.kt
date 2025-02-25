@@ -22,7 +22,6 @@ import kotlinx.coroutines.launch
 @Composable
 fun TestConfigurationScreen(navController: NavController) {
     val selectedTests = remember { mutableStateMapOf<String, MutableSet<String>>() }
-    val selectedTestsGlobal = remember { mutableStateOf(mutableSetOf<String>()) }
     val scrollState = rememberScrollState()
     val categories = remember { mutableStateOf<Map<String, List<String>>>(emptyMap()) }
     val loading = remember { mutableStateOf(true) }
@@ -30,13 +29,13 @@ fun TestConfigurationScreen(navController: NavController) {
 
     LaunchedEffect(Unit) {
         coroutineScope.launch {
-            Log.d("TestConfig", "Chargement des catégories depuis l'API...")
+            Log.d("TestConfig", "🔄 Chargement des catégories depuis l'API...")
             try {
                 val loadedCategories = loadCategoriesFromNetwork()
                 categories.value = loadedCategories
-                Log.d("TestConfig", "Catégories chargées avec succès: $loadedCategories")
+                Log.d("TestConfig", "✅ Catégories chargées avec succès : $loadedCategories")
             } catch (e: Exception) {
-                Log.e("TestConfig", "Erreur lors du chargement des catégories: ${e.message}")
+                Log.e("TestConfig", "❌ Erreur lors du chargement des catégories : ${e.message}")
                 e.printStackTrace()
             }
             loading.value = false
@@ -62,10 +61,10 @@ fun TestConfigurationScreen(navController: NavController) {
             if (loading.value) {
                 CircularProgressIndicator()
             } else {
-                Log.d("TestConfig", "Affichage des catégories et tests...")
+                Log.d("TestConfig", "📌 Affichage des catégories et tests...")
                 categories.value.forEach { (categoryName, testList) ->
-                    Log.d("TestConfig", "Catégorie: $categoryName, Nombre de tests: ${testList.size}")
-                    CategoryItem(categoryName, testList, selectedTests, selectedTestsGlobal)
+                    Log.d("TestConfig", "📁 Catégorie : $categoryName, Nombre de tests : ${testList.size}")
+                    CategoryItem(categoryName, testList, selectedTests)
                 }
             }
 
@@ -84,13 +83,11 @@ fun TestConfigurationScreen(navController: NavController) {
     }
 }
 
-
 @Composable
 fun CategoryItem(
     title: String,
     tests: List<String>, // Une liste de noms de tests
-    selectedTests: MutableMap<String, MutableSet<String>>,
-    selectedTestsGlobal: MutableState<MutableSet<String>>
+    selectedTests: MutableMap<String, MutableSet<String>>
 ) {
     var isExpanded by remember { mutableStateOf(false) }
 
@@ -128,23 +125,20 @@ fun CategoryItem(
             tests.forEach { testName ->  // Afficher le nom du test
                 val isChecked = selectedTests[title]?.contains(testName) ?: false
 
-                if (isExpanded || isChecked) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Checkbox(
-                            checked = isChecked,
-                            onCheckedChange = { checked ->
-                                selectedTests[title] = selectedTests.getOrDefault(title, mutableSetOf()).apply {
-                                    if (checked) add(testName) else remove(testName)
-                                }
-                                selectedTestsGlobal.value = selectedTests.values.flatten().toMutableSet()
-                            }
-                        )
-                        Text(
-                            text = testName,  // Affichage du nom du test
-                            style = MaterialTheme.typography.bodyLarge,
-                            color = MaterialTheme.colorScheme.primary
-                        )
-                    }
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Checkbox(
+                        checked = isChecked,
+                        onCheckedChange = { checked ->
+                            val updatedTests = selectedTests.getOrDefault(title, mutableSetOf()).toMutableSet()
+                            if (checked) updatedTests.add(testName) else updatedTests.remove(testName)
+                            selectedTests[title] = updatedTests // ✅ Mise à jour immédiate
+                        }
+                    )
+                    Text(
+                        text = testName,  // Affichage du nom du test
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = MaterialTheme.colorScheme.primary
+                    )
                 }
             }
         }

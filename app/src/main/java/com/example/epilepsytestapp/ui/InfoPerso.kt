@@ -34,11 +34,12 @@ fun InfoPersoScreen(navController: NavHostController) {
     val userId = currentUser?.uid ?: ""
 
     AppTheme {
-        Column (
-            modifier = Modifier.fillMaxSize().padding(16.dp),
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(16.dp),
             horizontalAlignment = Alignment.CenterHorizontally
-        )
-        {
+        ) {
             Text(
                 text = "CORTEST",
                 style = MaterialTheme.typography.displayLarge,
@@ -66,90 +67,103 @@ fun InfoPersoScreen(navController: NavHostController) {
 
             OutlinedTextField(
                 value = nom,
-                onValueChange = {nom = it},
-                label = { Text("Nom")},
+                onValueChange = { nom = it },
+                label = { Text("Nom") },
                 shape = RoundedCornerShape(50),
                 colors = OutlinedTextFieldDefaults.colors(
                     focusedBorderColor = MaterialTheme.colorScheme.primary,
                     unfocusedBorderColor = MaterialTheme.colorScheme.primary
                 ),
-                modifier = Modifier.fillMaxWidth().height(56.dp)
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(56.dp)
             )
 
             Spacer(modifier = Modifier.height(12.dp))
 
             OutlinedTextField(
                 value = prenom,
-                onValueChange = {prenom = it},
-                label = { Text("Prénom")},
+                onValueChange = { prenom = it },
+                label = { Text("Prénom") },
                 shape = RoundedCornerShape(50),
                 colors = OutlinedTextFieldDefaults.colors(
                     focusedBorderColor = MaterialTheme.colorScheme.primary,
                     unfocusedBorderColor = MaterialTheme.colorScheme.primary
                 ),
-                modifier = Modifier.fillMaxWidth().height(56.dp)
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(56.dp)
             )
 
             Spacer(modifier = Modifier.height(12.dp))
 
             OutlinedTextField(
                 value = adresse,
-                onValueChange = {adresse = it},
-                label = { Text("Adresse")},
+                onValueChange = { adresse = it },
+                label = { Text("Adresse") },
                 shape = RoundedCornerShape(50),
                 colors = OutlinedTextFieldDefaults.colors(
                     focusedBorderColor = MaterialTheme.colorScheme.primary,
                     unfocusedBorderColor = MaterialTheme.colorScheme.primary
                 ),
-                modifier = Modifier.fillMaxWidth().height(56.dp)
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(56.dp)
             )
 
             Spacer(modifier = Modifier.height(12.dp))
 
             OutlinedTextField(
                 value = neurologue,
-                onValueChange = {neurologue = it},
-                label = { Text("Neurologue")},
+                onValueChange = { neurologue = it },
+                label = { Text("Neurologue") },
                 shape = RoundedCornerShape(50),
                 colors = OutlinedTextFieldDefaults.colors(
                     focusedBorderColor = MaterialTheme.colorScheme.primary,
                     unfocusedBorderColor = MaterialTheme.colorScheme.primary
                 ),
-                modifier = Modifier.fillMaxWidth().height(56.dp)
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(56.dp)
             )
 
             Spacer(modifier = Modifier.height(20.dp))
 
-
             Button(
                 onClick = {
-                    if (userId.isNotEmpty()){
+                    if (nom.isNotEmpty() && prenom.isNotEmpty() && adresse.isNotEmpty() && neurologue.isNotEmpty()) {
                         isLoading = true
                         coroutineScope.launch {
                             try {
-                                val request = RegisterRequest(userId,nom,prenom,adresse,neurologue)
+                                val request = RegisterRequest(userId, nom, prenom, adresse, neurologue)
                                 RetrofitInstance.api.registerUser(request)
-                                Log.d("API","Utilisateur enregistré avec suucès")
-                                isLoading = false
-                                navController.navigate("home")
-                            } catch (e: Exception){
-                                Log.e("API","Erreur lors de l'envoi : ${e.message}")
+                                Log.d("API", "✅ Utilisateur enregistré avec succès")
+
+                                // 🔄 Redirection vers ConfigScreen après l'enregistrement
+                                navController.navigate("testConfigScreen") {
+                                    popUpTo("infoPerso") { inclusive = true }
+                                }
+                            } catch (e: Exception) {
+                                Log.e("API", "❌ Erreur lors de l'envoi : ${e.message}")
+                            } finally {
                                 isLoading = false
                             }
                         }
+                    } else {
+                        Log.e("API", "⚠ Veuillez remplir tous les champs")
                     }
-                    else { Log.e("API","Utilisateur non authentifié")}
                 },
                 shape = RoundedCornerShape(50),
                 colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
-                modifier = Modifier.fillMaxWidth().height(56.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(56.dp),
                 enabled = !isLoading
             ) {
-                if (isLoading){
+                if (isLoading) {
                     CircularProgressIndicator()
-                }
-                else {
-                    Text("Envoyer", style = MaterialTheme.typography.labelLarge)
+                } else {
+                    Text("Envoyer et configurer les tests", style = MaterialTheme.typography.labelLarge)
                 }
             }
         }

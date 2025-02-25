@@ -9,7 +9,6 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
@@ -19,7 +18,6 @@ import com.example.epilepsytestapp.R
 import com.example.epilepsytestapp.ui.theme.AppTheme
 import com.example.epilepsytestapp.model.Patient
 import com.google.firebase.auth.FirebaseAuth
-import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 
 @Composable
@@ -28,7 +26,7 @@ fun SignupScreen(
     onSaveProfile: (Patient) -> Unit,
     context: Context,
     patients: List<Patient>,
-    onNavigateToLogin : () -> Unit,
+    onNavigateToLogin: () -> Unit,
     navController: NavController
 ) {
     var email by remember { mutableStateOf(patient.username) }
@@ -73,7 +71,7 @@ fun SignupScreen(
             Spacer(modifier = Modifier.height(16.dp))
 
             Text(
-                text = "Inscription",
+                text = "Créer un compte",
                 style = MaterialTheme.typography.headlineSmall,
                 textAlign = TextAlign.Center,
                 color = MaterialTheme.colorScheme.primary
@@ -96,27 +94,7 @@ fun SignupScreen(
             )
             Spacer(modifier = Modifier.height(8.dp))
 
-            fun getPasswordErrors(password: String): List<String> {
-                val errors = mutableListOf<String>()
-
-                if (password.length < 6) errors.add("Au moins 6 caractères requis")
-                if (password.length > 4096) errors.add("Maximum 4096 caractères")
-                if (!password.any { it.isDigit() }) errors.add("Au moins un chiffre requis")
-                if (!password.any { "!@#\$%^&*(),.?\":{}|<>".contains(it) }) errors.add("Au moins un caractère spécial requis")
-
-                return errors
-            }
-
-// Vérification de la correspondance des mots de passe
-            val passwordErrors = getPasswordErrors(password)
-            val isPasswordValid = passwordErrors.isEmpty()
-            val isConfirmPasswordValid = confirmPassword == password && isPasswordValid
-
-// Déterminer la couleur de la bordure en fonction de la validité du mot de passe
-            val passwordBorderColor = if (isPasswordValid) MaterialTheme.colorScheme.primary else Color.Red
-            val confirmPasswordBorderColor = if (isConfirmPasswordValid) MaterialTheme.colorScheme.primary else Color.Red
-
-// Champ de saisie du mot de passe
+            // Mot de passe
             OutlinedTextField(
                 value = password,
                 onValueChange = { password = it },
@@ -134,26 +112,17 @@ fun SignupScreen(
                 },
                 shape = RoundedCornerShape(50),
                 colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = passwordBorderColor,
-                    unfocusedBorderColor = passwordBorderColor,
+                    focusedBorderColor = MaterialTheme.colorScheme.primary,
+                    unfocusedBorderColor = MaterialTheme.colorScheme.primary,
                 ),
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(56.dp)
             )
 
-// Affichage des erreurs sous le champ du mot de passe
-            if (passwordErrors.isNotEmpty()) {
-                Column(modifier = Modifier.fillMaxWidth()) {
-                    passwordErrors.forEach { error ->
-                        Text(text="-$error",color=Color.Red, fontSize = 10.sp,modifier=Modifier.padding(start=15.dp,top=15.dp))
-                    }
-                }
-            }
-
             Spacer(modifier = Modifier.height(8.dp))
 
-// Champ de vérification du mot de passe
+            // Confirmation du mot de passe
             OutlinedTextField(
                 value = confirmPassword,
                 onValueChange = { confirmPassword = it },
@@ -171,23 +140,14 @@ fun SignupScreen(
                 },
                 shape = RoundedCornerShape(50),
                 colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = confirmPasswordBorderColor,
-                    unfocusedBorderColor = confirmPasswordBorderColor,
+                    focusedBorderColor = MaterialTheme.colorScheme.primary,
+                    unfocusedBorderColor = MaterialTheme.colorScheme.primary,
                 ),
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(56.dp)
             )
-            if (!isConfirmPasswordValid) {
-                Column(modifier = Modifier.fillMaxWidth()) {
-                    Text(
-                        text = "Les mots de passe ne correspondent pas",
-                        color = Color.Red,
-                        fontSize = 10.sp,
-                        modifier = Modifier.padding(start = 15.dp, top = 15.dp)
-                    )
-                }
-            }
+
             Spacer(modifier = Modifier.height(30.dp))
 
             // Bouton d'inscription
@@ -198,15 +158,13 @@ fun SignupScreen(
                         firebaseAuth.createUserWithEmailAndPassword(email, password).addOnCompleteListener { task ->
                             isLoading = false
                             if (task.isSuccessful) {
-                                    Log.d("Signup", "Inscription réussie : ${firebaseAuth.currentUser?.email}")
-                                    navController.navigate("infoPerso"){launchSingleTop=true}
-                                }
-                                else {
-                                    Log.e("Signup", "Échec de l'inscription", task.exception)
-                                }
+                                Log.d("Signup", "Inscription réussie : ${firebaseAuth.currentUser?.email}")
+                                navController.navigate("infoPerso") { launchSingleTop = true }
+                            } else {
+                                Log.e("Signup", "Échec de l'inscription", task.exception)
                             }
-                    }
-                    else {
+                        }
+                    } else {
                         Log.e("Signup", "Les mots de passe ne correspondent pas")
                     }
                 },
@@ -216,14 +174,13 @@ fun SignupScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(56.dp)
-
             ) {
                 if (isLoading) {
                     CircularProgressIndicator()
-                } else{
-                Text("S'inscrire", style = MaterialTheme.typography.labelLarge)
-            }}
-
+                } else {
+                    Text("S'inscrire", style = MaterialTheme.typography.labelLarge)
+                }
+            }
 
             Spacer(modifier = Modifier.height(16.dp))
 
@@ -233,6 +190,20 @@ fun SignupScreen(
                     style = MaterialTheme.typography.bodyLarge,
                     textAlign = TextAlign.Center
                 )
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // ✅ Bouton temporaire pour passer à InfoPerso sans authentification
+            OutlinedButton(
+                onClick = { navController.navigate("infoPerso") },
+                shape = RoundedCornerShape(50),
+                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.secondary),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(56.dp)
+            ) {
+                Text("Passer", style = MaterialTheme.typography.labelLarge)
             }
         }
     }

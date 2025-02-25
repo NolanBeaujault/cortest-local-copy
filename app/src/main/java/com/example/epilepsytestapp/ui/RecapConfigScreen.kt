@@ -44,7 +44,7 @@ fun RecapScreen(navController: NavController) {
                         if (tests.isNotEmpty()) {
                             Text(
                                 text = category,
-                                style = MaterialTheme.typography.headlineSmall, // Changer ici si besoin
+                                style = MaterialTheme.typography.headlineSmall,
                                 color = MaterialTheme.colorScheme.primary,
                                 modifier = Modifier.padding(top = 8.dp, bottom = 4.dp)
                             )
@@ -68,7 +68,10 @@ fun RecapScreen(navController: NavController) {
             }
             Spacer(modifier = Modifier.height(8.dp))
             CustomButton(text = "Enregistrer la configuration") {
-                // Logique d’enregistrement à implémenter ici
+                // ✅ Redirection vers la page Home après l'enregistrement
+                navController.navigate("home") {
+                    popUpTo("home") { inclusive = true } // Supprime l'historique pour éviter le retour à la config
+                }
             }
         }
     }

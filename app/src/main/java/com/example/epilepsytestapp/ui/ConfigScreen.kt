@@ -116,29 +116,34 @@ fun CategoryItem(
                 contentDescription = "Expand",
                 modifier = Modifier
                     .size(20.dp)
-                    .rotate(if (isExpanded) -90f else 0f)
+                    .rotate(if (isExpanded) 180f else 0f) // 🔄 Rotation de l'icône
             )
         }
 
         // Liste des tests (noms des tests)
         Column(modifier = Modifier.padding(start = 16.dp)) {
-            tests.forEach { testName ->  // Afficher le nom du test
+            tests.forEach { testName ->
                 val isChecked = selectedTests[title]?.contains(testName) ?: false
 
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Checkbox(
-                        checked = isChecked,
-                        onCheckedChange = { checked ->
-                            val updatedTests = selectedTests.getOrDefault(title, mutableSetOf()).toMutableSet()
-                            if (checked) updatedTests.add(testName) else updatedTests.remove(testName)
-                            selectedTests[title] = updatedTests // ✅ Mise à jour immédiate
-                        }
-                    )
-                    Text(
-                        text = testName,  // Affichage du nom du test
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = MaterialTheme.colorScheme.primary
-                    )
+                // ✅ Afficher le test si :
+                // 1️⃣ Le volet est ouvert
+                // 2️⃣ Le test est coché (même si le volet est fermé)
+                if (isExpanded || isChecked) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Checkbox(
+                            checked = isChecked,
+                            onCheckedChange = { checked ->
+                                val updatedTests = selectedTests.getOrDefault(title, mutableSetOf()).toMutableSet()
+                                if (checked) updatedTests.add(testName) else updatedTests.remove(testName)
+                                selectedTests[title] = updatedTests // ✅ Mise à jour immédiate
+                            }
+                        )
+                        Text(
+                            text = testName,  // Affichage du nom du test
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                    }
                 }
             }
         }

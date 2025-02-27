@@ -20,13 +20,42 @@ import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
 import coil.compose.AsyncImage
 import com.example.epilepsytestapp.R
-import com.example.epilepsytestapp.model.Patient
+import com.example.epilepsytestapp.network.RetrofitInstance
+import com.example.epilepsytestapp.network.UserProfileResponse
 import com.example.epilepsytestapp.ui.theme.AppTheme
+import com.google.firebase.auth.FirebaseAuth
+import kotlinx.coroutines.launch
 
 @Composable
-fun ProfilePage(patients: List<Patient>, navController: NavHostController) {
-    // Sélectionnez le premier patient de la liste ou null si la liste est vide
-    val patient = patients.firstOrNull()
+fun ProfilePage(navController: NavHostController) {
+    val firebaseAuth = FirebaseAuth.getInstance()
+    val currentUser = firebaseAuth.currentUser
+    val userId = currentUser?.uid ?: ""
+
+    var profile by remember { mutableStateOf<UserProfileResponse?>(null) }
+    var isLoading by remember { mutableStateOf(true) }
+    var errorMessage by remember { mutableStateOf<String?>(null) }
+
+    val coroutineScope = rememberCoroutineScope()
+
+    // Effect pour récupérer les données de l'utilisateur
+    LaunchedEffect(userId) {
+        if (userId.isNotEmpty()) {
+            coroutineScope.launch {
+                try {
+                    val response = RetrofitInstance.api.getUserProfile(userId)
+                    profile = response
+                    isLoading = false
+                } catch (e: Exception) {
+                    errorMessage = "Erreur : ${e.message}"
+                    isLoading = false
+                }
+            }
+        } else {
+            errorMessage = "Aucun utilisateur connecté."
+            isLoading = false
+        }
+    }
 
     AppTheme {
         Box(
@@ -40,7 +69,7 @@ fun ProfilePage(patients: List<Patient>, navController: NavHostController) {
                     .fillMaxSize()
                     .padding(bottom = 70.dp) // Espace pour la barre de navigation
             ) {
-                // Rectangle bleu pâle en haut
+                // Header
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -53,28 +82,21 @@ fun ProfilePage(patients: List<Patient>, navController: NavHostController) {
                         horizontalArrangement = Arrangement.SpaceBetween,
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(horizontal = 3.dp) // Diminuer la marge horizontale pour éloigner les éléments
+                            .padding(horizontal = 3.dp)
                     ) {
-                        // Logo
                         Image(
                             painter = painterResource(id = R.mipmap.ic_brain_logo_foreground),
                             contentDescription = "Logo",
-                            modifier = Modifier
-                                .fillMaxHeight()// Taille ajustée
-                                .padding(end = 16.dp) // Espace supplémentaire à droite du logo
+                            modifier = Modifier.fillMaxHeight()
                         )
-
-                        // Titre
                         Text(
                             text = "Profil",
                             style = MaterialTheme.typography.displayLarge.copy(
                                 fontSize = 28.sp,
                                 color = MaterialTheme.colorScheme.onBackground
                             ),
-                            modifier = Modifier.padding(horizontal = 16.dp) // Espace autour du titre
+                            modifier = Modifier.padding(horizontal = 16.dp)
                         )
-
-                        // Icône utilisateur
                         Image(
                             painter = painterResource(id = R.mipmap.ic_user_foreground),
                             contentDescription = "Profil",
@@ -82,12 +104,7 @@ fun ProfilePage(patients: List<Patient>, navController: NavHostController) {
                                 .fillMaxHeight()
                                 .padding(start = 16.dp)
                                 .clickable {
-                                    val selectedPatientId = patients.firstOrNull()?.id
-                                    if (selectedPatientId != null) {
-                                        navController.navigate("profile/$selectedPatientId")
-                                    } else {
-                                        println("Aucun patient sélectionné.")
-                                    }
+                                    navController.navigate("profile/$userId")
                                 }
                         )
                     }
@@ -95,47 +112,52 @@ fun ProfilePage(patients: List<Patient>, navController: NavHostController) {
 
                 Spacer(modifier = Modifier.height(32.dp))
 
-                // Photo de profil ou avatar
-                Box(
-                    modifier = Modifier
-                        .size(150.dp)
-                        .align(Alignment.CenterHorizontally)
-                        .border(2.dp, Color(0xFF004D61), CircleShape)
-                        .padding(4.dp)
-                ) {
-                    AsyncImage(
-                        model = R.mipmap.ic_profile_foreground, // Image par défaut si pas de photo
-                        contentDescription = "Photo de profil",
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .clip(CircleShape)
+                // Affichage des données du profil
+                if (isLoading) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.align(Alignment.CenterHorizontally),
+                        color = Color(0xFF004D61)
                     )
-                }
+                } else if (errorMessage != null) {
+                    Text(
+                        text = errorMessage ?: "Erreur inconnue",
+                        color = Color.Red,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                } else if (profile != null) {
+                    val patient = profile!!
 
-                Spacer(modifier = Modifier.height(24.dp))
-
-                // Informations du profil
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 24.dp)
-                ) {
-                    if (patient != null) {
-                        ProfileInfoRow(label = "Nom", value = patient.lastName)
-                        ProfileInfoRow(label = "Prénom", value = patient.firstName)
-                        ProfileInfoRow(label = "Adresse", value = patient.address)
-                        ProfileInfoRow(label = "Neurologue", value = patient.neurologist)
-                        ProfileInfoRow(label = "Identifiant", value = patient.username)
-                    } else {
-                        Text(
-                            text = "Aucun patient sélectionné",
-                            style = MaterialTheme.typography.bodyLarge.copy(
-                                fontSize = 18.sp,
-                                color = MaterialTheme.colorScheme.error
-                            ),
-                            modifier = Modifier.fillMaxWidth(),
-                            textAlign = TextAlign.Center
+                    // Avatar
+                    Box(
+                        modifier = Modifier
+                            .size(150.dp)
+                            .align(Alignment.CenterHorizontally)
+                            .border(2.dp, Color(0xFF004D61), CircleShape)
+                            .padding(4.dp)
+                    ) {
+                        AsyncImage(
+                            model = R.mipmap.ic_profile_foreground, // Image par défaut
+                            contentDescription = "Photo de profil",
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .clip(CircleShape)
                         )
+                    }
+
+                    Spacer(modifier = Modifier.height(24.dp))
+
+                    // Informations du profil
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 24.dp)
+                    ) {
+                        ProfileInfoRow(label = "Nom", value = patient.nom)
+                        ProfileInfoRow(label = "Prénom", value = patient.prenom)
+                        ProfileInfoRow(label = "Adresse", value = patient.adresse)
+                        ProfileInfoRow(label = "Neurologue", value = patient.neurologue)
+                        ProfileInfoRow(label = "Date de naissance", value = patient.date_naissance ?: "Non renseignée")
                     }
                 }
             }
@@ -148,7 +170,6 @@ fun ProfilePage(patients: List<Patient>, navController: NavHostController) {
         }
     }
 }
-
 
 @Composable
 fun ProfileInfoRow(label: String, value: String) {

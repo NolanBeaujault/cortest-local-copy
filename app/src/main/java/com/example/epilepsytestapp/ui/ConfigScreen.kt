@@ -10,33 +10,58 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.rotate
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.example.epilepsytestapp.R
+import com.example.epilepsytestapp.category.LocalCatManager
 import com.example.epilepsytestapp.category.loadCategoriesFromNetwork
+import com.example.epilepsytestapp.category.Test
 import com.example.epilepsytestapp.ui.theme.AppTheme
 import kotlinx.coroutines.launch
 
 @Composable
 fun TestConfigurationScreen(navController: NavController) {
-    val selectedTests = remember { mutableStateMapOf<String, MutableSet<String>>() }
+    val selectedTests = remember { mutableStateMapOf<String, MutableSet<Test>>() }
     val scrollState = rememberScrollState()
-    val categories = remember { mutableStateOf<Map<String, List<String>>>(emptyMap()) }
+    val categories = remember { mutableStateOf<Map<String, List<Test>>>(emptyMap()) }
     val loading = remember { mutableStateOf(true) }
     val coroutineScope = rememberCoroutineScope()
+    val context = LocalContext.current
 
     LaunchedEffect(Unit) {
+        val restoredSelectedTests = navController.currentBackStackEntry?.savedStateHandle?.get<Map<String, List<Test>>>("selectedTests")
+        restoredSelectedTests?.let {
+            selectedTests.clear()
+            it.forEach { (category, tests) ->
+                selectedTests[category] = tests.toMutableSet()
+            }
+        }
+
         coroutineScope.launch {
             Log.d("TestConfig", "🔄 Chargement des catégories depuis l'API...")
+
             try {
                 val loadedCategories = loadCategoriesFromNetwork()
+                val localTestConfiguration = LocalCatManager.loadLocalTests(context)
+
                 categories.value = loadedCategories
+
+                loadedCategories.forEach { (categoryName, testList) ->
+                    val preSelectedTests = testList.filter { test ->
+                        localTestConfiguration.any { it.id_test == test.id_test }
+                    }.toMutableSet()
+
+                    if (preSelectedTests.isNotEmpty()) {
+                        selectedTests[categoryName] = preSelectedTests
+                    }
+                }
+
                 Log.d("TestConfig", "✅ Catégories chargées avec succès : $loadedCategories")
             } catch (e: Exception) {
                 Log.e("TestConfig", "❌ Erreur lors du chargement des catégories : ${e.message}")
-                e.printStackTrace()
             }
             loading.value = false
         }
@@ -86,17 +111,17 @@ fun TestConfigurationScreen(navController: NavController) {
 @Composable
 fun CategoryItem(
     title: String,
-    tests: List<String>, // Une liste de noms de tests
-    selectedTests: MutableMap<String, MutableSet<String>>
+    tests: List<Test>,
+    selectedTests: MutableMap<String, MutableSet<Test>>
 ) {
     var isExpanded by remember { mutableStateOf(false) }
 
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(bottom = 8.dp) // Espace entre les catégories
+            .padding(bottom = 8.dp)
     ) {
-        // Bouton pour afficher/cacher la catégorie
+
         Button(
             onClick = { isExpanded = !isExpanded },
             shape = RoundedCornerShape(8.dp),
@@ -116,30 +141,26 @@ fun CategoryItem(
                 contentDescription = "Expand",
                 modifier = Modifier
                     .size(20.dp)
-                    .rotate(if (isExpanded) 90f else 0f) // 🔄 Rotation de l'icône
+                    .rotate(if (isExpanded) 90f else 0f)
             )
         }
 
-        // Liste des tests (noms des tests)
         Column(modifier = Modifier.padding(start = 16.dp)) {
-            tests.forEach { testName ->
-                val isChecked = selectedTests[title]?.contains(testName) ?: false
+            tests.forEach { test ->
+                val isChecked = selectedTests[title]?.contains(test) ?: false
 
-                // ✅ Afficher le test si :
-                // 1️⃣ Le volet est ouvert
-                // 2️⃣ Le test est coché (même si le volet est fermé)
                 if (isExpanded || isChecked) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Checkbox(
                             checked = isChecked,
                             onCheckedChange = { checked ->
                                 val updatedTests = selectedTests.getOrDefault(title, mutableSetOf()).toMutableSet()
-                                if (checked) updatedTests.add(testName) else updatedTests.remove(testName)
-                                selectedTests[title] = updatedTests // ✅ Mise à jour immédiate
+                                if (checked) updatedTests.add(test) else updatedTests.remove(test)
+                                selectedTests[title] = updatedTests
                             }
                         )
                         Text(
-                            text = testName,  // Affichage du nom du test
+                            text = test.nom,
                             style = MaterialTheme.typography.bodyLarge,
                             color = MaterialTheme.colorScheme.primary
                         )

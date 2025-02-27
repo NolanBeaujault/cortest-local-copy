@@ -5,16 +5,24 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
+import com.example.epilepsytestapp.category.LocalCatManager
+import com.example.epilepsytestapp.category.Test
 import com.example.epilepsytestapp.ui.theme.AppTheme
+import kotlinx.coroutines.launch
 
 @Composable
 fun RecapScreen(navController: NavController) {
-    val selectedTests = navController.previousBackStackEntry?.savedStateHandle?.get<Map<String, List<String>>>("selectedTests") ?: emptyMap()
+    val selectedTests = navController.previousBackStackEntry?.savedStateHandle?.get<Map<String, List<Test>>>("selectedTests") ?: emptyMap()
+    val context = LocalContext.current
+    val coroutineScope = rememberCoroutineScope()
+
 
     AppTheme {
         Column(
@@ -51,7 +59,7 @@ fun RecapScreen(navController: NavController) {
                             Spacer(modifier = Modifier.height(16.dp))
                             tests.forEach { test ->
                                 Text(
-                                    text = "- $test",
+                                    text = "- ${test.nom}",
                                     style = MaterialTheme.typography.bodyLarge,
                                     color = MaterialTheme.colorScheme.primary,
                                     modifier = Modifier.padding(start = 8.dp, bottom = 4.dp)
@@ -64,13 +72,20 @@ fun RecapScreen(navController: NavController) {
             Spacer(modifier = Modifier.height(10.dp))
 
             CustomButton(text = "Retour") {
+                navController.previousBackStackEntry
+                    ?.savedStateHandle
+                    ?.set("selectedTests", selectedTests)
                 navController.popBackStack()
             }
+
             Spacer(modifier = Modifier.height(8.dp))
+
             CustomButton(text = "Enregistrer la configuration") {
-                // ✅ Redirection vers la page Home après l'enregistrement
+                coroutineScope.launch {
+                    LocalCatManager.saveLocalTests(context, selectedTests)
+                }
                 navController.navigate("home") {
-                    popUpTo("home") { inclusive = true } // Supprime l'historique pour éviter le retour à la config
+                    popUpTo("home") { inclusive = true }
                 }
             }
         }

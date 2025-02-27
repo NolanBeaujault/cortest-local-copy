@@ -306,21 +306,8 @@ fun NavigationGraph(
             TestEnregistre(navController = navController)
         }
 
-        composable(
-            route = "profile/{patientId}",
-            arguments = listOf(navArgument("patientId") { type = NavType.IntType })
-        ) { backStackEntry ->
-            val patientId = backStackEntry.arguments?.getInt("patientId")
-            val patient = patients.find { it.id == patientId }
-
-            if (patient != null) {
-                ProfilePage(
-                    patients = patients,
-                    navController = navController
-                )
-            } else {
-                navController.popBackStack()
-            }
+        composable(route = "profile"){
+            ProfilePage(navController = navController)
         }
 
         // Ajout des nouveaux écrans de configuration des tests

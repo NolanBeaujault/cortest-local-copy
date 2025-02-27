@@ -76,21 +76,11 @@ fun HomePage(navController: NavHostController, patient: List<Patient>) {
                                 .fillMaxHeight()
                                 .padding(start = 16.dp)
                                 .clickable {
-                                    // Supposons que le premier patient est sélectionné
-                                    val selectedPatientId = patient.firstOrNull()?.id
-
-                                    if (selectedPatientId != null) {
-                                        navController.navigate("profile/$selectedPatientId")
-                                    } else {
-                                        // Gérer le cas où aucun patient n'est disponible
-                                        println("Aucun patient sélectionné.")
-                                    }
+                                     navController.navigate("profile")
                                 }
                         )
-
                     }
                 }
-
 
                 Spacer(modifier = Modifier.height(16.dp))
 

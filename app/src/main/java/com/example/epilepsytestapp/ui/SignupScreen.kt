@@ -2,9 +2,9 @@ package com.example.epilepsytestapp.ui
 
 import android.content.Context
 import android.util.Log
+import android.widget.Toast
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.CornerSize
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -203,6 +203,7 @@ fun SignupScreen(
                                 navController.navigate("infoPerso") { launchSingleTop = true }
                             } else {
                                 Log.e("Signup", "Échec de l'inscription", task.exception)
+                                Toast.makeText(context, "Échec de l'inscription : ${task.exception?.message}", Toast.LENGTH_LONG).show()
                             }
                         }
                     } else {
@@ -235,3 +236,17 @@ fun SignupScreen(
         }
     }
 }
+
+fun traduireErreurFirebase(message: String?): String {
+    return when {
+        message.isNullOrEmpty() -> "Une erreur inconnue s'est produite."
+        message.contains("The email address is already in use", ignoreCase = true) -> "Cet email est déjà utilisé."
+        message.contains("The email address is badly formatted", ignoreCase = true) -> "Format d'email invalide."
+        message.contains("Password should be at least 6 characters", ignoreCase = true) -> "Le mot de passe doit contenir au moins 6 caractères."
+        message.contains("There is no user record corresponding to this identifier", ignoreCase = true) -> "Aucun utilisateur trouvé avec cet email."
+        message.contains("The password is invalid or the user does not have a password", ignoreCase = true) -> "Mot de passe incorrect."
+        message.contains("A network error", ignoreCase = true) -> "Erreur réseau. Vérifiez votre connexion internet."
+        else -> "Erreur : $message" // Affiche l'erreur originale si non reconnue
+    }
+}
+

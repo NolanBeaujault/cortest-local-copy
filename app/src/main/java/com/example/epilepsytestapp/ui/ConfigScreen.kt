@@ -32,13 +32,9 @@ fun TestConfigurationScreen(navController: NavController) {
     val context = LocalContext.current
 
     LaunchedEffect(Unit) {
-        val restoredSelectedTests = navController.currentBackStackEntry?.savedStateHandle?.get<Map<String, List<Test>>>("selectedTests")
-        restoredSelectedTests?.let {
-            selectedTests.clear()
-            it.forEach { (category, tests) ->
-                selectedTests[category] = tests.toMutableSet()
-            }
-        }
+        val restoredSelectedTests =
+            navController.currentBackStackEntry?.savedStateHandle?.get<Map<String, List<Test>>>("selectedTests")
+
 
         coroutineScope.launch {
             Log.d("TestConfig", "🔄 Chargement des catégories depuis l'API...")
@@ -47,17 +43,26 @@ fun TestConfigurationScreen(navController: NavController) {
                 val loadedCategories = loadCategoriesFromNetwork()
                 val localTestConfiguration = LocalCatManager.loadLocalTests(context)
 
+
                 categories.value = loadedCategories
 
                 loadedCategories.forEach { (categoryName, testList) ->
                     val preSelectedTests = testList.filter { test ->
-                        localTestConfiguration.any { it.id_test == test.id_test }
+                        localTestConfiguration[categoryName]?.any { it.id_test == test.id_test } == true
                     }.toMutableSet()
 
                     if (preSelectedTests.isNotEmpty()) {
                         selectedTests[categoryName] = preSelectedTests
                     }
                 }
+
+                if (restoredSelectedTests != null) {
+                    selectedTests.clear()
+                    restoredSelectedTests.forEach { (category, tests) ->
+                        selectedTests[category] = tests.toMutableSet()
+                    }
+                }
+
 
                 Log.d("TestConfig", "✅ Catégories chargées avec succès : $loadedCategories")
             } catch (e: Exception) {
@@ -88,7 +93,10 @@ fun TestConfigurationScreen(navController: NavController) {
             } else {
                 Log.d("TestConfig", "📌 Affichage des catégories et tests...")
                 categories.value.forEach { (categoryName, testList) ->
-                    Log.d("TestConfig", "📁 Catégorie : $categoryName, Nombre de tests : ${testList.size}")
+                    Log.d(
+                        "TestConfig",
+                        "📁 Catégorie : $categoryName, Nombre de tests : ${testList.size}"
+                    )
                     CategoryItem(categoryName, testList, selectedTests)
                 }
             }
@@ -97,7 +105,10 @@ fun TestConfigurationScreen(navController: NavController) {
 
             CustomButton(text = "Suivant") {
                 val filteredTests = selectedTests.mapValues { it.value.toList() }
-                navController.currentBackStackEntry?.savedStateHandle?.set("selectedTests", filteredTests)
+                navController.currentBackStackEntry?.savedStateHandle?.set(
+                    "selectedTests",
+                    filteredTests
+                )
                 navController.navigate("recapScreen")
             }
             Spacer(modifier = Modifier.height(8.dp))
@@ -154,7 +165,8 @@ fun CategoryItem(
                         Checkbox(
                             checked = isChecked,
                             onCheckedChange = { checked ->
-                                val updatedTests = selectedTests.getOrDefault(title, mutableSetOf()).toMutableSet()
+                                val updatedTests =
+                                    selectedTests.getOrDefault(title, mutableSetOf()).toMutableSet()
                                 if (checked) updatedTests.add(test) else updatedTests.remove(test)
                                 selectedTests[title] = updatedTests
                             }

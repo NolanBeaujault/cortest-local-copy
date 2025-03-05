@@ -19,7 +19,9 @@ import kotlinx.coroutines.launch
 
 @Composable
 fun RecapScreen(navController: NavController) {
-    val selectedTests = navController.previousBackStackEntry?.savedStateHandle?.get<Map<String, List<Test>>>("selectedTests") ?: emptyMap()
+    val selectedTests =
+        navController.previousBackStackEntry?.savedStateHandle?.get<Map<String, List<Test>>>("selectedTests")
+            ?: emptyMap()
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
 

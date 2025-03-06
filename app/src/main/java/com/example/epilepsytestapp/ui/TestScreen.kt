@@ -1,16 +1,12 @@
 package com.example.epilepsytestapp.ui
 
 import android.content.Context
-import android.graphics.Canvas
-import android.graphics.Paint
 import android.util.Log
-import android.view.View
 import androidx.camera.core.*
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.video.*
 import androidx.compose.foundation.layout.*
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
+import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -23,24 +19,19 @@ import androidx.core.content.ContextCompat
 import androidx.lifecycle.LifecycleOwner
 import androidx.navigation.NavHostController
 import com.example.epilepsytestapp.R
+import com.example.epilepsytestapp.category.LocalCatManager
 import com.example.epilepsytestapp.savefiles.saveTestInstructionsAsPDF
 import com.example.epilepsytestapp.savefiles.startRecording
 import com.example.epilepsytestapp.savefiles.stopRecording
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 @Composable
 fun TestScreen(navController: NavHostController) {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
 
-    val instructions = listOf(
-        "Regardez l'écran pendant 10 secondes.",
-        "Fermez les yeux et détendez-vous.",
-        "Suivez les instructions affichées à l'écran.",
-        "Levez votre bras droit.",
-        "Levez votre bras gauche."
-    )
-
+    val instructions = remember { mutableStateListOf<String>() } // ✅ Liste mutable des instructions chargées
     var currentInstructionIndex by remember { mutableIntStateOf(0) }
     val currentInstruction = instructions.getOrNull(currentInstructionIndex)
 
@@ -48,16 +39,25 @@ fun TestScreen(navController: NavHostController) {
     val videoCapture = remember { mutableStateOf<VideoCapture<Recorder>?>(null) }
     val recording = remember { mutableStateOf<Recording?>(null) }
 
-    // Liste pour sauvegarder les consignes et le temps écoulé
     val instructionsLog = remember { mutableListOf<Pair<String, Int>>() }
-
-    // Timer pour suivre le temps écoulé, initialisé à 0 au début
     var elapsedTime by remember { mutableStateOf(0) }
+
+    val coroutineScope = rememberCoroutineScope()
+
+    LaunchedEffect(Unit) {
+        coroutineScope.launch {
+            Log.d("TestScreen", "📂 Chargement des tests depuis le fichier local...")
+            val localTests = LocalCatManager.loadLocalTests(context)
+            val extractedInstructions = localTests.values.flatten().map { it.consigne }
+            instructions.addAll(extractedInstructions)
+            Log.d("TestScreen", "✅ Instructions chargées : $instructions")
+        }
+    }
 
     LaunchedEffect(isRecording) {
         while (isRecording) {
-            delay(1000L) // Mise à jour toutes les secondes
-            elapsedTime++  // Le temps s'incrémente chaque seconde
+            delay(1000L)
+            elapsedTime++
         }
     }
 
@@ -69,28 +69,25 @@ fun TestScreen(navController: NavHostController) {
             modifier = Modifier.fillMaxSize()
         )
 
-        // Instructions affichées à l'écran
         Box(
             modifier = Modifier
                 .fillMaxSize()
         ) {
-            // Instructions affichées aux 2/3 de l'écran
             Box(
                 modifier = Modifier
-                    .fillMaxHeight(1 / 3f) // Place le texte à 2/3 de la hauteur de l'écran
+                    .fillMaxHeight(1 / 3f)
                     .align(Alignment.BottomCenter)
-                    .padding(bottom = 16.dp) // Ajuste l'écart si nécessaire
+                    .padding(bottom = 16.dp)
             ) {
                 Text(
-                    text = currentInstruction ?: "",
-                    style = MaterialTheme.typography.headlineSmall.copy(fontSize = 28.sp), // Utilise la police CandaraBold
+                    text = currentInstruction ?: "Chargement...",
+                    style = MaterialTheme.typography.headlineSmall.copy(fontSize = 28.sp),
                     color = MaterialTheme.colorScheme.background,
-                    modifier = Modifier.padding(horizontal = 16.dp) // Ajuste le padding horizontal si besoin
+                    modifier = Modifier.padding(horizontal = 16.dp)
                 )
             }
         }
 
-        // Boutons en bas
         Row(
             modifier = Modifier
                 .align(Alignment.BottomCenter)
@@ -106,10 +103,7 @@ fun TestScreen(navController: NavHostController) {
                         stopRecording(context, recording)
                         isRecording = false
                     }
-                    // Ajout de la dernière consigne et du temps avant de quitter
                     instructionsLog.add(Pair(currentInstruction ?: "", elapsedTime))
-
-                    // Sauvegarde du PDF des consignes avant de quitter
                     saveTestInstructionsAsPDF(context, instructionsLog, elapsedTime)
                     navController.navigate("confirmation")
                 }
@@ -120,19 +114,14 @@ fun TestScreen(navController: NavHostController) {
                 contentDescription = "Instruction suivante",
                 onClick = {
                     if (currentInstructionIndex < instructions.size - 1) {
-                        // Ajout de la consigne et du temps à la liste
                         instructionsLog.add(Pair(currentInstruction ?: "", elapsedTime))
-
                         currentInstructionIndex++
                     } else {
                         if (isRecording) {
                             stopRecording(context, recording)
                             isRecording = false
                         }
-                        // Ajout de la dernière consigne et du temps avant de quitter
                         instructionsLog.add(Pair(currentInstruction ?: "", elapsedTime))
-
-                        // Sauvegarde du PDF des consignes avant de quitter
                         saveTestInstructionsAsPDF(context, instructionsLog, elapsedTime)
                         navController.navigate("confirmation")
                     }
@@ -145,33 +134,10 @@ fun TestScreen(navController: NavHostController) {
         videoCapture.value?.let {
             recording.value = startRecording(context, it)
             isRecording = true
-            elapsedTime = 0 // Réinitialise le timer au début de l'enregistrement
+            elapsedTime = 0
         }
     }
 }
-
-
-
-
-class CustomOverlayView(context: Context) : View(context) {
-    private var instructionText: String = ""
-    private val paint = Paint().apply {
-        color = android.graphics.Color.WHITE
-        textSize = 50f
-        textAlign = Paint.Align.CENTER
-    }
-
-    fun setInstruction(text: String) {
-        instructionText = text
-        invalidate()
-    }
-
-    override fun onDraw(canvas: Canvas) {
-        super.onDraw(canvas)
-        canvas.drawText(instructionText, width / 2f, height / 2f, paint)
-    }
-}
-
 
 @Composable
 fun CameraPreview(
@@ -202,9 +168,9 @@ fun CameraPreview(
                             lifecycleOwner, cameraSelector, preview, videoCaptureUseCase
                         )
                         videoCapture.value = videoCaptureUseCase
-                        Log.d("CameraPreview", "Caméra initialisée avec succès")
+                        Log.d("CameraPreview", "📷 Caméra initialisée avec succès")
                     } catch (e: Exception) {
-                        Log.e("CameraPreview", "Erreur lors de l'initialisation de la caméra", e)
+                        Log.e("CameraPreview", "❌ Erreur d'initialisation caméra", e)
                     }
                 }, ContextCompat.getMainExecutor(ctx))
             }
@@ -212,4 +178,3 @@ fun CameraPreview(
         modifier = modifier
     )
 }
-

@@ -30,7 +30,7 @@ object RetrofitClient {
 }
 
 // ✅ Fonction pour charger les catégories et tests
-suspend fun loadCategoriesFromNetwork(): Map<String, List<String>> {
+suspend fun loadCategoriesFromNetwork(): Map<String, List<Test>> {
     return withContext(Dispatchers.IO) {
         try {
             Log.d("NetworkCategory", "🔄 Lancement du chargement des catégories...")
@@ -58,12 +58,12 @@ suspend fun loadCategoriesFromNetwork(): Map<String, List<String>> {
             val parsedData: Map<String, Map<String, Any>> = gson.fromJson(jsonString, type)
 
             // ✅ Initialisation du Map final
-            val categoriesMap = mutableMapOf<String, List<String>>()
+            val categoriesMap = mutableMapOf<String, List<Test>>()
 
             // ✅ Extraction des catégories et tests
             parsedData.forEach { (_, categoryData) ->
                 val categoryName = categoryData["nom"] as? String ?: "Catégorie inconnue"
-                val testsList = mutableListOf<String>()
+                val testsList = mutableListOf<Test>()
 
                 // ✅ Parcourir les objets de la catégorie
                 categoryData.forEach { (key, value) ->
@@ -71,7 +71,36 @@ suspend fun loadCategoriesFromNetwork(): Map<String, List<String>> {
 
                     if (value is Map<*, *>) {
                         val testName = value["nom"] as? String ?: "Test inconnu"
-                        testsList.add(testName)
+                        val consigne = value["consigne"] as? String ?: "Consigne inconnue"
+                        val idTest = when (val id = value["id_test"]) {
+                            is Int -> id
+                            is Double -> id.toInt()
+                            else -> -1                            }
+
+                        val motMemoire = value["mot_memoire"] as? List<String> ?: emptyList()
+                        val image = value["image"] as? List<String> ?: emptyList()
+                        val motSetA = value["mot_setA"] as? List<String> ?: emptyList()
+                        val motSetB = value["mot_setB"] as? List<String> ?: emptyList()
+                        val phraseRepet = value["phrase_repet"] as? List<String> ?: emptyList()
+                        val couleur = value["couleur"] as? List<String> ?: emptyList()
+                        val mot = value["mot"] as? List<String> ?: emptyList()
+                        val groupe = value["groupe"] as? Map<String, String> ?: emptyMap()
+
+                        val test = Test(
+                            id_test = idTest,
+                            nom = testName,
+                            consigne = consigne,
+                            mot_memoire = motMemoire,
+                            image = image,
+                            mot_setA = motSetA,
+                            mot_setB = motSetB,
+                            phrase_repet = phraseRepet,
+                            couleur = couleur,
+                            mot = mot,
+                            groupe = groupe
+                        )
+
+                        testsList.add(test)
                     }
                 }
 

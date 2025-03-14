@@ -3,7 +3,8 @@ package com.example.epilepsytestapp.category
 data class Test(
     val id_test : Int,
     val nom: String,
-    val consigne: String,
+    val consigneA: String,
+    val consigneH: String,
 
     val mot_memoire: List<String>? = null,
     val image: List<String>? = null,

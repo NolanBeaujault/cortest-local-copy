@@ -81,7 +81,6 @@ fun FilesPage(navController: NavHostController, patient: List<Patient>) {
                     .fillMaxSize()
                     .padding(bottom = 70.dp) // Espace pour la barre de navigation
             ) {
-                // Rectangle bleu pâle en haut
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -101,11 +100,11 @@ fun FilesPage(navController: NavHostController, patient: List<Patient>) {
                             painter = painterResource(id = R.mipmap.ic_brain_logo_foreground),
                             contentDescription = "Logo",
                             modifier = Modifier
-                                .fillMaxHeight() // Taille ajustée
+                                .fillMaxHeight()// Taille ajustée
                                 .padding(end = 16.dp) // Espace supplémentaire à droite du logo
                         )
 
-                        // Titre
+                        // Titre "Home"
                         Text(
                             text = "Fichiers",
                             style = MaterialTheme.typography.displayLarge.copy(
@@ -123,12 +122,7 @@ fun FilesPage(navController: NavHostController, patient: List<Patient>) {
                                 .fillMaxHeight()
                                 .padding(start = 16.dp)
                                 .clickable {
-                                    val selectedPatientId = patient.firstOrNull()?.id
-                                    if (selectedPatientId != null) {
-                                        navController.navigate("profile/$selectedPatientId")
-                                    } else {
-                                        println("Aucun patient sélectionné.")
-                                    }
+                                    navController.navigate("profile")
                                 }
                         )
                     }

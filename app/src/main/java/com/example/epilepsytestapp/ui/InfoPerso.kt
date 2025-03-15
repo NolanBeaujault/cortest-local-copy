@@ -25,7 +25,7 @@ import java.text.SimpleDateFormat
 import java.util.*
 
 @Composable
-fun InfoPersoScreen(navController: NavHostController) {
+fun InfoPersoScreen(navController: NavHostController, onContinue: () -> Unit) {
     var nom by remember { mutableStateOf("") }
     var prenom by remember { mutableStateOf("") }
     var adresse by remember { mutableStateOf("") }
@@ -86,13 +86,12 @@ fun InfoPersoScreen(navController: NavHostController) {
     }
 
     AppTheme {
-        Column (
+        Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(16.dp),
             horizontalAlignment = Alignment.CenterHorizontally
-        )
-        {
+        ) {
             Text(
                 text = "CORTEST",
                 style = MaterialTheme.typography.displayLarge,
@@ -120,8 +119,8 @@ fun InfoPersoScreen(navController: NavHostController) {
 
             OutlinedTextField(
                 value = nom,
-                onValueChange = {nom = it},
-                label = { Text("Nom")},
+                onValueChange = { nom = it },
+                label = { Text("Nom") },
                 shape = RoundedCornerShape(50),
                 colors = OutlinedTextFieldDefaults.colors(
                     focusedBorderColor = MaterialTheme.colorScheme.primary,
@@ -136,8 +135,8 @@ fun InfoPersoScreen(navController: NavHostController) {
 
             OutlinedTextField(
                 value = prenom,
-                onValueChange = {prenom = it},
-                label = { Text("Prénom")},
+                onValueChange = { prenom = it },
+                label = { Text("Prénom") },
                 shape = RoundedCornerShape(50),
                 colors = OutlinedTextFieldDefaults.colors(
                     focusedBorderColor = MaterialTheme.colorScheme.primary,
@@ -179,8 +178,8 @@ fun InfoPersoScreen(navController: NavHostController) {
 
             OutlinedTextField(
                 value = adresse,
-                onValueChange = {adresse = it},
-                label = { Text("Adresse")},
+                onValueChange = { adresse = it },
+                label = { Text("Adresse") },
                 shape = RoundedCornerShape(50),
                 colors = OutlinedTextFieldDefaults.colors(
                     focusedBorderColor = MaterialTheme.colorScheme.primary,
@@ -195,8 +194,8 @@ fun InfoPersoScreen(navController: NavHostController) {
 
             OutlinedTextField(
                 value = neurologue,
-                onValueChange = {neurologue = it},
-                label = { Text("Neurologue")},
+                onValueChange = { neurologue = it },
+                label = { Text("Neurologue") },
                 shape = RoundedCornerShape(50),
                 colors = OutlinedTextFieldDefaults.colors(
                     focusedBorderColor = MaterialTheme.colorScheme.primary,
@@ -211,7 +210,7 @@ fun InfoPersoScreen(navController: NavHostController) {
 
             Button(
                 onClick = {
-                    if (userId.isNotEmpty() && nom.isNotEmpty() && prenom.isNotEmpty() && adresse.isNotEmpty() && neurologue.isNotEmpty() && date_naissance.isNotEmpty()){
+                    if (userId.isNotEmpty() && nom.isNotEmpty() && prenom.isNotEmpty() && adresse.isNotEmpty() && neurologue.isNotEmpty() && date_naissance.isNotEmpty()) {
                         isLoading = true
                         coroutineScope.launch {
                             try {
@@ -219,14 +218,15 @@ fun InfoPersoScreen(navController: NavHostController) {
                                 RetrofitInstance.api.registerUser(request)
                                 Log.d("API", "Utilisateur enregistré avec succès")
                                 isLoading = false
-                                navController.navigate("home")
-                            } catch (e: Exception){
+                                onContinue()
+                            } catch (e: Exception) {
                                 Log.e("API", "Erreur lors de l'envoi : ${e.message}")
                                 isLoading = false
                             }
                         }
+                    } else {
+                        Log.e("API", "Veuillez remplir tous les champs")
                     }
-                    else { Log.e("API", "Veuillez remplir tous les champs") }
                 },
                 shape = RoundedCornerShape(50),
                 colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
@@ -235,10 +235,9 @@ fun InfoPersoScreen(navController: NavHostController) {
                     .height(56.dp),
                 enabled = !isLoading
             ) {
-                if (isLoading){
+                if (isLoading) {
                     CircularProgressIndicator(color = MaterialTheme.colorScheme.onPrimary)
-                }
-                else {
+                } else {
                     Text("Envoyer", style = MaterialTheme.typography.labelLarge)
                 }
             }

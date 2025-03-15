@@ -1,14 +1,18 @@
 package com.example.epilepsytestapp.ui
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.example.epilepsytestapp.ui.theme.AppTheme
+import com.example.epilepsytestapp.ui.theme.PrimaryColor
 
 @Composable
 fun TypeConfigScreen(navController: NavController) {
@@ -18,40 +22,51 @@ fun TypeConfigScreen(navController: NavController) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(16.dp),
+                .padding(24.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
+            verticalArrangement = Arrangement.spacedBy(24.dp, Alignment.CenterVertically)
         ) {
             Text(
                 text = "Choisissez le type de test",
-                style = MaterialTheme.typography.displayLarge,
-                color = MaterialTheme.colorScheme.primary
+                textAlign = TextAlign.Center,
+                style = MaterialTheme.typography.displayLarge.copy(fontSize = 42.sp),
+                color = PrimaryColor
             )
 
-            Spacer(modifier = Modifier.height(32.dp))
-
-            Button(
+            OutlinedButton(
                 onClick = {
                     selectedType = "Hétérotest"
                     navController.navigate("testConfigScreen")
                 },
-                shape = RoundedCornerShape(8.dp),
-                modifier = Modifier.fillMaxWidth()
+                shape = RoundedCornerShape(16.dp),
+                border = BorderStroke(4.dp, PrimaryColor),
+                colors = ButtonDefaults.outlinedButtonColors(containerColor = MaterialTheme.colorScheme.background),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(80.dp)
             ) {
-                Text("Hétérotest", style = MaterialTheme.typography.bodyLarge)
+                Text(
+                    "Hétérotest",
+                    style = MaterialTheme.typography.headlineSmall.copy(fontSize = 28.sp, color = PrimaryColor)
+                )
             }
 
-            Spacer(modifier = Modifier.height(16.dp))
-
-            Button(
+            OutlinedButton(
                 onClick = {
                     selectedType = "Autotest"
                     navController.navigate("testConfigScreen")
                 },
-                shape = RoundedCornerShape(8.dp),
-                modifier = Modifier.fillMaxWidth()
+                shape = RoundedCornerShape(16.dp),
+                border = BorderStroke(4.dp, PrimaryColor),
+                colors = ButtonDefaults.outlinedButtonColors(containerColor = MaterialTheme.colorScheme.background),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(80.dp)
             ) {
-                Text("Autotest", style = MaterialTheme.typography.bodyLarge)
+                Text(
+                    "Autotest",
+                    style = MaterialTheme.typography.headlineSmall.copy(fontSize = 28.sp, color = PrimaryColor)
+                )
             }
         }
     }

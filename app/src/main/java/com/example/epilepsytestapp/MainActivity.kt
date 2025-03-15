@@ -262,7 +262,7 @@ fun NavigationGraph(
                     onModifyConfiguration = {
                         navController.navigate("testTypeSelectionScreen")
                     },
-                    patients = patients
+                    patient = patients
                 )
             } else {
                 navController.navigate("login")

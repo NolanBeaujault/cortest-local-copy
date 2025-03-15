@@ -27,10 +27,14 @@ import kotlinx.coroutines.launch
 @Composable
 fun RecapScreen(navController: NavController) {
     val selectedTests = remember {
-        navController.previousBackStackEntry?.savedStateHandle?.get<Map<String, List<Test>>>("selectedTests")
-            ?.mapValues { it.value.toMutableList() }
-            ?.toMutableMap() ?: mutableStateMapOf<String, MutableList<Test>>()
+        mutableStateListOf<Test>().apply {
+            navController.previousBackStackEntry?.savedStateHandle
+                ?.get<Map<String, List<Test>>>("selectedTests")
+                ?.values?.flatten()
+                ?.let { addAll(it) }
+        }
     }
+
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
 
@@ -58,19 +62,9 @@ fun RecapScreen(navController: NavController) {
                     .background(MaterialTheme.colorScheme.surface, shape = RoundedCornerShape(8.dp))
                     .padding(16.dp)
             ) {
-                selectedTests.forEach { (category, tests) ->
-                    if (tests.isNotEmpty()) {
-                        Text(
-                            text = category,
-                            style = MaterialTheme.typography.headlineSmall,
-                            color = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.padding(top = 8.dp, bottom = 4.dp)
-                        )
-                        Spacer(modifier = Modifier.height(16.dp))
-                        ReorderableList(tests)
-                    }
-                }
+                ReorderableList(selectedTests)
             }
+
             Spacer(modifier = Modifier.height(10.dp))
 
             CustomButton(text = "Retour") {
@@ -80,11 +74,13 @@ fun RecapScreen(navController: NavController) {
                 navController.popBackStack()
             }
 
+
+
             Spacer(modifier = Modifier.height(8.dp))
 
             CustomButton(text = "Enregistrer la configuration") {
                 coroutineScope.launch {
-                    LocalCatManager.saveLocalTests(context, selectedTests)
+                    LocalCatManager.saveLocalTests(context, mapOf("Tous les tests" to selectedTests))
                 }
                 navController.navigate("home") {
                     popUpTo("home") { inclusive = true }
@@ -94,21 +90,21 @@ fun RecapScreen(navController: NavController) {
     }
 }
 
+
 @Composable
 fun ReorderableList(tests: MutableList<Test>) {
-    var list by remember { mutableStateOf(tests.toList()) }
-
     Column {
-        list.forEachIndexed { index, test ->
-            TestItem(test, index, list) { updatedList ->
-                list = updatedList
+        tests.forEachIndexed { index, test ->
+            TestItem(test, index, tests) { updatedList ->
+                tests.clear()
+                tests.addAll(updatedList)
             }
         }
     }
 }
 
 @Composable
-fun TestItem(test: Test, index: Int, tests: List<Test>, onListUpdate: (List<Test>) -> Unit) {
+fun TestItem(test: Test, index: Int, tests: MutableList<Test>, onListUpdate: (List<Test>) -> Unit) {
     var offsetY by remember { mutableStateOf(0f) }
 
     Column(
@@ -119,18 +115,17 @@ fun TestItem(test: Test, index: Int, tests: List<Test>, onListUpdate: (List<Test
                 detectDragGestures { change, dragAmount ->
                     change.consumePositionChange()
                     offsetY += dragAmount.y
+
                     if (offsetY > 50 && index < tests.size - 1) {
-                        val newList = tests.toMutableList()
-                        val temp = newList[index]
-                        newList[index] = newList[index + 1]
-                        newList[index + 1] = temp
+                        val newList = tests.toMutableList().apply {
+                            swap(index, index + 1)
+                        }
                         onListUpdate(newList)
                         offsetY = 0f
                     } else if (offsetY < -50 && index > 0) {
-                        val newList = tests.toMutableList()
-                        val temp = newList[index]
-                        newList[index] = newList[index - 1]
-                        newList[index - 1] = temp
+                        val newList = tests.toMutableList().apply {
+                            swap(index, index - 1)
+                        }
                         onListUpdate(newList)
                         offsetY = 0f
                     }
@@ -143,52 +138,57 @@ fun TestItem(test: Test, index: Int, tests: List<Test>, onListUpdate: (List<Test
                 .background(MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(8.dp))
                 .padding(8.dp)
         ) {
-            Column {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Text(
-                        text = test.nom,
-                        color = MaterialTheme.colorScheme.primary,
-                        style = MaterialTheme.typography.bodyLarge,
-                        modifier = Modifier.weight(1f)
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text(
+                    text = test.nom,
+                    color = MaterialTheme.colorScheme.primary,
+                    style = MaterialTheme.typography.bodyLarge,
+                    modifier = Modifier.weight(1f)
+                )
+
+                IconButton(onClick = {
+                    if (index > 0) {
+                        val newList = tests.toMutableList().apply {
+                            swap(index, index - 1)
+                        }
+                        onListUpdate(newList)
+                    }
+                }) {
+                    Icon(
+                        painter = painterResource(id = R.mipmap.ic_expend_more_foreground),
+                        contentDescription = "Move Up",
+                        modifier = Modifier.rotate(-90f),
+                        tint = if (index > 0) MaterialTheme.colorScheme.primary else Color.Gray
                     )
-                    IconButton(onClick = {
-                        if (index > 0) {
-                            val newList = tests.toMutableList()
-                            val temp = newList[index]
-                            newList[index] = newList[index - 1]
-                            newList[index - 1] = temp
-                            onListUpdate(newList)
+                }
+
+                IconButton(onClick = {
+                    if (index < tests.size - 1) {
+                        val newList = tests.toMutableList().apply {
+                            swap(index, index + 1)
                         }
-                    }) {
-                        Icon(
-                            painter = painterResource(id = R.mipmap.ic_expend_more_foreground),
-                            contentDescription = "Move Up",
-                            modifier = Modifier.rotate(-90f),
-                            tint = if (index > 0) MaterialTheme.colorScheme.primary else Color.Gray
-                        )
+                        onListUpdate(newList)
                     }
-                    IconButton(onClick = {
-                        if (index < tests.size - 1) {
-                            val newList = tests.toMutableList()
-                            val temp = newList[index]
-                            newList[index] = newList[index + 1]
-                            newList[index + 1] = temp
-                            onListUpdate(newList)
-                        }
-                    }) {
-                        Icon(
-                            painter = painterResource(id = R.mipmap.ic_expend_more_foreground),
-                            contentDescription = "Move Down",
-                            modifier = Modifier.rotate(90f),
-                            tint = if (index < tests.size - 1) MaterialTheme.colorScheme.primary else Color.Gray
-                        )
-                    }
+                }) {
+                    Icon(
+                        painter = painterResource(id = R.mipmap.ic_expend_more_foreground),
+                        contentDescription = "Move Down",
+                        modifier = Modifier.rotate(90f),
+                        tint = if (index < tests.size - 1) MaterialTheme.colorScheme.primary else Color.Gray
+                    )
                 }
             }
         }
     }
+}
+
+// ✅ Fonction utilitaire pour échanger deux éléments
+fun <T> MutableList<T>.swap(index1: Int, index2: Int) {
+    val temp = this[index1]
+    this[index1] = this[index2]
+    this[index2] = temp
 }

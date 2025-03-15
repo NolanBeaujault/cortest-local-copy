@@ -32,37 +32,33 @@ fun ConfigScreen(navController: NavController) {
     val context = LocalContext.current
 
     LaunchedEffect(Unit) {
-        val restoredSelectedTests =
-            navController.currentBackStackEntry?.savedStateHandle?.get<Map<String, List<Test>>>("selectedTests")
-
         coroutineScope.launch {
             Log.d("TestConfig", "🔄 Chargement des catégories depuis l'API...")
 
             try {
+                // Charger les catégories depuis l'API
                 val loadedCategories = loadCategoriesFromNetwork()
+
+                // Charger la configuration locale enregistrée (tests sélectionnés)
                 val localTestConfiguration = LocalCatManager.loadLocalTests(context)
 
                 categories.value = loadedCategories
 
+                // Initialiser selectedTests avec les tests déjà sélectionnés dans la configuration locale
                 loadedCategories.forEach { (categoryName, testList) ->
                     val preSelectedTests = testList.filter { test ->
+                        // Vérifier si le test est déjà sélectionné dans la configuration locale
                         localTestConfiguration[categoryName]?.any { it.id_test == test.id_test } == true
                     }.toMutableSet()
 
-                    // Sélectionner tous les tests par défaut pour la catégorie "Examen Type"
+                    // Ajouter tous les tests de la catégorie "Examen Type" si besoin
                     if (categoryName == "Examen Type") {
                         preSelectedTests.addAll(testList)
                     }
 
+                    // Si des tests sont pré-sélectionnés, les ajouter à selectedTests
                     if (preSelectedTests.isNotEmpty()) {
                         selectedTests[categoryName] = preSelectedTests
-                    }
-                }
-
-                if (restoredSelectedTests != null) {
-                    selectedTests.clear()
-                    restoredSelectedTests.forEach { (category, tests) ->
-                        selectedTests[category] = tests.toMutableSet()
                     }
                 }
 
@@ -95,10 +91,7 @@ fun ConfigScreen(navController: NavController) {
             } else {
                 Log.d("TestConfig", "📌 Affichage des catégories et tests...")
                 categories.value.forEach { (categoryName, testList) ->
-                    Log.d(
-                        "TestConfig",
-                        "📁 Catégorie : $categoryName, Nombre de tests : ${testList.size}"
-                    )
+                    Log.d("TestConfig", "📁 Catégorie : $categoryName, Nombre de tests : ${testList.size}")
                     CategoryItem(categoryName, testList, selectedTests)
                 }
             }
@@ -107,10 +100,7 @@ fun ConfigScreen(navController: NavController) {
 
             CustomButton(text = "Suivant") {
                 val filteredTests = selectedTests.mapValues { it.value.toList() }
-                navController.currentBackStackEntry?.savedStateHandle?.set(
-                    "selectedTests",
-                    filteredTests
-                )
+                navController.currentBackStackEntry?.savedStateHandle?.set("selectedTests", filteredTests)
                 navController.navigate("recapScreen")
             }
             Spacer(modifier = Modifier.height(8.dp))
@@ -134,7 +124,6 @@ fun CategoryItem(
             .fillMaxWidth()
             .padding(bottom = 8.dp)
     ) {
-
         Button(
             onClick = { isExpanded = !isExpanded },
             shape = RoundedCornerShape(8.dp),

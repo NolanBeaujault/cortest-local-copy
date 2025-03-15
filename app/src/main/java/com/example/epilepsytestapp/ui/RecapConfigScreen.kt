@@ -1,9 +1,12 @@
 package com.example.epilepsytestapp.ui
 
+import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -61,6 +64,7 @@ fun RecapScreen(navController: NavController) {
                     .padding(8.dp)
                     .background(MaterialTheme.colorScheme.surface, shape = RoundedCornerShape(8.dp))
                     .padding(16.dp)
+                    .verticalScroll(rememberScrollState())  // Activation du défilement vertical
             ) {
                 ReorderableList(selectedTests)
             }
@@ -68,13 +72,19 @@ fun RecapScreen(navController: NavController) {
             Spacer(modifier = Modifier.height(10.dp))
 
             CustomButton(text = "Retour") {
-                navController.previousBackStackEntry
-                    ?.savedStateHandle
-                    ?.set("selectedTests", selectedTests)
-                navController.popBackStack()
+                try {
+                    val backStackEntry = navController.previousBackStackEntry
+                    if (backStackEntry != null) {
+                        // Sauvegarder les tests sélectionnés dans le `savedStateHandle`
+                        backStackEntry.savedStateHandle["selectedTests"] = mapOf("Tous les tests" to selectedTests.toList())
+                        navController.popBackStack()
+                    } else {
+                        Log.e("Navigation", "Impossible de revenir en arrière, backStackEntry est null")
+                    }
+                } catch (e: Exception) {
+                    Log.e("Navigation", "Erreur lors du retour à la page précédente : ${e.message}")
+                }
             }
-
-
 
             Spacer(modifier = Modifier.height(8.dp))
 
@@ -91,6 +101,7 @@ fun RecapScreen(navController: NavController) {
 }
 
 
+
 @Composable
 fun ReorderableList(tests: MutableList<Test>) {
     Column {
@@ -105,32 +116,10 @@ fun ReorderableList(tests: MutableList<Test>) {
 
 @Composable
 fun TestItem(test: Test, index: Int, tests: MutableList<Test>, onListUpdate: (List<Test>) -> Unit) {
-    var offsetY by remember { mutableStateOf(0f) }
-
     Column(
         modifier = Modifier
             .fillMaxWidth()
             .padding(bottom = 8.dp)
-            .pointerInput(Unit) {
-                detectDragGestures { change, dragAmount ->
-                    change.consumePositionChange()
-                    offsetY += dragAmount.y
-
-                    if (offsetY > 50 && index < tests.size - 1) {
-                        val newList = tests.toMutableList().apply {
-                            swap(index, index + 1)
-                        }
-                        onListUpdate(newList)
-                        offsetY = 0f
-                    } else if (offsetY < -50 && index > 0) {
-                        val newList = tests.toMutableList().apply {
-                            swap(index, index - 1)
-                        }
-                        onListUpdate(newList)
-                        offsetY = 0f
-                    }
-                }
-            }
     ) {
         Box(
             modifier = Modifier

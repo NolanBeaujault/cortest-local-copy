@@ -2,7 +2,6 @@ package com.example.epilepsytestapp.ui
 
 import android.util.Log
 import androidx.compose.foundation.background
-import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -13,7 +12,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.input.pointer.consumePositionChange
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
@@ -29,6 +27,7 @@ import kotlinx.coroutines.launch
 
 @Composable
 fun RecapScreen(navController: NavController) {
+    // Récupérer les tests sélectionnés à partir de `savedStateHandle`
     val selectedTests = remember {
         mutableStateListOf<Test>().apply {
             navController.previousBackStackEntry?.savedStateHandle
@@ -66,18 +65,20 @@ fun RecapScreen(navController: NavController) {
                     .padding(16.dp)
                     .verticalScroll(rememberScrollState())  // Activation du défilement vertical
             ) {
+                // Affichage des tests sélectionnés
                 ReorderableList(selectedTests)
             }
 
             Spacer(modifier = Modifier.height(10.dp))
 
+            // Bouton Retour
             CustomButton(text = "Retour") {
                 try {
                     val backStackEntry = navController.previousBackStackEntry
                     if (backStackEntry != null) {
                         // Sauvegarder les tests sélectionnés dans le `savedStateHandle`
                         backStackEntry.savedStateHandle["selectedTests"] = mapOf("Tous les tests" to selectedTests.toList())
-                        navController.popBackStack()
+                        navController.navigate("testConfigScreen")
                     } else {
                         Log.e("Navigation", "Impossible de revenir en arrière, backStackEntry est null")
                     }
@@ -88,8 +89,10 @@ fun RecapScreen(navController: NavController) {
 
             Spacer(modifier = Modifier.height(8.dp))
 
+            // Bouton Enregistrer
             CustomButton(text = "Enregistrer la configuration") {
                 coroutineScope.launch {
+                    // Sauvegarder les tests sélectionnés de manière structurée
                     LocalCatManager.saveLocalTests(context, mapOf("Tous les tests" to selectedTests))
                 }
                 navController.navigate("home") {
@@ -99,8 +102,6 @@ fun RecapScreen(navController: NavController) {
         }
     }
 }
-
-
 
 @Composable
 fun ReorderableList(tests: MutableList<Test>) {

@@ -23,7 +23,7 @@ import com.example.epilepsytestapp.ui.theme.AppTheme
 import kotlinx.coroutines.launch
 
 @Composable
-fun TestConfigurationScreen(navController: NavController) {
+fun ConfigScreen(navController: NavController) {
     val selectedTests = remember { mutableStateMapOf<String, MutableSet<Test>>() }
     val scrollState = rememberScrollState()
     val categories = remember { mutableStateOf<Map<String, List<Test>>>(emptyMap()) }
@@ -35,7 +35,6 @@ fun TestConfigurationScreen(navController: NavController) {
         val restoredSelectedTests =
             navController.currentBackStackEntry?.savedStateHandle?.get<Map<String, List<Test>>>("selectedTests")
 
-
         coroutineScope.launch {
             Log.d("TestConfig", "🔄 Chargement des catégories depuis l'API...")
 
@@ -43,13 +42,17 @@ fun TestConfigurationScreen(navController: NavController) {
                 val loadedCategories = loadCategoriesFromNetwork()
                 val localTestConfiguration = LocalCatManager.loadLocalTests(context)
 
-
                 categories.value = loadedCategories
 
                 loadedCategories.forEach { (categoryName, testList) ->
                     val preSelectedTests = testList.filter { test ->
                         localTestConfiguration[categoryName]?.any { it.id_test == test.id_test } == true
                     }.toMutableSet()
+
+                    // Sélectionner tous les tests par défaut pour la catégorie "Examen Type"
+                    if (categoryName == "Examen Type") {
+                        preSelectedTests.addAll(testList)
+                    }
 
                     if (preSelectedTests.isNotEmpty()) {
                         selectedTests[categoryName] = preSelectedTests
@@ -62,7 +65,6 @@ fun TestConfigurationScreen(navController: NavController) {
                         selectedTests[category] = tests.toMutableSet()
                     }
                 }
-
 
                 Log.d("TestConfig", "✅ Catégories chargées avec succès : $loadedCategories")
             } catch (e: Exception) {

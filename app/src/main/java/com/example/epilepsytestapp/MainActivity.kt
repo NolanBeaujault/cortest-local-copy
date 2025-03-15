@@ -182,8 +182,6 @@ fun EpilepsyTestApp(
     }
 }
 
-
-
 @Composable
 fun NavigationGraph(
     navController: NavHostController,
@@ -232,14 +230,23 @@ fun NavigationGraph(
 
         composable("infoPerso") {
             Log.d("NavigationGraph", "InfoPersoScreen ajouté au graph")
-            InfoPersoScreen(navController = navController)
+            InfoPersoScreen(navController = navController, onContinue = { navController.navigate("testTypeSelectionScreen") })
         }
 
+        composable("testTypeSelectionScreen") {
+            TypeConfigScreen(navController = navController)
+        }
 
-        composable("home") {
-            if (isAuthenticated) {
-                HomePage(navController = navController, patient = patients)
-            }
+        composable("testConfigScreen") {
+            ConfigScreen(
+                navController = navController,
+                )
+        }
+
+        composable("recapScreen") {
+            RecapScreen(
+                navController = navController,
+            )
         }
 
         composable("settings") {
@@ -251,6 +258,9 @@ fun NavigationGraph(
                         navController.navigate("login") {
                             popUpTo("settings") { inclusive = true }
                         }
+                    },
+                    onModifyConfiguration = {
+                        navController.navigate("testTypeSelectionScreen")
                     },
                     patients = patients
                 )
@@ -306,25 +316,8 @@ fun NavigationGraph(
             TestEnregistre(navController = navController)
         }
 
-        composable(route = "profile"){
+        composable(route = "profile") {
             ProfilePage(navController = navController)
-        }
-
-        // Ajout des nouveaux écrans de configuration des tests
-        composable("testConfigScreen") {
-            if (isAuthenticated) {
-                TestConfigurationScreen(navController = navController)
-            } else {
-                navController.navigate("login")
-            }
-        }
-
-        composable("recapScreen") {
-            if (isAuthenticated) {
-                RecapScreen(navController = navController)
-            } else {
-                navController.navigate("login")
-            }
         }
     }
 }

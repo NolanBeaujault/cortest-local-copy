@@ -24,7 +24,7 @@ import com.example.epilepsytestapp.model.Patient
 import com.example.epilepsytestapp.ui.theme.AppTheme
 
 @Composable
-fun SettingsPage(navController: NavHostController, onLogout: () -> Unit, patients: List<Patient>) {
+fun SettingsPage(navController: NavHostController, onLogout: () -> Unit, onModifyConfiguration: () -> Unit, patients: List<Patient>) {
     AppTheme {
         Box(
             modifier = Modifier
@@ -111,14 +111,13 @@ fun SettingsPage(navController: NavHostController, onLogout: () -> Unit, patient
                         }
                     )
 
-                    // Ajout d'une nouvelle option de paramètre
+                    // Modifier la configuration
                     SettingsOption(
-                        text = "Modifier la catégorisation",
+                        text = "Modifier la configuration",
                         onClick = {
-                            navController.navigate("testConfigScreen")
+                            onModifyConfiguration()
                         }
                     )
-
                 }
             }
 

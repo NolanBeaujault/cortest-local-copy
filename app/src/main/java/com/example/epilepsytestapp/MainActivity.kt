@@ -298,15 +298,15 @@ fun NavigationGraph(
 
         composable("confirmation") {
             ConfirmationScreen(
-                navController = navController,
-                currentInstructionIndex = currentInstructionIndex, // Passer l'index ici
                 onStopTestConfirmed = {
-                    navController.navigate("questionnaire") {
-                        popUpTo("homepage") { inclusive = false }
-                    }
+                    navController.navigate("questionnaire")
+                },
+                onCancelTest = {
+                    navController.navigate("test")
                 }
             )
         }
+
 
         composable("questionnaire") {
             PostTestQuestionnaireScreen(

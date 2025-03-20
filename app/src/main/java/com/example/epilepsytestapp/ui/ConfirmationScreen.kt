@@ -13,19 +13,14 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.navigation.NavHostController
 import com.example.epilepsytestapp.R
 import com.example.epilepsytestapp.ui.theme.AppTheme
 
 @Composable
 fun ConfirmationScreen(
-    navController: NavHostController,
     onStopTestConfirmed: () -> Unit,
-    currentInstructionIndex: Int
+    onCancelTest: () -> Unit
 ) {
-    // Récupérer l'index de l'instruction depuis la navigation
-    val currentInstructionIndex = navController.previousBackStackEntry?.arguments?.getInt("currentInstructionIndex") ?: 0
-
     AppTheme {
         Box(
             modifier = Modifier
@@ -70,10 +65,7 @@ fun ConfirmationScreen(
                     ImageClickableButton(
                         iconResId = R.mipmap.ic_close_foreground,
                         label = "Non je continue\nle test",
-                        onClick = {
-                            navController.popBackStack()
-                            navController.navigate("test/$currentInstructionIndex") // Ou "demo/$currentInstructionIndex" selon le cas
-                        }
+                        onClick = onCancelTest
                     )
                 }
             }
@@ -95,8 +87,6 @@ fun ConfirmationScreen(
         }
     }
 }
-
-
 
 @Composable
 fun ImageClickableButton(iconResId: Int, label: String, onClick: () -> Unit) {
@@ -139,3 +129,4 @@ fun ImageClickable(
             .clickable(onClick = onClick)
     )
 }
+

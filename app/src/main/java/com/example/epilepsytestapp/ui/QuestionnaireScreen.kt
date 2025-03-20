@@ -288,8 +288,4 @@ fun QuestionSlider(question: String) {
     }
 }
 
-@Preview(showBackground = true, widthDp = 360, heightDp = 640)
-@Composable
-fun PreviewPostTestQuestionnaireScreen() {
-    PostTestQuestionnaireScreen(onSaveTest = { /* Action simulée */ })
-}
+

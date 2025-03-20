@@ -132,7 +132,7 @@ fun HomePage(navController: NavHostController, patient: List<Patient>) {
 
                 // Bouton "Commencer un test"
                 Button(
-                    onClick = { navController.navigate("test") },
+                    onClick = { navController.navigate("test/0") },
                     modifier = Modifier
                         .fillMaxWidth() // Pleine largeur
                         .padding(horizontal = 16.dp)
@@ -178,10 +178,10 @@ fun NavigationBar(navController: NavHostController, modifier: Modifier = Modifie
                     .aspectRatio(1f) // Assure un rapport largeur/hauteur carré
             )
         }
-        IconButton(onClick = { navController.navigate("calendar") }) {
+        IconButton(onClick = { navController.navigate("demo/0") }) {
             Image(
-                painter = painterResource(id = R.mipmap.ic_calendar_foreground),
-                contentDescription = "Calendar",
+                painter = painterResource(id = R.mipmap.ic_demo_foreground),
+                contentDescription = "Demo",
                 modifier = Modifier
                     .fillMaxHeight()
                     .aspectRatio(1f)

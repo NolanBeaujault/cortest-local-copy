@@ -39,6 +39,7 @@ class MainActivity : ComponentActivity() {
         // Vérifier et demander les autorisations nécessaires
         requestPermissionsIfNecessary()
 
+
         setContent {
             val patients = remember { mutableStateListOf<Patient>() }
             var isLoading by remember { mutableStateOf(true) }
@@ -269,9 +270,10 @@ fun NavigationGraph(
             }
         }
 
-        composable("calendar") {
+        // Page Demo
+        composable("demo/{currentInstructionIndex}") {
             if (isAuthenticated) {
-                CalendarPage(navController = navController)
+                DemoScreen(navController = navController)
             } else {
                 navController.navigate("login")
             }
@@ -285,7 +287,8 @@ fun NavigationGraph(
             }
         }
 
-        composable("test") {
+        // Test
+        composable("test/{currentInstructionIndex}") {
             if (isAuthenticated) {
                 TestScreen(navController = navController)
             } else {
@@ -295,11 +298,12 @@ fun NavigationGraph(
 
         composable("confirmation") {
             ConfirmationScreen(
+                navController = navController,
+                currentInstructionIndex = currentInstructionIndex, // Passer l'index ici
                 onStopTestConfirmed = {
-                    navController.navigate("questionnaire")
-                },
-                onCancelTest = {
-                    navController.navigate("test")
+                    navController.navigate("questionnaire") {
+                        popUpTo("homepage") { inclusive = false }
+                    }
                 }
             )
         }
@@ -316,8 +320,5 @@ fun NavigationGraph(
             TestEnregistre(navController = navController)
         }
 
-        composable(route = "profile") {
-            ProfilePage(navController = navController)
-        }
     }
 }

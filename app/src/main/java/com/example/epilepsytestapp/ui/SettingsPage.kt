@@ -10,7 +10,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -24,7 +24,14 @@ import com.example.epilepsytestapp.model.Patient
 import com.example.epilepsytestapp.ui.theme.AppTheme
 
 @Composable
-fun SettingsPage(navController: NavHostController, onLogout: () -> Unit, patients: List<Patient>) {
+fun SettingsPage(
+    navController: NavHostController,
+    onLogout: () -> Unit,
+    onModifyConfiguration: () -> Unit,
+    patient: List<Patient>
+) {
+    val isFrontCamera = remember { mutableStateOf(true) } // ✅ Stockage de l'état de la caméra
+
     AppTheme {
         Box(
             modifier = Modifier
@@ -61,7 +68,7 @@ fun SettingsPage(navController: NavHostController, onLogout: () -> Unit, patient
                                 .padding(end = 16.dp) // Espace supplémentaire à droite du logo
                         )
 
-                        // Titre
+                        // Titre "Home"
                         Text(
                             text = "Paramètres",
                             style = MaterialTheme.typography.displayLarge.copy(
@@ -79,12 +86,7 @@ fun SettingsPage(navController: NavHostController, onLogout: () -> Unit, patient
                                 .fillMaxHeight()
                                 .padding(start = 16.dp)
                                 .clickable {
-                                    val selectedPatientId = patients.firstOrNull()?.id
-                                    if (selectedPatientId != null) {
-                                        navController.navigate("profile/$selectedPatientId")
-                                    } else {
-                                        println("Aucun patient sélectionné.")
-                                    }
+                                    navController.navigate("profile")
                                 }
                         )
                     }
@@ -92,42 +94,60 @@ fun SettingsPage(navController: NavHostController, onLogout: () -> Unit, patient
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                // Options des paramètres
-                Column(modifier = Modifier.fillMaxSize()) {
-                    // Accéder aux autorisations
-                    SettingsOption(
-                        text = "Gérer les autorisations",
-                        onClick = { openAppSettings(navController.context) }
-                    )
+                SettingsOption(text = "Gérer les autorisations") { openAppSettings(navController.context) }
+                SettingsOption(text = "Déconnexion") { onLogout(); navController.navigate("login") }
+                SettingsOption(text = "Modifier la configuration", onClick = onModifyConfiguration)
 
-                    // Déconnexion
-                    SettingsOption(
-                        text = "Déconnexion",
-                        onClick = {
-                            onLogout()
-                            navController.navigate("login") {
-                                popUpTo("login") { inclusive = true }
-                            }
-                        }
-                    )
+                Spacer(modifier = Modifier.height(16.dp))
 
-                    // Ajout d'une nouvelle option de paramètre
-                    SettingsOption(
-                        text = "Modifier la catégorisation",
-                        onClick = {
-                            navController.navigate("testConfigScreen")
-                        }
+                // ✅ Ligne avec le switch caméra et ses labels
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 8.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "Caméra",
+                        style = MaterialTheme.typography.bodyLarge.copy(fontSize = 20.sp),
+                        color = MaterialTheme.colorScheme.primary
                     )
-
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Text(
+                            text = "Arrière",
+                            style = MaterialTheme.typography.bodyLarge.copy(fontSize = 18.sp),
+                            color = if (!isFrontCamera.value) MaterialTheme.colorScheme.primary else Color.Gray
+                        )
+                        Switch(
+                            checked = isFrontCamera.value,
+                            onCheckedChange = { isFrontCamera.value = it },
+                            colors = SwitchDefaults.colors(
+                                checkedThumbColor = Color.White,
+                                checkedTrackColor = MaterialTheme.colorScheme.primary,
+                                uncheckedThumbColor = Color.White,
+                                uncheckedTrackColor = Color.Gray
+                            )
+                        )
+                        Text(
+                            text = "Avant",
+                            style = MaterialTheme.typography.bodyLarge.copy(fontSize = 18.sp),
+                            color = if (isFrontCamera.value) MaterialTheme.colorScheme.primary else Color.Gray
+                        )
+                    }
                 }
-            }
 
-            // Barre de navigation en bas
+
+            }
             NavigationBar(
-                navController = navController,
-                modifier = Modifier.align(Alignment.BottomCenter) // Fixe la barre en bas
+                    navController = navController,
+            modifier = Modifier.align(Alignment.BottomCenter) // Fixe la barre en bas
             )
         }
+
     }
 }
 

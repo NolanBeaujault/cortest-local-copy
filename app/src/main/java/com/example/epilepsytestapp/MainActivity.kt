@@ -39,6 +39,7 @@ class MainActivity : ComponentActivity() {
         // Vérifier et demander les autorisations nécessaires
         requestPermissionsIfNecessary()
 
+
         setContent {
             val patients = remember { mutableStateListOf<Patient>() }
             var isLoading by remember { mutableStateOf(true) }
@@ -232,7 +233,23 @@ fun NavigationGraph(
 
         composable("infoPerso") {
             Log.d("NavigationGraph", "InfoPersoScreen ajouté au graph")
-            InfoPersoScreen(navController = navController)
+            InfoPersoScreen(navController = navController, onContinue = { navController.navigate("testTypeSelectionScreen") })
+        }
+
+        composable("testTypeSelectionScreen") {
+            TypeConfigScreen(navController = navController)
+        }
+
+        composable("testConfigScreen") {
+            ConfigScreen(
+                navController = navController,
+                )
+        }
+
+        composable("recapScreen") {
+            RecapScreen(
+                navController = navController,
+            )
         }
 
         composable("settings") {
@@ -245,16 +262,20 @@ fun NavigationGraph(
                             popUpTo("settings") { inclusive = true }
                         }
                     },
-                    patients = patients
+                    onModifyConfiguration = {
+                        navController.navigate("testTypeSelectionScreen")
+                    },
+                    patient = patients
                 )
             } else {
                 navController.navigate("login")
             }
         }
 
-        composable("calendar") {
+        // Page Demo
+        composable("demo/{currentInstructionIndex}") {
             if (isAuthenticated) {
-                CalendarPage(navController = navController)
+                DemoScreen(navController = navController)
             } else {
                 navController.navigate("login")
             }
@@ -268,7 +289,8 @@ fun NavigationGraph(
             }
         }
 
-        composable("test") {
+        // Test
+        composable("test/{currentInstructionIndex}") {
             if (isAuthenticated) {
                 TestScreen(navController = navController, recordedVideos = recordedVideos)
             } else {
@@ -289,6 +311,7 @@ fun NavigationGraph(
             )
         }
 
+
         composable("questionnaire") {
             PostTestQuestionnaireScreen(
                 onSaveTest = {
@@ -301,25 +324,5 @@ fun NavigationGraph(
             TestEnregistre(navController = navController)
         }
 
-        composable(route = "profile"){
-            ProfilePage(navController = navController)
-        }
-
-        // Ajout des nouveaux écrans de configuration des tests
-        composable("testConfigScreen") {
-            if (isAuthenticated) {
-                TestConfigurationScreen(navController = navController)
-            } else {
-                navController.navigate("login")
-            }
-        }
-
-        composable("recapScreen") {
-            if (isAuthenticated) {
-                RecapScreen(navController = navController)
-            } else {
-                navController.navigate("login")
-            }
-        }
     }
 }

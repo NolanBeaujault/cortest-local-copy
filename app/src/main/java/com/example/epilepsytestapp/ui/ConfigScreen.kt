@@ -22,8 +22,9 @@ import com.example.epilepsytestapp.category.Test
 import com.example.epilepsytestapp.ui.theme.AppTheme
 import kotlinx.coroutines.launch
 
+
 @Composable
-fun TestConfigurationScreen(navController: NavController) {
+fun ConfigScreen(navController: NavController) {
     val selectedTests = remember { mutableStateMapOf<String, MutableSet<Test>>() }
     val scrollState = rememberScrollState()
     val categories = remember { mutableStateOf<Map<String, List<Test>>>(emptyMap()) }

@@ -1,7 +1,9 @@
+package com.example.epilepsytestapp.ui
+
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.*
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -31,7 +33,7 @@ fun ConfirmationScreen(
                 .background(MaterialTheme.colorScheme.background)
                 .padding(16.dp)
         ) {
-            // Titre
+            // Title
             Text(
                 text = "Arrêter\nle test\nen cours ?",
                 style = MaterialTheme.typography.headlineSmall.copy(
@@ -45,7 +47,7 @@ fun ConfirmationScreen(
                 color = MaterialTheme.colorScheme.onBackground
             )
 
-            // Boutons d'action
+            // Action buttons
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -55,19 +57,16 @@ fun ConfirmationScreen(
                 Spacer(modifier = Modifier.height(80.dp))
 
                 Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 32.dp),
-                    horizontalArrangement = Arrangement.SpaceEvenly
+                    modifier = Modifier.align(Alignment.CenterHorizontally)
                 ) {
-                    // Bouton Oui (Check)
                     ImageClickableButton(
                         iconResId = R.mipmap.ic_check_foreground,
                         label = "Oui j'arrête\nle test",
-                        onClick = onStopTestConfirmed
+                        onClick = {
+                            onStopTestConfirmed()
+                        }
                     )
-
-                    // Bouton Non (Retour à l'origine)
+                    Spacer(modifier = Modifier.width(16.dp)) // Space between buttons
                     ImageClickableButton(
                         iconResId = R.mipmap.ic_close_foreground,
                         label = "Non je continue\nle test",
@@ -79,7 +78,7 @@ fun ConfirmationScreen(
                 }
             }
 
-            // Logo en bas
+            // Bottom logo
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -105,7 +104,6 @@ fun ImageClickableButton(iconResId: Int, label: String, onClick: () -> Unit) {
         modifier = Modifier.padding(1.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        // Image cliquable
         Image(
             painter = painterResource(id = iconResId),
             contentDescription = label,
@@ -114,7 +112,6 @@ fun ImageClickableButton(iconResId: Int, label: String, onClick: () -> Unit) {
                 .clickable { onClick() }
         )
         Spacer(modifier = Modifier.height(4.dp))
-        // Texte sous l'image
         Text(
             text = label,
             style = MaterialTheme.typography.bodyLarge.copy(
@@ -124,4 +121,21 @@ fun ImageClickableButton(iconResId: Int, label: String, onClick: () -> Unit) {
             )
         )
     }
+}
+
+@Composable
+fun ImageClickable(
+    imageResId: Int,
+    contentDescription: String?,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Image(
+        painter = painterResource(id = imageResId),
+        contentDescription = contentDescription,
+        modifier = modifier
+            .size(180.dp)
+            .padding(6.dp)
+            .clickable(onClick = onClick)
+    )
 }

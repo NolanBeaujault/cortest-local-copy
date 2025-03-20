@@ -1,7 +1,8 @@
 package com.example.epilepsytestapp.ui
 
+import android.util.Log
+import android.widget.Toast
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
@@ -9,31 +10,35 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.navigation.NavController
 import com.example.epilepsytestapp.R
+import com.example.epilepsytestapp.network.FirebaseAuthManager
 import com.example.epilepsytestapp.ui.theme.AppTheme
-
 
 @Composable
 fun LoginScreen(
-    patients: List<Patient>,
-    onNavigateToSignup: () -> Unit,
-    onNavigateToHome: (String, String) -> Unit
+    navController: NavController,
+    onAuthenticated: () -> Unit,
+    onNavigateToSignup: () -> Unit
 ) {
-    var username by remember { mutableStateOf("") }
+    val context = LocalContext.current
+    var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var errorMessage by remember { mutableStateOf("") }
-    var isPasswordVisible by remember { mutableStateOf(false) } // Contrôle de la visibilité du mot de passe
+    var isPasswordVisible by remember { mutableStateOf(false) }
+    var isLoading by remember { mutableStateOf(false) }
+    var rememberMe by remember { mutableStateOf(false) }
 
     AppTheme {
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .border(4.dp, Color(0xFF2B4765), RoundedCornerShape(1.dp))
                 .padding(16.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
@@ -57,15 +62,16 @@ fun LoginScreen(
             // Connexion
             Text(
                 text = "Connexion",
-                style = MaterialTheme.typography.headlineSmall
+                style = MaterialTheme.typography.headlineSmall,
+                color = MaterialTheme.colorScheme.primary
             )
             Spacer(modifier = Modifier.height(16.dp))
 
             // Identifiant
             OutlinedTextField(
-                value = username,
-                onValueChange = { username = it },
-                label = { Text("Identifiant") },
+                value = email,
+                onValueChange = { email = it },
+                label = { Text("Email") },
                 shape = RoundedCornerShape(50),
                 colors = OutlinedTextFieldDefaults.colors(
                     focusedBorderColor = MaterialTheme.colorScheme.primary,
@@ -102,7 +108,7 @@ fun LoginScreen(
                     .fillMaxWidth()
                     .height(56.dp)
             )
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(8.dp))
 
             // Message d'erreur
             if (errorMessage.isNotEmpty()) {
@@ -113,34 +119,58 @@ fun LoginScreen(
                     textAlign = TextAlign.Center
                 )
             }
-            Spacer(modifier = Modifier.height(32.dp))
+            Spacer(modifier = Modifier.height(20.dp))
+
+            // Rester connecté
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Checkbox(
+                    checked = rememberMe,
+                    onCheckedChange = { rememberMe = it }
+                )
+                Text(text = "Rester connecté")
+            }
+            Spacer(modifier = Modifier.height(16.dp))
 
             // Bouton de connexion
             Button(
                 onClick = {
-                    if (username.isNotBlank() && password.isNotBlank()) {
-                        onNavigateToHome(username, password)
+                    if (email.isNotEmpty() && password.isNotEmpty()) {
+                        isLoading = true
+                        FirebaseAuthManager.login(email, password) { success, error ->
+                            isLoading = false
+                            if (success) {
+                                Log.d("LoginScreen", "Connexion réussie, redirection vers la page d'accueil")
+                                onAuthenticated()
+                                navController.navigate("home") {
+                                    popUpTo("login") { inclusive = true }
+                                }
+                            } else {
+                                errorMessage = error ?: "Échec de la connexion"
+                                Log.e("LoginScreen", "Erreur de connexion: $errorMessage")
+                            }
+                        }
                     } else {
-                        errorMessage = "Veuillez remplir tous les champs."
+                        errorMessage = "Email et mot de passe ne doivent pas être vides"
+                        Toast.makeText(context, errorMessage, Toast.LENGTH_SHORT).show()
                     }
                 },
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(56.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.primary,
-                    contentColor = MaterialTheme.colorScheme.onPrimary
-                ),
-                shape = RoundedCornerShape(50)
+                enabled = !isLoading
             ) {
-                Text(
-                    text = "Connexion",
-                    style = MaterialTheme.typography.labelLarge
-                )
+                if (isLoading) {
+                    CircularProgressIndicator(color = MaterialTheme.colorScheme.onPrimary)
+                } else {
+                    Text("Connexion")
+                }
             }
+
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Lien vers création de compte
             TextButton(onClick = onNavigateToSignup) {
                 Text(
                     text = "Créer un compte",
@@ -151,10 +181,6 @@ fun LoginScreen(
         }
     }
 }
-
-
-
-
 
 @Composable
 fun CustomButton(text: String, onClick: () -> Unit) {
@@ -169,5 +195,17 @@ fun CustomButton(text: String, onClick: () -> Unit) {
         )
     ) {
         Text(text = text)
+    }
+}
+
+@Composable
+fun LoadingScreen() {
+    Box(
+        contentAlignment = Alignment.Center,
+        modifier = Modifier.fillMaxSize()
+    ) {
+        CircularProgressIndicator(
+            color = MaterialTheme.colorScheme.primary
+        )
     }
 }

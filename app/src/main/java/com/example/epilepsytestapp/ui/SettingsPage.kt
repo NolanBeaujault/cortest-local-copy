@@ -1,25 +1,37 @@
 package com.example.epilepsytestapp.ui
 
+import android.content.Context
+import android.content.Intent
+import android.provider.Settings
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
 import com.example.epilepsytestapp.R
+import com.example.epilepsytestapp.model.Patient
 import com.example.epilepsytestapp.ui.theme.AppTheme
 
-
 @Composable
-fun SettingsPage(navController: NavHostController) {
+fun SettingsPage(
+    navController: NavHostController,
+    onLogout: () -> Unit,
+    onModifyConfiguration: () -> Unit,
+    patient: List<Patient>
+) {
+    val isFrontCamera = remember { mutableStateOf(true) } // ✅ Stockage de l'état de la caméra
+
     AppTheme {
         Box(
             modifier = Modifier
@@ -30,9 +42,9 @@ fun SettingsPage(navController: NavHostController) {
             Column(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(bottom = 70.dp)
+                    .padding(bottom = 70.dp) // Espace pour la barre de navigation
             ) {
-                // Barre supérieure
+                // Rectangle bleu pâle en haut
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -71,51 +83,94 @@ fun SettingsPage(navController: NavHostController) {
                             painter = painterResource(id = R.mipmap.ic_user_foreground),
                             contentDescription = "Profil",
                             modifier = Modifier
-                                .fillMaxHeight() // Taille ajustée
-                                .padding(start = 16.dp) // Espace supplémentaire à gauche de l'icône
+                                .fillMaxHeight()
+                                .padding(start = 16.dp)
+                                .clickable {
+                                    navController.navigate("profile")
+                                }
                         )
                     }
                 }
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                // Options des paramètres
-                Text(
-                    text = "Informations de connexion",
-                    modifier = Modifier
-                        .padding(16.dp)
-                        .fillMaxWidth()
-                        .border(1.dp, Color.Gray)
-                        .padding(8.dp),
-                    style = MaterialTheme.typography.bodyLarge
-                )
+                SettingsOption(text = "Gérer les autorisations") { openAppSettings(navController.context) }
+                SettingsOption(text = "Déconnexion") { onLogout(); navController.navigate("login") }
+                SettingsOption(text = "Modifier la configuration", onClick = onModifyConfiguration)
 
-                Text(
-                    text = "Autorisation caméra",
-                    modifier = Modifier
-                        .padding(16.dp)
-                        .fillMaxWidth()
-                        .border(1.dp, Color.Gray)
-                        .padding(8.dp),
-                    style = MaterialTheme.typography.bodyLarge
-                )
+                Spacer(modifier = Modifier.height(16.dp))
 
-                Text(
-                    text = "Déconnexion",
+                // ✅ Ligne avec le switch caméra et ses labels
+                Row(
                     modifier = Modifier
-                        .padding(16.dp)
                         .fillMaxWidth()
-                        .border(1.dp, Color.Gray)
-                        .padding(8.dp),
-                    style = MaterialTheme.typography.bodyLarge
-                )
+                        .padding(horizontal = 16.dp, vertical = 8.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "Caméra",
+                        style = MaterialTheme.typography.bodyLarge.copy(fontSize = 20.sp),
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Text(
+                            text = "Arrière",
+                            style = MaterialTheme.typography.bodyLarge.copy(fontSize = 18.sp),
+                            color = if (!isFrontCamera.value) MaterialTheme.colorScheme.primary else Color.Gray
+                        )
+                        Switch(
+                            checked = isFrontCamera.value,
+                            onCheckedChange = { isFrontCamera.value = it },
+                            colors = SwitchDefaults.colors(
+                                checkedThumbColor = Color.White,
+                                checkedTrackColor = MaterialTheme.colorScheme.primary,
+                                uncheckedThumbColor = Color.White,
+                                uncheckedTrackColor = Color.Gray
+                            )
+                        )
+                        Text(
+                            text = "Avant",
+                            style = MaterialTheme.typography.bodyLarge.copy(fontSize = 18.sp),
+                            color = if (isFrontCamera.value) MaterialTheme.colorScheme.primary else Color.Gray
+                        )
+                    }
+                }
+
+
             }
-
-            // Barre de navigation en bas
             NavigationBar(
-                navController = navController,
-                modifier = Modifier.align(Alignment.BottomCenter) // Fixe la barre en bas
+                    navController = navController,
+            modifier = Modifier.align(Alignment.BottomCenter) // Fixe la barre en bas
             )
         }
+
     }
+}
+
+@Composable
+fun SettingsOption(text: String, onClick: () -> Unit) {
+    Text(
+        text = text,
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(16.dp)
+            .border(1.dp, Color.Gray, RoundedCornerShape(4.dp))
+            .clickable { onClick() }
+            .padding(12.dp),
+        style = MaterialTheme.typography.bodyLarge.copy(
+            textAlign = TextAlign.Start
+        )
+    )
+}
+
+// Fonction pour ouvrir les paramètres de l'application
+fun openAppSettings(context: Context) {
+    val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+        data = android.net.Uri.fromParts("package", context.packageName, null)
+    }
+    context.startActivity(intent)
 }

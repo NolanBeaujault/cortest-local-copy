@@ -1,81 +1,93 @@
 package com.example.epilepsytestapp.ui
 
 import android.content.Context
-import androidx.camera.core.CameraSelector
+import android.util.Log
+import androidx.camera.core.*
 import androidx.camera.lifecycle.ProcessCameraProvider
-import androidx.compose.foundation.Image
+import androidx.camera.video.*
 import androidx.compose.foundation.layout.*
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
+import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.LifecycleOwner
-import com.example.epilepsytestapp.R
-import androidx.compose.ui.res.painterResource
-import androidx.compose.foundation.clickable
 import androidx.navigation.NavHostController
-
+import com.example.epilepsytestapp.R
+import com.example.epilepsytestapp.category.LocalCatManager
+import com.example.epilepsytestapp.savefiles.saveTestInstructionsAsPDF
+import com.example.epilepsytestapp.savefiles.startRecording
+import com.example.epilepsytestapp.savefiles.stopRecording
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 @Composable
 fun TestScreen(navController: NavHostController) {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
 
-
-    // Liste des consignes
-    val instructions = listOf(
-        "Regardez l'écran pendant 10 secondes.",
-        "Fermez les yeux et détendez-vous.",
-        "Suivez les instructions affichées à l'écran.",
-        "Levez votre bras droit.",
-        "Levez votre bras gauche."
-    )
-
-    // État pour suivre la consigne actuelle
-    var currentInstructionIndex by remember { mutableStateOf(0) }
+    val instructions = remember { mutableStateListOf<String>() } // ✅ Liste mutable des instructions chargées
+    var currentInstructionIndex by remember { mutableIntStateOf(0) }
     val currentInstruction = instructions.getOrNull(currentInstructionIndex)
 
-    // État pour gérer les erreurs de la caméra
-    var cameraError by remember { mutableStateOf(false) }
+    var isRecording by remember { mutableStateOf(false) }
+    val videoCapture = remember { mutableStateOf<VideoCapture<Recorder>?>(null) }
+    val recording = remember { mutableStateOf<Recording?>(null) }
+
+    val instructionsLog = remember { mutableListOf<Pair<String, Int>>() }
+    var elapsedTime by remember { mutableStateOf(0) }
+
+    val coroutineScope = rememberCoroutineScope()
+
+    LaunchedEffect(Unit) {
+        coroutineScope.launch {
+            Log.d("TestScreen", "📂 Chargement des tests depuis le fichier local...")
+            val localTests = LocalCatManager.loadLocalTests(context)
+            val extractedInstructions = localTests.values.flatten().map { it.consigne }
+            instructions.addAll(extractedInstructions)
+            Log.d("TestScreen", "✅ Instructions chargées : $instructions")
+        }
+    }
+
+    LaunchedEffect(isRecording) {
+        while (isRecording) {
+            delay(1000L)
+            elapsedTime++
+        }
+    }
 
     Box(modifier = Modifier.fillMaxSize()) {
-        if (!cameraError) {
-            // Affiche la caméra
-            CameraPreview(
-                context = context,
-                lifecycleOwner = lifecycleOwner,
-                modifier = Modifier.fillMaxSize()
-            )
-        } else {
-            // Affiche un message d'erreur
-            Text(
-                text = "Impossible d'accéder à la caméra",
-                color = Color.Red,
-                modifier = Modifier.align(Alignment.Center),
-                style = MaterialTheme.typography.bodyLarge
-            )
-        }
+        CameraPreview(
+            context = context,
+            lifecycleOwner = lifecycleOwner,
+            videoCapture = videoCapture,
+            modifier = Modifier.fillMaxSize()
+        )
 
-        // Consignes affichées au centre de l'écran
-        currentInstruction?.let {
-            Text(
-                text = it,
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+        ) {
+            Box(
                 modifier = Modifier
-                    .align(Alignment.Center)
-                    .padding(16.dp),
-                style = MaterialTheme.typography.headlineSmall.copy(color = Color.White),
-                maxLines = 2
-            )
+                    .fillMaxHeight(1 / 3f)
+                    .align(Alignment.BottomCenter)
+                    .padding(bottom = 16.dp)
+            ) {
+                Text(
+                    text = currentInstruction ?: "Chargement...",
+                    style = MaterialTheme.typography.headlineSmall.copy(fontSize = 28.sp),
+                    color = MaterialTheme.colorScheme.background,
+                    modifier = Modifier.padding(horizontal = 16.dp)
+                )
+            }
         }
 
-        // Images cliquables en bas de l'écran
         Row(
             modifier = Modifier
                 .align(Alignment.BottomCenter)
@@ -83,76 +95,82 @@ fun TestScreen(navController: NavHostController) {
                 .padding(15.dp),
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            // Image de croix
             ImageClickable(
-                imageResId = R.mipmap.ic_close_foreground, // Remplacez par l'ID de votre image
+                imageResId = R.mipmap.ic_close_foreground,
                 contentDescription = "Arrêter le test",
-                onClick = { navController.navigate("confirmation/${currentInstructionIndex}") }
+                onClick = {
+                    if (isRecording) {
+                        stopRecording(context, recording)
+                        isRecording = false
+                    }
+                    instructionsLog.add(Pair(currentInstruction ?: "", elapsedTime))
+                    saveTestInstructionsAsPDF(context, instructionsLog, elapsedTime)
+                    navController.navigate("confirmation")
+                }
             )
 
-            // Image de flèche
             ImageClickable(
-                imageResId = R.mipmap.ic_next_foreground, // Remplacez par l'ID de votre image
+                imageResId = R.mipmap.ic_next_foreground,
                 contentDescription = "Instruction suivante",
                 onClick = {
                     if (currentInstructionIndex < instructions.size - 1) {
+                        instructionsLog.add(Pair(currentInstruction ?: "", elapsedTime))
                         currentInstructionIndex++
                     } else {
-                        // Si on est à la dernière consigne, arrêter le test
+                        if (isRecording) {
+                            stopRecording(context, recording)
+                            isRecording = false
+                        }
+                        instructionsLog.add(Pair(currentInstruction ?: "", elapsedTime))
+                        saveTestInstructionsAsPDF(context, instructionsLog, elapsedTime)
                         navController.navigate("confirmation")
                     }
                 }
             )
         }
     }
-}
 
-
-@Composable
-fun ImageClickable(
-    imageResId: Int,
-    contentDescription: String?,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    Image(
-        painter = painterResource(id = imageResId),
-        contentDescription = contentDescription,
-        modifier = modifier
-            .size(180.dp) // Taille de l'image multipliée par 5
-            .padding(6.dp)
-            .clickable(onClick = onClick)
-    )
+    LaunchedEffect(videoCapture.value) {
+        videoCapture.value?.let {
+            recording.value = startRecording(context, it)
+            isRecording = true
+            elapsedTime = 0
+        }
+    }
 }
 
 @Composable
 fun CameraPreview(
     context: Context,
     lifecycleOwner: LifecycleOwner,
+    videoCapture: MutableState<VideoCapture<Recorder>?>,
     modifier: Modifier = Modifier
 ) {
     AndroidView(
         factory = { ctx ->
             androidx.camera.view.PreviewView(ctx).apply {
                 val cameraProviderFuture = ProcessCameraProvider.getInstance(ctx)
-
                 cameraProviderFuture.addListener({
                     try {
                         val cameraProvider = cameraProviderFuture.get()
                         val cameraSelector = CameraSelector.DEFAULT_BACK_CAMERA
+                        val preview = Preview.Builder().build().also {
+                            it.setSurfaceProvider(this.surfaceProvider)
+                        }
 
-                        // Préparation de l'objet Preview
-                        val preview = androidx.camera.core.Preview.Builder().build()
-                        preview.surfaceProvider = this.surfaceProvider
+                        val recorder = Recorder.Builder()
+                            .setQualitySelector(QualitySelector.from(Quality.HD))
+                            .build()
+                        val videoCaptureUseCase = VideoCapture.withOutput(recorder)
 
-                        // Lier la caméra à la PreviewView
+                        cameraProvider.unbindAll()
                         cameraProvider.bindToLifecycle(
-                            lifecycleOwner,
-                            cameraSelector,
-                            preview
+                            lifecycleOwner, cameraSelector, preview, videoCaptureUseCase
                         )
+                        videoCapture.value = videoCaptureUseCase
+                        Log.d("CameraPreview", "📷 Caméra initialisée avec succès")
                     } catch (e: Exception) {
-                        e.printStackTrace() // Gérer les erreurs ici
+                        Log.e("CameraPreview", "❌ Erreur d'initialisation caméra", e)
                     }
                 }, ContextCompat.getMainExecutor(ctx))
             }

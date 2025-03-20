@@ -3,6 +3,7 @@ package com.example.epilepsytestapp.ui
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
@@ -16,10 +17,11 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
 import com.example.epilepsytestapp.R
+import com.example.epilepsytestapp.model.Patient
 import com.example.epilepsytestapp.ui.theme.AppTheme
 
 @Composable
-fun HomePage(navController: NavHostController) {
+fun HomePage(navController: NavHostController, patient: List<Patient>) {
     AppTheme {
         Box(
             modifier = Modifier
@@ -71,12 +73,14 @@ fun HomePage(navController: NavHostController) {
                             painter = painterResource(id = R.mipmap.ic_user_foreground),
                             contentDescription = "Profil",
                             modifier = Modifier
-                                .fillMaxHeight() // Taille ajustée
-                                .padding(start = 16.dp) // Espace supplémentaire à gauche de l'icône
+                                .fillMaxHeight()
+                                .padding(start = 16.dp)
+                                .clickable {
+                                     navController.navigate("profile")
+                                }
                         )
                     }
                 }
-
 
                 Spacer(modifier = Modifier.height(16.dp))
 

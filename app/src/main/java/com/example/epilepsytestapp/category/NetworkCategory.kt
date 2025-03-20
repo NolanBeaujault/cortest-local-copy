@@ -71,8 +71,9 @@ suspend fun loadCategoriesFromNetwork(): Map<String, List<Test>> {
 
                     if (value is Map<*, *>) {
                         val testName = value["nom"] as? String ?: "Test inconnu"
-                        val consigneA = value["consigneA"] as? String ?: "ConsigneA inconnue"
-                        val consigneH = value["consigneH"] as? String ?: "ConsigneH inconnue"
+                        val consigneA = value["a_consigne"] as? String ?: "ConsigneA inconnue"
+                        val consigneH = value["h_consigne"] as? String ?: "ConsigneH inconnue"
+                        val typetest = value["type"] as? String ?: "Type inconnu"
                         val idTest = when (val id = value["id_test"]) {
                             is Int -> id
                             is Double -> id.toInt()
@@ -88,7 +89,7 @@ suspend fun loadCategoriesFromNetwork(): Map<String, List<Test>> {
                         val groupe = value["groupe"] as? Map<String, String> ?: emptyMap()
 
                         val test = Test(
-                            id_test = idTest,
+                            idtest = idTest,
                             nom = testName,
                             consigneA = consigneA,
                             consigneH = consigneH,
@@ -99,7 +100,8 @@ suspend fun loadCategoriesFromNetwork(): Map<String, List<Test>> {
                             phrase_repet = phraseRepet,
                             couleur = couleur,
                             mot = mot,
-                            groupe = groupe
+                            groupe = groupe,
+                            typetest = typetest,
                         )
 
                         testsList.add(test)

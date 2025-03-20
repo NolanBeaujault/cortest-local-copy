@@ -44,7 +44,7 @@ fun TestScreen(navController: NavHostController) {
 
     val recordedVideos = remember { mutableStateListOf<String>() } // ✅ Liste des vidéos enregistrées
     val instructionsLog = remember { mutableListOf<Pair<String, Int>>() }
-    var elapsedTime by remember { mutableStateOf(0) }
+    var elapsedTime by remember { mutableIntStateOf(0) }
 
     val coroutineScope = rememberCoroutineScope()
     var isFrontCamera by remember { mutableStateOf(true) }
@@ -61,8 +61,8 @@ fun TestScreen(navController: NavHostController) {
             Log.d("TestScreen", "📂 Chargement des tests depuis le fichier local...")
             val localTests = LocalCatManager.loadLocalTests(context)
             localTests.values.flatten().forEach { test ->
-                test.consigneA?.let { instructionsA.add(it) }
-                test.consigneH?.let { instructionsH.add(it) }
+                test.consigneA.let { instructionsA.add(it) }
+                test.consigneH.let { instructionsH.add(it) }
             }
             currentInstruction.value = currentConsigne
         }
@@ -117,7 +117,7 @@ fun TestScreen(navController: NavHostController) {
                 onClick = {
                     if (isRecording) {
                         val videoPath = stopRecording(context, recording)
-                        videoPath?.let { recordedVideos.add(it.toString()) }
+                        videoPath.let { recordedVideos.add(it.toString()) }
                         isRecording = false
                     }
                     instructionsLog.add(Pair(currentInstruction.value, elapsedTime))
@@ -166,7 +166,7 @@ fun TestScreen(navController: NavHostController) {
             onClick = {
                 if (isRecording) {
                     val videoPath = stopRecording(context, recording)
-                    videoPath?.let { recordedVideos.add(it.toString()) }
+                    videoPath.let { recordedVideos.add(it.toString()) }
                     isRecording = false
                 }
                 isFrontCamera = !isFrontCamera
@@ -243,7 +243,7 @@ fun bindCamera(
             cameraProvider.unbindAll()
 
             val preview = Preview.Builder().build().also {
-                it.setSurfaceProvider(previewView.surfaceProvider)
+                it.surfaceProvider = previewView.surfaceProvider
             }
 
             val recorder = Recorder.Builder()

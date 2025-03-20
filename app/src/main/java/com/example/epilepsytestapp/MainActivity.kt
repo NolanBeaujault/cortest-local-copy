@@ -193,6 +193,8 @@ fun NavigationGraph(
     onRememberMe: (Boolean) -> Unit,
     onLogout: () -> Unit
 ) {
+    val recordedVideos = remember { mutableStateListOf<String>() }
+
     NavHost(
         navController = navController,
         startDestination = startDestination
@@ -290,7 +292,7 @@ fun NavigationGraph(
         // Test
         composable("test/{currentInstructionIndex}") {
             if (isAuthenticated) {
-                TestScreen(navController = navController)
+                TestScreen(navController = navController, recordedVideos = recordedVideos)
             } else {
                 navController.navigate("login")
             }
@@ -298,6 +300,8 @@ fun NavigationGraph(
 
         composable("confirmation") {
             ConfirmationScreen(
+                navController = navController, // Pass the navController here
+                recordedVideos = recordedVideos,
                 onStopTestConfirmed = {
                     navController.navigate("questionnaire")
                 },

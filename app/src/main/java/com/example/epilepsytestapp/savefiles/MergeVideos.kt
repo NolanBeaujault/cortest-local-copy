@@ -89,7 +89,7 @@ fun mergeVideos(context: Context, videoPaths: List<String>): String? {
                     }
 
                     bufferInfo.presentationTimeUs = currentPresentationTimeUs + extractor.sampleTime
-                    bufferInfo.flags = extractor.sampleFlags
+                    bufferInfo.flags = MediaCodec.BUFFER_FLAG_SYNC_FRAME
                     mediaMuxer.writeSampleData(if (extractor.getTrackFormat(i).getString(MediaFormat.KEY_MIME)?.startsWith("video/") == true) videoTrackIndex else audioTrackIndex, buffer, bufferInfo)
 
                     extractor.advance()

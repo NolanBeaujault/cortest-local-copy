@@ -6,7 +6,6 @@ import android.media.MediaExtractor
 import android.media.MediaFormat
 import android.media.MediaMuxer
 import android.media.MediaScannerConnection
-import android.net.Uri
 import android.util.Log
 import java.io.File
 import java.nio.ByteBuffer
@@ -27,60 +26,82 @@ fun mergeVideos(context: Context, videoPaths: List<String>): String? {
         val mediaMuxer = MediaMuxer(outputFile.absolutePath, MediaMuxer.OutputFormat.MUXER_OUTPUT_MPEG_4)
         val bufferSize = 1024 * 1024 // 1MB buffer
         val buffer = ByteBuffer.allocate(bufferSize)
-        val extractor = MediaExtractor()
         val bufferInfo = MediaCodec.BufferInfo()
 
-        var trackIndex = -1
+        var videoTrackIndex = -1
+        var audioTrackIndex = -1
         var hasVideoTrack = false
+        var hasAudioTrack = false
+        var currentPresentationTimeUs = 0L
 
+        // Ajout des pistes vidéo et audio
         for (videoPath in videoPaths) {
+            val videoFile = File(videoPath)
+            if (!videoFile.exists()) {
+                Log.e("MergeVideo", "❌ Le fichier vidéo n'existe pas : $videoPath")
+                continue
+            }
+
+            val extractor = MediaExtractor()
             extractor.setDataSource(videoPath)
+
             for (i in 0 until extractor.trackCount) {
                 val format = extractor.getTrackFormat(i)
                 val mime = format.getString(MediaFormat.KEY_MIME)
-                if (mime?.startsWith("video/") == true) {
-                    if (!hasVideoTrack) {
-                        trackIndex = mediaMuxer.addTrack(format)
-                        mediaMuxer.start()
-                        hasVideoTrack = true
-                        Log.d("MergeVideo", "🎬 Piste vidéo ajoutée : $mime")
-                    }
-                    extractor.selectTrack(i)
-                    break
+                if (mime?.startsWith("video/") == true && videoTrackIndex == -1) {
+                    videoTrackIndex = mediaMuxer.addTrack(format)
+                    hasVideoTrack = true
+                    Log.d("MergeVideo", "🎬 Piste vidéo ajoutée : $mime")
+                } else if (mime?.startsWith("audio/") == true && audioTrackIndex == -1) {
+                    audioTrackIndex = mediaMuxer.addTrack(format)
+                    hasAudioTrack = true
+                    Log.d("MergeVideo", "🎵 Piste audio ajoutée : $mime")
                 }
             }
+            extractor.release()
         }
 
-        if (!hasVideoTrack) {
-            Log.e("MergeVideo", "❌ Aucune piste vidéo valide trouvée")
-            return null
+        // Démarrage du MediaMuxer après avoir ajouté toutes les pistes
+        if (hasVideoTrack || hasAudioTrack) {
+            mediaMuxer.start()
         }
 
+        // Lecture des pistes et écriture des échantillons
         for (videoPath in videoPaths) {
-            Log.d("MergeVideo", "🔄 Traitement de la vidéo : $videoPath")
-            extractor.setDataSource(videoPath)
-            extractor.selectTrack(trackIndex)
-
-            while (true) {
-                bufferInfo.offset = 0
-                bufferInfo.size = extractor.readSampleData(buffer, 0)
-
-                if (bufferInfo.size < 0) {
-                    Log.d("MergeVideo", "✅ Fin de la lecture du fichier : $videoPath")
-                    break
-                }
-
-                bufferInfo.presentationTimeUs = extractor.sampleTime
-                bufferInfo.flags = MediaCodec.BUFFER_FLAG_SYNC_FRAME
-                mediaMuxer.writeSampleData(trackIndex, buffer, bufferInfo)
-
-                extractor.advance()
+            val videoFile = File(videoPath)
+            if (!videoFile.exists()) {
+                Log.e("MergeVideo", "❌ Le fichier vidéo n'existe pas : $videoPath")
+                continue
             }
+
+            val extractor = MediaExtractor()
+            extractor.setDataSource(videoPath)
+
+            for (i in 0 until extractor.trackCount) {
+                extractor.selectTrack(i)
+                while (true) {
+                    bufferInfo.offset = 0
+                    bufferInfo.size = extractor.readSampleData(buffer, 0)
+
+                    if (bufferInfo.size < 0) {
+                        Log.d("MergeVideo", "✅ Fin de la lecture du fichier : $videoPath")
+                        break
+                    }
+
+                    bufferInfo.presentationTimeUs = currentPresentationTimeUs + extractor.sampleTime
+                    bufferInfo.flags = extractor.sampleFlags
+                    mediaMuxer.writeSampleData(if (extractor.getTrackFormat(i).getString(MediaFormat.KEY_MIME)?.startsWith("video/") == true) videoTrackIndex else audioTrackIndex, buffer, bufferInfo)
+
+                    extractor.advance()
+                }
+                extractor.unselectTrack(i)
+            }
+            currentPresentationTimeUs += bufferInfo.presentationTimeUs + bufferInfo.size
+            extractor.release()
         }
 
         mediaMuxer.stop()
         mediaMuxer.release()
-        extractor.release()
 
         Log.d("MergeVideo", "✅ Fusion des vidéos réussie : ${outputFile.absolutePath}")
 

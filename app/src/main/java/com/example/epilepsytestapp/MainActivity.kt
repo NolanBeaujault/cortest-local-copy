@@ -182,8 +182,6 @@ fun EpilepsyTestApp(
     }
 }
 
-
-
 @Composable
 fun NavigationGraph(
     navController: NavHostController,
@@ -194,6 +192,8 @@ fun NavigationGraph(
     onRememberMe: (Boolean) -> Unit,
     onLogout: () -> Unit
 ) {
+    val recordedVideos = remember { mutableStateListOf<String>() }
+
     NavHost(
         navController = navController,
         startDestination = startDestination
@@ -235,13 +235,6 @@ fun NavigationGraph(
             InfoPersoScreen(navController = navController)
         }
 
-
-        composable("home") {
-            if (isAuthenticated) {
-                HomePage(navController = navController, patient = patients)
-            }
-        }
-
         composable("settings") {
             if (isAuthenticated) {
                 SettingsPage(
@@ -277,7 +270,7 @@ fun NavigationGraph(
 
         composable("test") {
             if (isAuthenticated) {
-                TestScreen(navController = navController)
+                TestScreen(navController = navController, recordedVideos = recordedVideos)
             } else {
                 navController.navigate("login")
             }
@@ -285,6 +278,8 @@ fun NavigationGraph(
 
         composable("confirmation") {
             ConfirmationScreen(
+                navController = navController, // Pass the navController here
+                recordedVideos = recordedVideos,
                 onStopTestConfirmed = {
                     navController.navigate("questionnaire")
                 },

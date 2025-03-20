@@ -5,7 +5,6 @@ import android.util.Log
 import androidx.camera.core.*
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.video.*
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -13,7 +12,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
@@ -31,7 +29,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 @Composable
-fun TestScreen(navController: NavHostController) {
+fun TestScreen(navController: NavHostController, recordedVideos: MutableList<String>) {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
 
@@ -43,8 +41,8 @@ fun TestScreen(navController: NavHostController) {
     var isRecording by remember { mutableStateOf(false) }
     val videoCapture = remember { mutableStateOf<VideoCapture<Recorder>?>(null) }
     val recording = remember { mutableStateOf<Recording?>(null) }
+    val videoFilePath = remember { mutableStateOf<String?>(null) }
 
-    val recordedVideos = remember { mutableStateListOf<String>() }
     val instructionsLog = remember { mutableListOf<Pair<String, Int>>() }
     var elapsedTime by remember { mutableIntStateOf(0) }
 
@@ -116,7 +114,7 @@ fun TestScreen(navController: NavHostController) {
             }
         }
 
-        // 🔹 Bouton pour arrêter le test et fusionner les vidéos
+        // 🔹 Bouton pour arrêter le test et naviguer vers l'écran de confirmation
         Row(
             modifier = Modifier
                 .align(Alignment.BottomCenter)
@@ -129,19 +127,13 @@ fun TestScreen(navController: NavHostController) {
                 contentDescription = "Arrêter le test",
                 onClick = {
                     if (isRecording) {
-                        val videoPath = stopRecording(context, recording)
-                        videoPath.let { recordedVideos.add(it.toString()) }
+                        val videoPath = stopRecording(context, recording, videoFilePath)
+                        videoPath?.let { recordedVideos.add(it) }
                         isRecording = false
                     }
                     instructionsLog.add(Pair(currentInstruction.value, elapsedTime))
 
-                    // ✅ Fusionner les vidéos enregistrées
-                    if (recordedVideos.isNotEmpty()) {
-                        val mergedVideoPath = mergeVideos(context, recordedVideos)
-                        Log.d("TestScreen", "Vidéo fusionnée : $mergedVideoPath")
-                    }
-
-                    saveTestInstructionsAsPDF(context, instructionsLog, elapsedTime)
+                    // ✅ Naviguer vers l'écran de confirmation
                     navController.navigate("confirmation")
                 }
             )
@@ -154,18 +146,19 @@ fun TestScreen(navController: NavHostController) {
                     if (currentInstructionIndex < (if (isFrontCamera) instructionsA.size else instructionsH.size) - 1) {
                         instructionsLog.add(Pair(currentInstruction.value, elapsedTime))
                         currentInstructionIndex++
-                        currentInstruction.value = if (isFrontCamera) {
+                        currentConsigne = if (isFrontCamera) {
                             instructionsA.getOrNull(currentInstructionIndex) ?: "Consigne A"
                         } else {
                             instructionsH.getOrNull(currentInstructionIndex) ?: "Consigne H"
                         }
+                        currentInstruction.value = currentConsigne
                     } else {
                         if (isRecording) {
-                            stopRecording(context, recording)
+                            val videoPath = stopRecording(context, recording, videoFilePath)
+                            videoPath?.let { recordedVideos.add(it) }
                             isRecording = false
                         }
                         instructionsLog.add(Pair(currentInstruction.value, elapsedTime))
-                        saveTestInstructionsAsPDF(context, instructionsLog, elapsedTime)
                         navController.navigate("confirmation")
                     }
                 }
@@ -178,8 +171,8 @@ fun TestScreen(navController: NavHostController) {
             contentDescription = "Changer de caméra",
             onClick = {
                 if (isRecording) {
-                    val videoPath = stopRecording(context, recording)
-                    videoPath.let { recordedVideos.add(it.toString()) }
+                    val videoPath = stopRecording(context, recording, videoFilePath)
+                    videoPath?.let { recordedVideos.add(it) }
                     isRecording = false
                 }
                 isFrontCamera = !isFrontCamera
@@ -194,18 +187,19 @@ fun TestScreen(navController: NavHostController) {
             modifier = Modifier
                 .padding(10.dp)
                 .align(Alignment.TopEnd)
-                .size(80.dp)  // Ajout de cette ligne pour réduire la taille
+                .size(80.dp)  // Ajustement de la taille
         )
 
-    // 🔹 Démarrer l'enregistrement après le changement de caméra
-    LaunchedEffect(videoCapture.value, isFrontCamera) {
-        videoCapture.value?.let {
-            recording.value = startRecording(context, it, recording)
-            isRecording = true
-            elapsedTime = 0
+        // 🔹 Démarrer l'enregistrement après le changement de caméra
+        LaunchedEffect(videoCapture.value, isFrontCamera) {
+            videoCapture.value?.let {
+                recording.value = startRecording(context, it, recording, videoFilePath)
+                isRecording = true
+                elapsedTime = 0
+            }
         }
     }
-}}
+}
 
 @Composable
 fun CameraPreview(

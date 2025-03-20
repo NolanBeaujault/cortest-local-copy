@@ -48,7 +48,7 @@ fun TestConfigurationScreen(navController: NavController) {
 
                 loadedCategories.forEach { (categoryName, testList) ->
                     val preSelectedTests = testList.filter { test ->
-                        localTestConfiguration[categoryName]?.any { it.id_test == test.id_test } == true
+                        localTestConfiguration[categoryName]?.any { it.idtest == test.idtest } == true
                     }.toMutableSet()
 
                     if (preSelectedTests.isNotEmpty()) {

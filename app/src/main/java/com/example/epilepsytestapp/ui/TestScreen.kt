@@ -5,6 +5,7 @@ import android.util.Log
 import androidx.camera.core.*
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.video.*
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -12,6 +13,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
@@ -36,35 +38,46 @@ fun TestScreen(navController: NavHostController) {
     val instructionsA = remember { mutableStateListOf<String>() }
     val instructionsH = remember { mutableStateListOf<String>() }
     var currentInstructionIndex by remember { mutableIntStateOf(0) }
-    val currentInstruction = remember { mutableStateOf<String>("") }
+    val currentInstruction = remember { mutableStateOf("Chargement...") }
 
     var isRecording by remember { mutableStateOf(false) }
     val videoCapture = remember { mutableStateOf<VideoCapture<Recorder>?>(null) }
     val recording = remember { mutableStateOf<Recording?>(null) }
 
-    val recordedVideos = remember { mutableStateListOf<String>() } // ✅ Liste des vidéos enregistrées
+    val recordedVideos = remember { mutableStateListOf<String>() }
     val instructionsLog = remember { mutableListOf<Pair<String, Int>>() }
     var elapsedTime by remember { mutableIntStateOf(0) }
 
     val coroutineScope = rememberCoroutineScope()
     var isFrontCamera by remember { mutableStateOf(true) }
 
-    val currentConsigne = if (isFrontCamera) {
-        instructionsA.getOrNull(currentInstructionIndex) ?: "Consigne A"
-    } else {
-        instructionsH.getOrNull(currentInstructionIndex) ?: "Consigne H"
+    var currentConsigne by remember {
+        mutableStateOf(if (isFrontCamera) {
+            instructionsA.getOrNull(currentInstructionIndex) ?: "Aucune consigne"
+        } else {
+            instructionsH.getOrNull(currentInstructionIndex) ?: "Aucune consigne"
+        })
     }
 
-    // 📂 Charger les tests et instructions
+    // 📂 Chargement des consignes
     LaunchedEffect(Unit) {
         coroutineScope.launch {
             Log.d("TestScreen", "📂 Chargement des tests depuis le fichier local...")
             val localTests = LocalCatManager.loadLocalTests(context)
+
             localTests.values.flatten().forEach { test ->
-                test.consigneA.let { instructionsA.add(it) }
-                test.consigneH.let { instructionsH.add(it) }
+                test.consigneA?.let { instructionsA.add(it) }
+                test.consigneH?.let { instructionsH.add(it) }
+            }
+
+            // ✅ Mise à jour de `currentInstruction` après le chargement des consignes
+            currentConsigne = if (isFrontCamera) {
+                instructionsA.getOrNull(currentInstructionIndex) ?: "Aucune consigne"
+            } else {
+                instructionsH.getOrNull(currentInstructionIndex) ?: "Aucune consigne"
             }
             currentInstruction.value = currentConsigne
+            Log.d("TestScreen", "✅ Consigne initiale : ${currentInstruction.value}")
         }
     }
 
@@ -179,10 +192,10 @@ fun TestScreen(navController: NavHostController) {
                 videoCapture.value = null
             },
             modifier = Modifier
-                .padding(16.dp)
+                .padding(10.dp)
                 .align(Alignment.TopEnd)
+                .size(80.dp)  // Ajout de cette ligne pour réduire la taille
         )
-    }
 
     // 🔹 Démarrer l'enregistrement après le changement de caméra
     LaunchedEffect(videoCapture.value, isFrontCamera) {
@@ -192,7 +205,7 @@ fun TestScreen(navController: NavHostController) {
             elapsedTime = 0
         }
     }
-}
+}}
 
 @Composable
 fun CameraPreview(

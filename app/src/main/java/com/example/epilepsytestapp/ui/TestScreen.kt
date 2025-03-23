@@ -63,10 +63,11 @@ fun TestScreen(navController: NavHostController, recordedVideos: MutableList<Str
             Log.d("TestScreen", "📂 Chargement des tests depuis le fichier local...")
             val localTests = LocalCatManager.loadLocalTests(context)
 
-            localTests.values.flatten().forEach { test ->
-                test.consigneA?.let { instructionsA.add(it) }
-                test.consigneH?.let { instructionsH.add(it) }
-            }
+            val extractedInstructionsH = localTests.map { it.h_consigne }.filterNotNull()
+            val extractedInstructionsA = localTests.map { it.a_consigne }.filterNotNull()
+
+            instructionsH.addAll(extractedInstructionsH)
+            instructionsA.addAll(extractedInstructionsA)
 
             // ✅ Mise à jour de `currentInstruction` après le chargement des consignes
             currentConsigne = if (isFrontCamera) {

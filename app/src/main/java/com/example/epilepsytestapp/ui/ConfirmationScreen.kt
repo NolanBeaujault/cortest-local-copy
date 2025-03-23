@@ -1,5 +1,6 @@
 package com.example.epilepsytestapp.ui
 
+import android.util.Log
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -7,20 +8,30 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.navigation.NavHostController
 import com.example.epilepsytestapp.R
+import com.example.epilepsytestapp.savefiles.mergeVideos
 import com.example.epilepsytestapp.ui.theme.AppTheme
+import kotlinx.coroutines.launch
 
 @Composable
 fun ConfirmationScreen(
+    navController: NavHostController,
+    recordedVideos: MutableList<String>,
     onStopTestConfirmed: () -> Unit,
     onCancelTest: () -> Unit
 ) {
+    val context = LocalContext.current
+    val coroutineScope = rememberCoroutineScope()
+
     AppTheme {
         Box(
             modifier = Modifier
@@ -58,7 +69,16 @@ fun ConfirmationScreen(
                         iconResId = R.mipmap.ic_check_foreground,
                         label = "Oui j'arrête\nle test",
                         onClick = {
-                            onStopTestConfirmed()
+                            coroutineScope.launch {
+                                // Fusionner les vidéos enregistrées
+                                val mergedVideoPath = mergeVideos(context, recordedVideos)
+                                Log.d("ConfirmationScreen", "Vidéo fusionnée : $mergedVideoPath")
+
+                                // Vider la liste recordedVideos après la fusion
+                                recordedVideos.clear()
+
+                                onStopTestConfirmed()
+                            }
                         }
                     )
                     Spacer(modifier = Modifier.width(16.dp)) // Space between buttons
@@ -129,3 +149,4 @@ fun ImageClickable(
             .clickable(onClick = onClick)
     )
 }
+

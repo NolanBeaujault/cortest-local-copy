@@ -39,6 +39,7 @@ class MainActivity : ComponentActivity() {
         // Vérifier et demander les autorisations nécessaires
         requestPermissionsIfNecessary()
 
+
         setContent {
             val patients = remember { mutableStateListOf<Patient>() }
             var isLoading by remember { mutableStateOf(true) }
@@ -192,6 +193,8 @@ fun NavigationGraph(
     onRememberMe: (Boolean) -> Unit,
     onLogout: () -> Unit
 ) {
+    val recordedVideos = remember { mutableStateListOf<String>() }
+
     NavHost(
         navController = navController,
         startDestination = startDestination
@@ -270,9 +273,10 @@ fun NavigationGraph(
             }
         }
 
-        composable("calendar") {
+        // Page Demo
+        composable("demo/{currentInstructionIndex}") {
             if (isAuthenticated) {
-                CalendarPage(navController = navController)
+                DemoScreen(navController = navController)
             } else {
                 navController.navigate("login")
             }
@@ -286,9 +290,10 @@ fun NavigationGraph(
             }
         }
 
-        composable("test") {
+        // Test
+        composable("test/{currentInstructionIndex}") {
             if (isAuthenticated) {
-                TestScreen(navController = navController)
+                TestScreen(navController = navController, recordedVideos = recordedVideos)
             } else {
                 navController.navigate("login")
             }
@@ -296,6 +301,8 @@ fun NavigationGraph(
 
         composable("confirmation") {
             ConfirmationScreen(
+                navController = navController, // Pass the navController here
+                recordedVideos = recordedVideos,
                 onStopTestConfirmed = {
                     navController.navigate("questionnaire")
                 },
@@ -304,6 +311,7 @@ fun NavigationGraph(
                 }
             )
         }
+
 
         composable("questionnaire") {
             PostTestQuestionnaireScreen(
@@ -317,8 +325,5 @@ fun NavigationGraph(
             TestEnregistre(navController = navController)
         }
 
-        composable(route = "profile") {
-            ProfilePage(navController = navController)
-        }
     }
 }

@@ -234,3 +234,58 @@ fun QuestionSlider(question: String, onValueChange: (Float) -> Unit) {
         }
     }
 }
+
+@Composable
+fun QuestionSlider(question: String) {
+    val sliderValue = remember { mutableFloatStateOf(0f) } // Valeur initiale à 0
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 8.dp),
+        horizontalAlignment = Alignment.Start
+    ) {
+        // Intitulé de la question
+        Text(
+            text = question,
+            style = MaterialTheme.typography.bodyLarge,
+            color = MaterialTheme.colorScheme.primary,
+            modifier = Modifier.padding(start = 8.dp)
+        )
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        // Curseur
+        Slider(
+            value = sliderValue.floatValue,
+            onValueChange = { sliderValue.floatValue = it },
+            valueRange = 0f..5f, // Valeurs de 0 à 5
+            steps = 4, // 5 étapes au total (0, 1, 2, 3, 4, 5)
+            colors = SliderDefaults.colors(
+                thumbColor = MaterialTheme.colorScheme.primary,
+                activeTrackColor = MaterialTheme.colorScheme.primary,
+                inactiveTrackColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.3f)
+            )
+        )
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        // Affichage des numéros sous le curseur
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            // Affichage des numéros de 0 à 5 sous le curseur
+            for (i in 0..5) {
+                Text(
+                    text = "$i",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.padding(horizontal = 4.dp)
+                )
+            }
+        }
+    }
+}
+
+

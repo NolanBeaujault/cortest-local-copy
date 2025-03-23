@@ -1,5 +1,6 @@
 package com.example.epilepsytestapp.ui
 
+import android.util.Log
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -10,14 +11,18 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.example.epilepsytestapp.ui.theme.AppTheme
 import com.example.epilepsytestapp.ui.theme.PrimaryColor
 
-@Composable
-fun TypeConfigScreen(navController: NavController) {
-    var selectedType by remember { mutableStateOf<String?>(null) }
+class TestViewModel : ViewModel() {
+    var selectedType = mutableStateOf("both")
+}
 
+@Composable
+fun TypeConfigScreen(navController: NavController, testViewModel: TestViewModel = viewModel()) {
     AppTheme {
         Column(
             modifier = Modifier
@@ -35,7 +40,8 @@ fun TypeConfigScreen(navController: NavController) {
 
             OutlinedButton(
                 onClick = {
-                    selectedType = "Hétérotest"
+                    testViewModel.selectedType.value = "hetero"
+                    Log.d("TestTypeConfig", "Affichage des tests de type : ${testViewModel.selectedType.value}")
                     navController.navigate("testConfigScreen")
                 },
                 shape = RoundedCornerShape(16.dp),
@@ -53,7 +59,8 @@ fun TypeConfigScreen(navController: NavController) {
 
             OutlinedButton(
                 onClick = {
-                    selectedType = "Autotest"
+                    testViewModel.selectedType.value = "auto"
+                    Log.d("TestTypeConfig", "Affichage des tests de type : ${testViewModel.selectedType.value}")
                     navController.navigate("testConfigScreen")
                 },
                 shape = RoundedCornerShape(16.dp),

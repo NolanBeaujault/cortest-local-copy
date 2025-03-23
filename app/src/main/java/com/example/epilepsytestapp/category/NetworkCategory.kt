@@ -9,13 +9,13 @@ import retrofit2.http.GET
 import com.google.gson.GsonBuilder
 import com.google.gson.reflect.TypeToken
 
-// ✅ Interface API
+
 interface ApiService {
     @GET("categories")
     suspend fun getCategories(): retrofit2.Response<Map<String, Any>>
 }
 
-// ✅ Initialisation du client Retrofit
+
 object RetrofitClient {
     private const val BASE_URL = "http://pi-nolan.its-tps.fr:2880/"
 
@@ -29,7 +29,7 @@ object RetrofitClient {
     }
 }
 
-// ✅ Fonction pour charger les catégories et tests
+
 suspend fun loadCategoriesFromNetwork(): Map<String, List<Test>> {
     return withContext(Dispatchers.IO) {
         try {
@@ -53,25 +53,23 @@ suspend fun loadCategoriesFromNetwork(): Map<String, List<Test>> {
             val gson = GsonBuilder().setLenient().create()
             val jsonString = gson.toJson(rawJson)
 
-            // ✅ Conversion en Map générique
             val type = object : TypeToken<Map<String, Map<String, Any>>>() {}.type
             val parsedData: Map<String, Map<String, Any>> = gson.fromJson(jsonString, type)
 
-            // ✅ Initialisation du Map final
             val categoriesMap = mutableMapOf<String, List<Test>>()
 
-            // ✅ Extraction des catégories et tests
             parsedData.forEach { (_, categoryData) ->
                 val categoryName = categoryData["nom"] as? String ?: "Catégorie inconnue"
                 val testsList = mutableListOf<Test>()
 
-                // ✅ Parcourir les objets de la catégorie
                 categoryData.forEach { (key, value) ->
-                    if (key == "id_category" || key == "nom") return@forEach // Ignorer l'ID et le nom de la catégorie
+                    if (key == "id_category" || key == "nom") return@forEach
 
                     if (value is Map<*, *>) {
                         val testName = value["nom"] as? String ?: "Test inconnu"
-                        val consigne = value["consigne"] as? String ?: "Consigne inconnue"
+                        val testType = value["type"] as? String ?: "Type inconnu"
+                        val a_consigne = value["a_consigne"] as? String ?: "Consigne Auto inconnue"
+                        val h_consigne = value["h_consigne"] as? String ?: "Consigne Hetero inconnue"
                         val idTest = when (val id = value["id_test"]) {
                             is Int -> id
                             is Double -> id.toInt()
@@ -84,12 +82,20 @@ suspend fun loadCategoriesFromNetwork(): Map<String, List<Test>> {
                         val phraseRepet = value["phrase_repet"] as? List<String> ?: emptyList()
                         val couleur = value["couleur"] as? List<String> ?: emptyList()
                         val mot = value["mot"] as? List<String> ?: emptyList()
-                        val groupe = value["groupe"] as? Map<String, String> ?: emptyMap()
+
+                        val groupeData = value["groupe"] as? Map<String, Any>
+
+                        val idGroupe = groupeData?.get("id_groupe") as? Int ?: -1
+                        val nomGroupe = groupeData?.get("nom") as? String ?: ""
+
+                        val groupe = Groupe(id_groupe = idGroupe, nom = nomGroupe)
 
                         val test = Test(
                             id_test = idTest,
+                            type = testType,
                             nom = testName,
-                            consigne = consigne,
+                            a_consigne = a_consigne,
+                            h_consigne = h_consigne,
                             mot_memoire = motMemoire,
                             image = image,
                             mot_setA = motSetA,
@@ -104,7 +110,6 @@ suspend fun loadCategoriesFromNetwork(): Map<String, List<Test>> {
                     }
                 }
 
-                // ✅ Ajout à la Map finale avec le bon nom de catégorie
                 categoriesMap[categoryName] = testsList
             }
 

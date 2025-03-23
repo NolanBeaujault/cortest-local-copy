@@ -31,7 +31,7 @@ fun TestScreen(navController: NavHostController) {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
 
-    val instructions = remember { mutableStateListOf<String>() } // ✅ Liste mutable des instructions chargées
+    val instructions = remember { mutableStateListOf<String>() }
     var currentInstructionIndex by remember { mutableIntStateOf(0) }
     val currentInstruction = instructions.getOrNull(currentInstructionIndex)
 
@@ -48,7 +48,7 @@ fun TestScreen(navController: NavHostController) {
         coroutineScope.launch {
             Log.d("TestScreen", "📂 Chargement des tests depuis le fichier local...")
             val localTests = LocalCatManager.loadLocalTests(context)
-            val extractedInstructions = localTests.values.flatten().map { it.consigne }
+            val extractedInstructions = localTests.map { it.h_consigne }.filterNotNull()
             instructions.addAll(extractedInstructions)
             Log.d("TestScreen", "✅ Instructions chargées : $instructions")
         }

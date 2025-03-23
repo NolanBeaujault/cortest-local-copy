@@ -14,6 +14,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.example.epilepsytestapp.R
 import com.example.epilepsytestapp.category.LocalCatManager
@@ -24,46 +25,46 @@ import kotlinx.coroutines.launch
 
 
 @Composable
-fun ConfigScreen(navController: NavController) {
-    val selectedTests = remember { mutableStateMapOf<String, MutableSet<Test>>() }
+fun ConfigScreen(navController: NavController, testViewModel: TestViewModel = viewModel()) {
+    val selectedType = testViewModel.selectedType.value
+    val selectedTests = remember { mutableStateOf(mutableSetOf<Test>()) }
     val scrollState = rememberScrollState()
     val categories = remember { mutableStateOf<Map<String, List<Test>>>(emptyMap()) }
     val loading = remember { mutableStateOf(true) }
     val coroutineScope = rememberCoroutineScope()
     val context = LocalContext.current
 
-    LaunchedEffect(Unit) {
-        val restoredSelectedTests =
-            navController.currentBackStackEntry?.savedStateHandle?.get<Map<String, List<Test>>>("selectedTests")
+    LaunchedEffect(selectedType) {
 
 
         coroutineScope.launch {
             Log.d("TestConfig", "🔄 Chargement des catégories depuis l'API...")
+            Log.d("TestTypeConfig", "Affichage des tests de type : ${selectedType}")
 
             try {
                 val loadedCategories = loadCategoriesFromNetwork()
                 val localTestConfiguration = LocalCatManager.loadLocalTests(context)
 
-
                 categories.value = loadedCategories
 
-                loadedCategories.forEach { (categoryName, testList) ->
-                    val preSelectedTests = testList.filter { test ->
-                        localTestConfiguration[categoryName]?.any { it.id_test == test.id_test } == true
-                    }.toMutableSet()
+                val preSelectedTests = loadedCategories.values.flatten()
+                    //.filter { test -> test.type == "both" || test.type == selectedType }
+                    .filter { test -> localTestConfiguration.any { it.id_test == test.id_test } }
+                    .toMutableSet()
 
-                    if (preSelectedTests.isNotEmpty()) {
-                        selectedTests[categoryName] = preSelectedTests
-                    }
+                selectedTests.value.clear()
+                selectedTests.value.addAll(preSelectedTests)
+
+                Log.d("TestConfig", "✅ Tests pré-cochés (local) : $preSelectedTests")
+
+                val restoredSelectedTests =
+                    navController.currentBackStackEntry?.savedStateHandle?.get<List<Test>>("selectedTests")
+
+                restoredSelectedTests?.let {
+                    Log.d("TestConfig", "🔄 Écrasement avec restoredSelectedTests : $it")
+                    selectedTests.value.clear()
+                    selectedTests.value.addAll(it)
                 }
-
-                if (restoredSelectedTests != null) {
-                    selectedTests.clear()
-                    restoredSelectedTests.forEach { (category, tests) ->
-                        selectedTests[category] = tests.toMutableSet()
-                    }
-                }
-
 
                 Log.d("TestConfig", "✅ Catégories chargées avec succès : $loadedCategories")
             } catch (e: Exception) {
@@ -94,21 +95,24 @@ fun ConfigScreen(navController: NavController) {
             } else {
                 Log.d("TestConfig", "📌 Affichage des catégories et tests...")
                 categories.value.forEach { (categoryName, testList) ->
-                    Log.d(
-                        "TestConfig",
-                        "📁 Catégorie : $categoryName, Nombre de tests : ${testList.size}"
-                    )
-                    CategoryItem(categoryName, testList, selectedTests)
+                    CategoryItem(categoryName, testList, selectedTests.value) { test, checked ->
+                        val updatedSet = selectedTests.value.toMutableSet()
+                        if (checked) {
+                            updatedSet.add(test)
+                        } else {
+                            updatedSet.removeIf { it.id_test == test.id_test }
+                        }
+                        selectedTests.value = updatedSet
+                    }
                 }
             }
 
             Spacer(modifier = Modifier.height(16.dp))
 
             CustomButton(text = "Suivant") {
-                val filteredTests = selectedTests.mapValues { it.value.toList() }
                 navController.currentBackStackEntry?.savedStateHandle?.set(
                     "selectedTests",
-                    filteredTests
+                    selectedTests.value.toList()
                 )
                 navController.navigate("recapScreen")
             }
@@ -124,7 +128,8 @@ fun ConfigScreen(navController: NavController) {
 fun CategoryItem(
     title: String,
     tests: List<Test>,
-    selectedTests: MutableMap<String, MutableSet<Test>>
+    selectedTests: Set<Test>,
+    onTestCheckedChange: (Test, Boolean) -> Unit
 ) {
     var isExpanded by remember { mutableStateOf(false) }
 
@@ -159,17 +164,14 @@ fun CategoryItem(
 
         Column(modifier = Modifier.padding(start = 16.dp)) {
             tests.forEach { test ->
-                val isChecked = selectedTests[title]?.contains(test) ?: false
+                val isChecked = selectedTests.any { it.id_test == test.id_test }
 
                 if (isExpanded || isChecked) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Checkbox(
                             checked = isChecked,
                             onCheckedChange = { checked ->
-                                val updatedTests =
-                                    selectedTests.getOrDefault(title, mutableSetOf()).toMutableSet()
-                                if (checked) updatedTests.add(test) else updatedTests.remove(test)
-                                selectedTests[title] = updatedTests
+                                onTestCheckedChange(test, checked)
                             }
                         )
                         Text(

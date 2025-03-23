@@ -70,48 +70,88 @@ fun DemoScreen(navController: NavController) {
                 currentStep = 9
             }
             9 -> {
+                delay(5000)
+                currentStep = 10
+            }
+            10 -> {
                 delay(timeMillis = 5000)
                 navController.navigate("home")
             }
         }
     }
 
+    Box(modifier = Modifier.fillMaxSize()) {
     when (currentStep) {
         0 -> {
-            HomeScreen1()
+            StartScreen()
         }
         1 -> {
-            InstructionScreen1()
+            HomeScreen1(onNextStep = { currentStep = 2 })
         }
         2 -> {
-            InstructionScreen2(onNextStep = { currentStep = 3 })
+            InstructionScreen1()
         }
         3 -> {
-            InstructionScreen3()
+            InstructionScreen2(onNextStep = { currentStep = 4 })
         }
         4 -> {
-            TextScreen1()
+            InstructionScreen3()
         }
         5 -> {
-            InstructionScreen4(onNextStep = { currentStep = 6 })
+            TextScreen1()
         }
         6 -> {
-            ConfirmationScreen1()
+            InstructionScreen4(onNextStep = { currentStep = 7 })
         }
         7 -> {
-            ConfirmationScreen2(onNextStep = { currentStep = 8 })
+            ConfirmationScreen1()
         }
         8 -> {
-            TextScreen2()
+            ConfirmationScreen2(onNextStep = { currentStep = 9 })
         }
         9 -> {
+            TextScreen2()
+        }
+        10 -> {
             EndScreen()
         }
+    }
+        Image(
+            painter = painterResource(id = R.mipmap.ic_fin_demo_simple_foreground),
+            contentDescription = "Bouton arrêt démo",
+            modifier = Modifier
+                .align(Alignment.TopEnd)
+                .padding(16.dp)
+                .size(60.dp)
+                .clickable { navController.navigate("home") }
+        )
     }
 }
 
 @Composable
-fun HomeScreen1() {
+fun StartScreen() {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Blue40),
+        contentAlignment = Alignment.Center
+    ) {
+        Text(
+            text = "La démo va commencer !",
+            fontSize = 28.sp,
+            color = MaterialTheme.colorScheme.onBackground,
+            textAlign = TextAlign.Center
+        )
+    }
+}
+
+@Composable
+fun HomeScreen1(onNextStep: () -> Unit) {
+    LaunchedEffect(Unit) {
+        delay(5000)
+        onNextStep()
+    }
+
     AppTheme {
         Box(
             modifier = Modifier
@@ -218,7 +258,7 @@ fun HomeScreen1() {
 
                 // Bouton "Commencer un test"
                 Button(
-                    onClick = {  },
+                    onClick = {onNextStep()},
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(horizontal = 16.dp)
@@ -248,7 +288,7 @@ fun HomeScreen1() {
                     .offset(y = (40).dp)
             )
             Image(
-                painter = painterResource(id = R.mipmap.ic_arrow_foreground),
+                painter = painterResource(id = R.mipmap.ic_dark_arrow_foreground),
                 contentDescription = "Flèche vers bouton suivant",
                 modifier = Modifier
                     .size(110.dp)
@@ -678,7 +718,7 @@ fun ConfirmationScreen1() {
                     .offset(y = (-110).dp)
             )
             Image(
-                painter = painterResource(id = R.mipmap.ic_arrow_foreground),
+                painter = painterResource(id = R.mipmap.ic_dark_arrow_foreground),
                 contentDescription = "Flèche vers bouton suivant",
                 modifier = Modifier
                     .size(110.dp)
@@ -781,7 +821,7 @@ fun ConfirmationScreen2(onNextStep: () -> Unit) {
                     .offset(y = (-90).dp)
             )
             Image(
-                painter = painterResource(id = R.mipmap.ic_arrow_foreground),
+                painter = painterResource(id = R.mipmap.ic_dark_arrow_foreground),
                 contentDescription = "Flèche vers bouton suivant",
                 modifier = Modifier
                     .size(110.dp)

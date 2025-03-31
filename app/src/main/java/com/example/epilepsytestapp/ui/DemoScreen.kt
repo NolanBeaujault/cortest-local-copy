@@ -18,6 +18,7 @@ import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -30,92 +31,45 @@ import com.example.epilepsytestapp.ui.theme.Blue40
 @Composable
 fun DemoScreen(navController: NavController) {
     var currentStep by remember { mutableStateOf(0) }
+    var auto by remember { mutableStateOf(true) } // Valeur par défaut
 
     LaunchedEffect(currentStep) {
         when (currentStep) {
-            0 -> {
-                delay(5000)
-                currentStep = 1
-            }
-            1 -> {
-                delay(5000)
-                currentStep = 2
-            }
-            2 -> {
-                delay(5000)
-                currentStep = 3
-            }
-            3 -> {
-                delay(5000)
-                currentStep = 4
-            }
-            4 -> {
-                delay(7000)
-                currentStep = 5
-            }
-            5 -> {
-                delay(5000)
-                currentStep = 6
-            }
-            6 -> {
-                delay(5000)
-                currentStep = 7
-            }
-            7 -> {
-                delay(5000)
-                currentStep = 8
-            }
-            8 -> {
-                delay(5000)
-                currentStep = 9
-            }
-            9 -> {
-                delay(5000)
-                currentStep = 10
-            }
-            10 -> {
-                delay(timeMillis = 5000)
-                navController.navigate("home")
-            }
+            0 -> delay(5000).also { currentStep = 1 }
+            1 -> {} // Rien ici car on attend le choix
+            2 -> delay(5000).also { currentStep = 3 }
+            3 -> delay(5000).also { currentStep = 4 }
+            4 -> delay(7000).also { currentStep = 5 }
+            5 -> delay(5000).also { currentStep = 6 }
+            6 -> delay(5000).also { currentStep = 7 }
+            7 -> delay(5000).also { currentStep = 8 }
+            8 -> delay(5000).also { currentStep = 9 }
+            9 -> delay(5000).also { currentStep = 10 }
+            10 -> delay(5000).also { currentStep = 11 }
+            11 -> delay(5000).also { navController.navigate("home") }
         }
     }
 
     Box(modifier = Modifier.fillMaxSize()) {
-    when (currentStep) {
-        0 -> {
-            StartScreen()
+        when (currentStep) {
+            0 -> StartScreen()
+            1 -> ChoixScreen(
+                onChooseAuto = { auto = true; currentStep = 2 },
+                onChooseHetero = { auto = false; currentStep = 2 }
+            )
+            2 -> HomeScreen1(onNextStep = { currentStep = 3 })
+            3 -> InstructionScreen1(auto)
+            4 -> InstructionScreen2(onNextStep = { currentStep = 5 })
+            5 -> InstructionScreen3(auto)
+            6 -> TextScreen1(auto)
+            7 -> InstructionScreen4(auto, onNextStep = { currentStep = 8 })
+            8 -> ConfirmationScreen1()
+            9 -> ConfirmationScreen2(onNextStep = { currentStep = 10 })
+            10 -> TextScreen2(auto)
+            11 -> EndScreen()
         }
-        1 -> {
-            HomeScreen1(onNextStep = { currentStep = 2 })
-        }
-        2 -> {
-            InstructionScreen1()
-        }
-        3 -> {
-            InstructionScreen2(onNextStep = { currentStep = 4 })
-        }
-        4 -> {
-            InstructionScreen3()
-        }
-        5 -> {
-            TextScreen1()
-        }
-        6 -> {
-            InstructionScreen4(onNextStep = { currentStep = 7 })
-        }
-        7 -> {
-            ConfirmationScreen1()
-        }
-        8 -> {
-            ConfirmationScreen2(onNextStep = { currentStep = 9 })
-        }
-        9 -> {
-            TextScreen2()
-        }
-        10 -> {
-            EndScreen()
-        }
-    }
+
+        // Ajout d'un bouton en haut à droite pour quitter la démo
         Image(
             painter = painterResource(id = R.mipmap.ic_fin_demo_simple_foreground),
             contentDescription = "Bouton arrêt démo",
@@ -127,6 +81,9 @@ fun DemoScreen(navController: NavController) {
         )
     }
 }
+
+
+
 
 @Composable
 fun StartScreen() {
@@ -144,6 +101,51 @@ fun StartScreen() {
         )
     }
 }
+
+@Composable
+fun ChoixScreen(onChooseAuto: () -> Unit, onChooseHetero: () -> Unit) {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Blue40)
+            .padding(20.dp)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(20.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
+        ) {
+            Text(
+                text = "Choisis ton mode de test : ",
+                fontSize = 28.sp,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onBackground
+            )
+
+            Spacer(modifier = Modifier.height(20.dp))
+
+            Button(onClick = onChooseAuto) {
+                Text(
+                    text = "Test Auto",
+                    fontSize = 24.sp
+                )
+            }
+
+            Spacer(modifier = Modifier.height(15.dp))
+
+            Button(onClick = onChooseHetero) {
+                Text(
+                    text = "Test Hétéro",
+                    fontSize = 24.sp
+                )
+            }
+        }
+    }
+}
+
+
 
 @Composable
 fun HomeScreen1(onNextStep: () -> Unit) {
@@ -278,7 +280,7 @@ fun HomeScreen1(onNextStep: () -> Unit) {
 
             // Phrase de démo
             Text(
-                text = "Une crise se déclenche. Toi\nou un proche qui se tient à\ncôté de toi peut alors\ncliquer sur \"Commencer\nun test\".",
+                text = "Une crise se déclenche. Tu peux alors cliquer sur \"Commencer un test\".",
                 fontSize = 24.sp,
                 textAlign = TextAlign.Center,
                 color = MaterialTheme.colorScheme.onBackground,
@@ -349,7 +351,7 @@ fun HomeScreen1(onNextStep: () -> Unit) {
 
 
 @Composable
-fun InstructionScreen1() {
+fun InstructionScreen1(auto: Boolean) {
 
     var cameraError by remember { mutableStateOf(false) }
 
@@ -383,7 +385,7 @@ fun InstructionScreen1() {
 
         //Phrases de démo
         Text(
-            text = "Suis les instructions",
+            text = if (auto) "Suis les instructions" else "Lis les instructions à voix haute",
             fontSize = 24.sp,
             color = Blue40,
             modifier = Modifier
@@ -515,7 +517,7 @@ fun InstructionScreen2(onNextStep: () -> Unit) {
 
 
 @Composable
-fun InstructionScreen3() {
+fun InstructionScreen3(auto: Boolean) {
     var cameraError by remember { mutableStateOf(false) }
 
     Box(modifier = Modifier.fillMaxSize()) {
@@ -538,7 +540,7 @@ fun InstructionScreen3() {
 
         // Consigne au centre de l'écran
         Text(
-            text = "Lève les deux bras devant toi",
+            text = if (auto) "Montre la main gauche à la caméra" else  "Lève les deux bras devant toi",
             modifier = Modifier
                 .align(Alignment.Center)
                 .padding(16.dp),
@@ -578,7 +580,7 @@ fun InstructionScreen3() {
 
 
 @Composable
-fun TextScreen1() {
+fun TextScreen1(auto: Boolean) {
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -586,7 +588,7 @@ fun TextScreen1() {
         contentAlignment = Alignment.Center
     ) {
         Text(
-            text = "Plusieurs consignes vont\nsuivre, suis-les autant que\ntu peux. Tu peux parler,\ntes gestes et tes paroles\nseront enregistrés et\npourront ensuite être\ntransmis à ton\nneurologue.",
+            text = if (auto) "Plusieurs consignes vont\nsuivre, suis-les autant que\ntu peux. Tu peux parler,\ntes gestes et tes paroles\nseront enregistrés et\npourront ensuite être\ntransmis à ton\nneurologue." else "Plusieurs consignes vont suivre. Vous pouvez parler, vos gestes et paroles seront enregistrés et pourront ensuite être transmis au neurologue.",
             fontSize = 28.sp,
             color = MaterialTheme.colorScheme.onBackground,
             textAlign = TextAlign.Center,
@@ -596,7 +598,7 @@ fun TextScreen1() {
 }
 
 @Composable
-fun InstructionScreen4(onNextStep: () -> Unit) {
+fun InstructionScreen4(auto: Boolean, onNextStep: () -> Unit) {
     LaunchedEffect(Unit) {
         delay(5000)
         onNextStep()
@@ -624,7 +626,7 @@ fun InstructionScreen4(onNextStep: () -> Unit) {
 
         // Consigne au centre de l'écran
         Text(
-            text = "Lève les deux bras devant toi",
+            text = if (auto) "Montre la main gauche à la caméra" else  "Lève les deux bras devant toi",
             modifier = Modifier
                 .align(Alignment.Center)
                 .padding(16.dp),
@@ -889,7 +891,7 @@ fun ConfirmationScreen2(onNextStep: () -> Unit) {
 
 
 @Composable
-fun TextScreen2() {
+fun TextScreen2(auto: Boolean) {
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -897,12 +899,7 @@ fun TextScreen2() {
         contentAlignment = Alignment.Center
     ) {
         Text(
-            text = "Tu peux ensuite remplir\n" +
-                    "un questionnaire post-\n" +
-                    "crise afin de revenir plus\n" +
-                    "en détail sur des ressentis\n" +
-                    "que tu pourrais partager à\n" +
-                    "ton neurologue.",
+            text = if (auto) "Tu peux ensuite remplir un questionnaire post crise afin de revenir plus en détail sur des ressentis que tu pourrais partager à ton neurologue." else "Un questionnaire post crise sera ensuite disponible afin de revenir plus en détail sur des ressentis à partager au neurologue.",
             fontSize = 28.sp,
             color = MaterialTheme.colorScheme.onBackground,
             textAlign = TextAlign.Center,

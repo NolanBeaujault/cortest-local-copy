@@ -247,6 +247,10 @@ fun NavigationGraph(
                 )
         }
 
+        composable(route = "profile"){
+            ProfilePage(navController = navController)
+        }
+
         composable("recapScreen") {
             RecapScreen(
                 navController = navController,

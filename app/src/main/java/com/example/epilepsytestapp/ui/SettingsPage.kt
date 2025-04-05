@@ -18,6 +18,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.ViewModel
 import androidx.navigation.NavHostController
 import com.example.epilepsytestapp.R
 import com.example.epilepsytestapp.model.Patient
@@ -28,9 +29,11 @@ fun SettingsPage(
     navController: NavHostController,
     onLogout: () -> Unit,
     onModifyConfiguration: () -> Unit,
-    patient: List<Patient>
+    patient: List<Patient>,
+    cameraViewModel: CameraViewModel
 ) {
-    val isFrontCamera = remember { mutableStateOf(true) } // ✅ Stockage de l'état de la caméra
+    val isFrontCamera = cameraViewModel.isFrontCamera
+
 
     AppTheme {
         Box(
@@ -173,4 +176,8 @@ fun openAppSettings(context: Context) {
         data = android.net.Uri.fromParts("package", context.packageName, null)
     }
     context.startActivity(intent)
+}
+
+class CameraViewModel : ViewModel() {
+    var isFrontCamera = mutableStateOf(true)
 }

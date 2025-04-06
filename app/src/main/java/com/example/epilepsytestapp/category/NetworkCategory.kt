@@ -71,6 +71,7 @@ suspend fun loadCategoriesFromNetwork(): Map<String, List<Test>> {
 
                     if (value is Map<*, *>) {
                         val testName = value["nom"] as? String ?: "Test inconnu"
+                        val affichage = value["affichage"] as? String ?: "Affichage inconnu"
                         val consigneA = value["a_consigne"] as? String ?: "ConsigneA inconnue"
                         val consigneH = value["h_consigne"] as? String ?: "ConsigneH inconnue"
                         val typetest = value["type"] as? String ?: "Type inconnu"
@@ -79,11 +80,9 @@ suspend fun loadCategoriesFromNetwork(): Map<String, List<Test>> {
                             is Double -> id.toInt()
                             else -> -1                            }
 
-                        val motMemoire = value["mot_memoire"] as? List<String> ?: emptyList()
+                        val motset = value["mot_set"] as? List<String> ?: emptyList()
+                        Log.d("NetworkCategory", "✅ affichage récupéré : $affichage")
                         val image = value["image"] as? List<String> ?: emptyList()
-                        val motSetA = value["mot_setA"] as? List<String> ?: emptyList()
-                        val motSetB = value["mot_setB"] as? List<String> ?: emptyList()
-                        val phraseRepet = value["phrase_repet"] as? List<String> ?: emptyList()
                         val couleur = value["couleur"] as? List<String> ?: emptyList()
                         val mot = value["mot"] as? List<String> ?: emptyList()
                         val groupe = value["groupe"] as? Map<String, String> ?: emptyMap()
@@ -91,13 +90,11 @@ suspend fun loadCategoriesFromNetwork(): Map<String, List<Test>> {
                         val test = Test(
                             idtest = idTest,
                             nom = testName,
+                            affichage = affichage,
                             consigneA = consigneA,
                             consigneH = consigneH,
-                            mot_memoire = motMemoire,
+                            mot_set = motset,
                             image = image,
-                            mot_setA = motSetA,
-                            mot_setB = motSetB,
-                            phrase_repet = phraseRepet,
                             couleur = couleur,
                             mot = mot,
                             groupe = groupe,

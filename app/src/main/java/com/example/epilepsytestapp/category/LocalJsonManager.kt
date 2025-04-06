@@ -34,18 +34,17 @@ object LocalCatManager {
                 val filteredTests = selectedTests.mapValues { (categories, tests) ->
                     tests.map { test ->
                         test.copy(
-                            mot_memoire = test.mot_memoire?.takeIf { it.isNotEmpty() },
+                            affichage = test.affichage,
+                            mot_set = test.mot_set?.takeIf { it.isNotEmpty() },
                             image = test.image?.takeIf { it.isNotEmpty() },
-                            mot_setA = test.mot_setA?.takeIf { it.isNotEmpty() },
-                            mot_setB = test.mot_setB?.takeIf { it.isNotEmpty() },
-                            phrase_repet = test.phrase_repet?.takeIf { it.isNotEmpty() },
                             couleur = test.couleur?.takeIf { it.isNotEmpty() },
                             mot = test.mot?.takeIf { it.isNotEmpty() },
                             groupe = test.groupe?.takeIf { it.isNotEmpty() }
                         )
                     }
-                }
 
+                }
+                Log.d("LocalCategory", "Affichage : ${filteredTests}")
                 val updatedTestsJson = gson.toJson(filteredTests)
                 val file = File(context.filesDir, FILE_NAME)
                 file.writeText(updatedTestsJson)

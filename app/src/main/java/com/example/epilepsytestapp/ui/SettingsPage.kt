@@ -100,6 +100,10 @@ fun SettingsPage(
                 SettingsOption(text = "Gérer les autorisations") { openAppSettings(navController.context) }
                 SettingsOption(text = "Déconnexion") { onLogout(); navController.navigate("login") }
                 SettingsOption(text = "Modifier la configuration", onClick = onModifyConfiguration)
+                SettingsOption(text = "Modifier le questionnaire") {
+                    navController.navigate("survey_entry")
+                }
+
 
                 Spacer(modifier = Modifier.height(16.dp))
 

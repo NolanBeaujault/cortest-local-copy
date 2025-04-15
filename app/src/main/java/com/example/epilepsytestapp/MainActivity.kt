@@ -327,7 +327,7 @@ fun NavigationGraph(
         }
 
         composable("survey_entry") {
-            SurveyEntryScreen()
+            SurveyEntryScreen(navController = navController)
         }
 
 

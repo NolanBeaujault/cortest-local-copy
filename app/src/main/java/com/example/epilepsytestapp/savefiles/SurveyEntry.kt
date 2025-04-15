@@ -13,9 +13,10 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.*
+import androidx.navigation.NavHostController
 
 @Composable
-fun SurveyEntryScreen() {
+fun SurveyEntryScreen(navController: NavHostController) {
     val context = LocalContext.current
     val questions = remember { mutableStateListOf<SurveyQuestionUI>() }
 
@@ -129,6 +130,7 @@ fun SurveyEntryScreen() {
                 } else {
                     Toast.makeText(context, "❌ Erreur lors de l'enregistrement", Toast.LENGTH_LONG).show()
                 }
+                navController.navigate("home")
             },
             modifier = Modifier.fillMaxWidth()
         ) {
@@ -142,7 +144,7 @@ fun QuestionTypeSelector(selected: QuestionType, onSelected: (QuestionType) -> U
     Column {
         Text("Type de question :", style = MaterialTheme.typography.bodyMedium)
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            QuestionType.values().forEach { type ->
+            QuestionType.entries.forEach { type ->
                 Row(
                     modifier = Modifier
                         .clickable { onSelected(type) }

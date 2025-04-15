@@ -10,8 +10,10 @@ import android.util.Log
 import java.io.File
 import java.nio.ByteBuffer
 
-fun mergeVideos(context: Context, videoPaths: List<String>): String? {
-    if (videoPaths.isEmpty()) {
+fun mergeVideos(context: Context, recordedVideos: List<String>): String? {
+    Log.d("MergeVideo", "📋 Contenu de recordedVideos : $recordedVideos")
+
+    if (recordedVideos.isEmpty()) {
         Log.e("MergeVideo", "❌ Aucune vidéo à fusionner")
         return null
     }
@@ -34,8 +36,14 @@ fun mergeVideos(context: Context, videoPaths: List<String>): String? {
         var hasAudioTrack = false
         var currentPresentationTimeUs = 0L
 
+        // Afficher les vidéos dans les logs avant la fusion
+        recordedVideos.forEach { videoPath ->
+            Log.d("MergeVideo", "📂 Vidéo à fusionner : $videoPath")
+        }
+
         // Ajout des pistes vidéo et audio
-        for (videoPath in videoPaths) {
+        val extractors = mutableListOf<MediaExtractor>()
+        for (videoPath in recordedVideos) {
             val videoFile = File(videoPath)
             if (!videoFile.exists()) {
                 Log.e("MergeVideo", "❌ Le fichier vidéo n'existe pas : $videoPath")
@@ -44,6 +52,7 @@ fun mergeVideos(context: Context, videoPaths: List<String>): String? {
 
             val extractor = MediaExtractor()
             extractor.setDataSource(videoPath)
+            extractors.add(extractor)
 
             for (i in 0 until extractor.trackCount) {
                 val format = extractor.getTrackFormat(i)
@@ -58,7 +67,6 @@ fun mergeVideos(context: Context, videoPaths: List<String>): String? {
                     Log.d("MergeVideo", "🎵 Piste audio ajoutée : $mime")
                 }
             }
-            extractor.release()
         }
 
         // Démarrage du MediaMuxer après avoir ajouté toutes les pistes
@@ -67,15 +75,13 @@ fun mergeVideos(context: Context, videoPaths: List<String>): String? {
         }
 
         // Lecture des pistes et écriture des échantillons
-        for (videoPath in videoPaths) {
+        for ((index, videoPath) in recordedVideos.withIndex()) {
+            val extractor = extractors[index]
             val videoFile = File(videoPath)
             if (!videoFile.exists()) {
                 Log.e("MergeVideo", "❌ Le fichier vidéo n'existe pas : $videoPath")
                 continue
             }
-
-            val extractor = MediaExtractor()
-            extractor.setDataSource(videoPath)
 
             for (i in 0 until extractor.trackCount) {
                 extractor.selectTrack(i)
@@ -90,14 +96,20 @@ fun mergeVideos(context: Context, videoPaths: List<String>): String? {
 
                     bufferInfo.presentationTimeUs = currentPresentationTimeUs + extractor.sampleTime
                     bufferInfo.flags = MediaCodec.BUFFER_FLAG_SYNC_FRAME
-                    mediaMuxer.writeSampleData(if (extractor.getTrackFormat(i).getString(MediaFormat.KEY_MIME)?.startsWith("video/") == true) videoTrackIndex else audioTrackIndex, buffer, bufferInfo)
+                    mediaMuxer.writeSampleData(
+                        if (extractor.getTrackFormat(i).getString(MediaFormat.KEY_MIME)?.startsWith("video/") == true)
+                            videoTrackIndex
+                        else
+                            audioTrackIndex,
+                        buffer,
+                        bufferInfo
+                    )
 
                     extractor.advance()
                 }
                 extractor.unselectTrack(i)
             }
             currentPresentationTimeUs += bufferInfo.presentationTimeUs + bufferInfo.size
-            extractor.release()
         }
 
         mediaMuxer.stop()

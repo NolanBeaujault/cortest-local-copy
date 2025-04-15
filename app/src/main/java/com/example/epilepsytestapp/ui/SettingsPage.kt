@@ -13,6 +13,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
@@ -71,7 +72,7 @@ fun SettingsPage(
                                 .padding(end = 16.dp) // Espace supplémentaire à droite du logo
                         )
 
-                        // Titre "Home"
+                        // Titre "Paramètres"
                         Text(
                             text = "Paramètres",
                             style = MaterialTheme.typography.displayLarge.copy(
@@ -107,7 +108,7 @@ fun SettingsPage(
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                // ✅ Ligne avec le switch caméra et ses labels
+                // Ligne avec le switch caméra et ses labels
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -164,11 +165,18 @@ fun SettingsOption(text: String, onClick: () -> Unit) {
         text = text,
         modifier = Modifier
             .fillMaxWidth()
-            .padding(16.dp)
-            .border(1.dp, Color.Gray, RoundedCornerShape(4.dp))
+            .padding(horizontal = 16.dp, vertical = 8.dp)
+            .clip(RoundedCornerShape(16.dp))
+            .background(Color(0xFFD0EEED))
+            .border(
+                width = 2.dp,
+                color = MaterialTheme.colorScheme.primary,
+                shape = RoundedCornerShape(16.dp)
+            )
             .clickable { onClick() }
             .padding(12.dp),
         style = MaterialTheme.typography.bodyLarge.copy(
+            color = MaterialTheme.colorScheme.primary,
             textAlign = TextAlign.Start
         )
     )

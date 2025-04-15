@@ -178,7 +178,7 @@ fun TestScreen(navController: NavHostController, recordedVideos: MutableList<Str
 
                 val cameraLabel =
                     if (!cameraViewModel.isFrontCamera.value) "Caméra frontale" else "Caméra arrière"
-                instructionsLog.add(Pair("Changement de caméra - $cameraLabel", elapsedTime))
+                instructionsLog.add(Pair("Changement de caméra : $cameraLabel", elapsedTime))
 
                 cameraViewModel.isFrontCamera.value = !cameraViewModel.isFrontCamera.value
 

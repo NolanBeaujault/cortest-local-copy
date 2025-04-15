@@ -176,6 +176,10 @@ fun TestScreen(navController: NavHostController, recordedVideos: MutableList<Str
                     isRecording = false
                 }
 
+                val cameraLabel =
+                    if (!cameraViewModel.isFrontCamera.value) "Caméra frontale" else "Caméra arrière"
+                instructionsLog.add(Pair("Changement de caméra - $cameraLabel", elapsedTime))
+
                 cameraViewModel.isFrontCamera.value = !cameraViewModel.isFrontCamera.value
 
                 currentInstruction.value = if (cameraViewModel.isFrontCamera.value) {
@@ -184,11 +188,20 @@ fun TestScreen(navController: NavHostController, recordedVideos: MutableList<Str
                     instructionsH.getOrNull(currentInstructionIndex) ?: "Consigne H"
                 }
 
-                Log.d("TestScreen", "Changement de caméra : isFrontCamera = ${cameraViewModel.isFrontCamera.value}")
+                Log.d(
+                    "TestScreen",
+                    "Changement de caméra : isFrontCamera = ${cameraViewModel.isFrontCamera.value}"
+                )
 
                 videoCapture.value = null
+
+                // 💡 Redémarre le chrono uniquement après la nouvelle caméra
+                coroutineScope.launch {
+                    delay(500) // attendre que la nouvelle vidéo démarre
+                    elapsedTime = 0
+                }
             },
-            modifier = Modifier
+                    modifier = Modifier
                 .padding(10.dp)
                 .align(Alignment.TopEnd)
                 .size(80.dp)
@@ -197,11 +210,10 @@ fun TestScreen(navController: NavHostController, recordedVideos: MutableList<Str
         // 🎥 Démarrer l'enregistrement automatiquement après changement de caméra
         LaunchedEffect(videoCapture.value, isFrontCamera) {
             if (!isRecording) {
-                delay(100L)
+                delay(300L)
                 videoCapture.value?.let {
                     recording.value = startRecording(context, it, recording, videoFilePath, recordedVideos)
                     isRecording = true
-                    elapsedTime = 0
                 }
             }
         }

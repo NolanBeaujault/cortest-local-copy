@@ -20,6 +20,8 @@ import androidx.lifecycle.LifecycleOwner
 import androidx.navigation.NavHostController
 import com.example.epilepsytestapp.R
 import com.example.epilepsytestapp.category.LocalCatManager
+import com.example.epilepsytestapp.category.Test
+import com.example.epilepsytestapp.category.TestDisplay
 import com.example.epilepsytestapp.savefiles.saveTestInstructionsAsPDF
 import com.example.epilepsytestapp.savefiles.startRecording
 import com.example.epilepsytestapp.savefiles.stopRecording
@@ -35,6 +37,8 @@ fun TestScreen(navController: NavHostController, recordedVideos: MutableList<Str
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
 
+    val tests = remember { mutableStateListOf<Test>() }
+
     val instructionsA = remember { mutableStateListOf<String>() }
     val instructionsH = remember { mutableStateListOf<String>() }
     var currentInstructionIndex by remember { mutableIntStateOf(0) }
@@ -49,33 +53,19 @@ fun TestScreen(navController: NavHostController, recordedVideos: MutableList<Str
     var elapsedTime by remember { mutableIntStateOf(0) }
 
     val coroutineScope = rememberCoroutineScope()
-    val hasLoadedInstructions = remember { mutableStateOf(false) }
 
-    var currentConsigne by remember {
-        mutableStateOf("Aucune consigne")
-    }
+    val currentTest = tests.getOrNull(currentInstructionIndex)
+
 
     // 📂 Chargement des consignes (une seule fois)
     LaunchedEffect(Unit) {
-        if (!hasLoadedInstructions.value) {
-            coroutineScope.launch {
-                Log.d("TestScreen", "📂 Chargement des tests depuis le fichier local...")
-                val localTests = LocalCatManager.loadLocalTests(context)
-
-                localTests.values.flatten().forEach { test ->
-                    test.consigneA?.let { instructionsA.add(it) }
-                    test.consigneH?.let { instructionsH.add(it) }
-                }
-
-                currentConsigne = if (isFrontCamera) {
-                    instructionsA.getOrNull(currentInstructionIndex) ?: "Aucune consigne"
-                } else {
-                    instructionsH.getOrNull(currentInstructionIndex) ?: "Aucune consigne"
-                }
-                currentInstruction.value = currentConsigne
-                hasLoadedInstructions.value = true
-                Log.d("TestScreen", "✅ Consigne initiale : ${currentInstruction.value}")
-            }
+        coroutineScope.launch {
+            Log.d("TestScreen", "📂 Chargement des tests depuis le fichier local...")
+            val localTests = LocalCatManager.loadLocalTests(context)
+            tests.addAll(localTests.values.flatten())
+            val consigne = if (isFrontCamera) currentTest?.consigneA else currentTest?.consigneH
+            currentInstruction.value = consigne ?: "Aucune consigne"
+            Log.d("TestScreen", "✅ Consigne initiale : ${currentInstruction.value}")
         }
     }
 
@@ -105,12 +95,20 @@ fun TestScreen(navController: NavHostController, recordedVideos: MutableList<Str
                     .align(Alignment.BottomCenter)
                     .padding(bottom = 16.dp)
             ) {
-                Text(
-                    text = currentInstruction.value,
-                    style = MaterialTheme.typography.headlineSmall.copy(fontSize = 28.sp),
-                    color = MaterialTheme.colorScheme.background,
-                    modifier = Modifier.padding(horizontal = 16.dp)
-                )
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .align(Alignment.TopCenter)
+                        .padding(bottom = 32.dp) // Marge en haut pour éviter la barre de statut
+                ) {
+                    currentTest?.let {
+                        // Passage de currentInstructionIndex en paramètre à TestDisplay
+                        TestDisplay(
+                            test = it,
+                            isFrontCamera = isFrontCamera,
+                            key = currentInstructionIndex // Utilisation de currentInstructionIndex comme clé
+                        ) }
+                }
             }
         }
 
@@ -130,7 +128,9 @@ fun TestScreen(navController: NavHostController, recordedVideos: MutableList<Str
                         stopRecording(context, recording, videoFilePath)
                         isRecording = false
                     }
-                    instructionsLog.add(Pair(currentInstruction.value, elapsedTime))
+                    currentTest?.let {
+                        instructionsLog.add(Pair(currentInstruction.value, elapsedTime))
+                        }
 
                     val pdfFile = saveTestInstructionsAsPDF(context, instructionsLog, elapsedTime)
                     pdfFile?.let {
@@ -145,15 +145,13 @@ fun TestScreen(navController: NavHostController, recordedVideos: MutableList<Str
                 imageResId = R.mipmap.ic_next_foreground,
                 contentDescription = "Instruction suivante",
                 onClick = {
-                    if (currentInstructionIndex < (if (isFrontCamera) instructionsA.size else instructionsH.size) - 1) {
+                    currentTest?.let {
                         instructionsLog.add(Pair(currentInstruction.value, elapsedTime))
+                    }
+                    if (currentInstructionIndex < tests.size - 1) {
                         currentInstructionIndex++
-                        currentConsigne = if (isFrontCamera) {
-                            instructionsA.getOrNull(currentInstructionIndex) ?: "Consigne A"
-                        } else {
-                            instructionsH.getOrNull(currentInstructionIndex) ?: "Consigne H"
-                        }
-                        currentInstruction.value = currentConsigne
+                        val consigne = if (isFrontCamera) currentTest?.consigneA else currentTest?.consigneH
+                        currentInstruction.value = consigne ?: "Aucune consigne"
                     } else {
                         if (isRecording) {
                             stopRecording(context, recording, videoFilePath)
@@ -181,24 +179,18 @@ fun TestScreen(navController: NavHostController, recordedVideos: MutableList<Str
                 instructionsLog.add(Pair("Changement de caméra : $cameraLabel", elapsedTime))
 
                 cameraViewModel.isFrontCamera.value = !cameraViewModel.isFrontCamera.value
-
-                currentInstruction.value = if (cameraViewModel.isFrontCamera.value) {
-                    instructionsA.getOrNull(currentInstructionIndex) ?: "Consigne A"
+                val consigne = if (cameraViewModel.isFrontCamera.value) {
+                    currentTest?.consigneA
                 } else {
-                    instructionsH.getOrNull(currentInstructionIndex) ?: "Consigne H"
+                    currentTest?.consigneH
                 }
-
-                Log.d(
-                    "TestScreen",
-                    "Changement de caméra : isFrontCamera = ${cameraViewModel.isFrontCamera.value}"
-                )
-
+                currentInstruction.value = consigne ?: "Aucune consigne"
+                Log.d("TestScreen", "🎥 Changement de caméra : ${cameraViewModel.isFrontCamera.value}")
                 videoCapture.value = null
 
                 // 💡 Redémarre le chrono uniquement après la nouvelle caméra
                 coroutineScope.launch {
                     delay(500) // attendre que la nouvelle vidéo démarre
-                    elapsedTime = 0
                 }
             },
                     modifier = Modifier

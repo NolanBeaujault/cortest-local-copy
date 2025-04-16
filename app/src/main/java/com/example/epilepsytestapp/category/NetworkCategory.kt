@@ -67,6 +67,8 @@ suspend fun loadCategoriesFromNetwork(): Map<String, List<Test>> {
 
                     if (value is Map<*, *>) {
                         val testName = value["nom"] as? String ?: "Test inconnu"
+                        val affichage = value["affichage"] as? String ?: "Affichage inconnu"
+                        Log.d("NetworkCategory", "Affichage récupéré : $affichage")
                         val testType = value["type"] as? String ?: "Type inconnu"
                         val a_consigne = value["a_consigne"] as? String ?: "Consigne Auto inconnue"
                         val h_consigne = value["h_consigne"] as? String ?: "Consigne Hetero inconnue"
@@ -75,11 +77,8 @@ suspend fun loadCategoriesFromNetwork(): Map<String, List<Test>> {
                             is Double -> id.toInt()
                             else -> -1                            }
 
-                        val motMemoire = value["mot_memoire"] as? List<String> ?: emptyList()
+                        val motset = value["mot_set"] as? List<String> ?: emptyList()
                         val image = value["image"] as? List<String> ?: emptyList()
-                        val motSetA = value["mot_setA"] as? List<String> ?: emptyList()
-                        val motSetB = value["mot_setB"] as? List<String> ?: emptyList()
-                        val phraseRepet = value["phrase_repet"] as? List<String> ?: emptyList()
                         val couleur = value["couleur"] as? List<String> ?: emptyList()
                         val mot = value["mot"] as? List<String> ?: emptyList()
 
@@ -94,15 +93,13 @@ suspend fun loadCategoriesFromNetwork(): Map<String, List<Test>> {
                             id_test = idTest,
                             type = testType,
                             nom = testName,
+                            affichage = affichage,
                             a_consigne = a_consigne,
                             h_consigne = h_consigne,
-                            mot_memoire = motMemoire,
                             image = image,
-                            mot_setA = motSetA,
-                            mot_setB = motSetB,
-                            phrase_repet = phraseRepet,
                             couleur = couleur,
                             mot = mot,
+                            mot_set = motset,
                             groupe = groupe
                         )
 

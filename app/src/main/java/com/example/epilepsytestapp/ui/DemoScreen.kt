@@ -17,9 +17,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
@@ -35,7 +37,7 @@ fun DemoScreen(navController: NavController) {
 
     LaunchedEffect(currentStep) {
         when (currentStep) {
-            0 -> delay(5000).also { currentStep = 1 }
+            0 -> delay(3000).also { currentStep = 1 }
             1 -> {} // Rien ici car on attend le choix
             2 -> delay(5000).also { currentStep = 3 }
             3 -> delay(5000).also { currentStep = 4 }
@@ -46,7 +48,7 @@ fun DemoScreen(navController: NavController) {
             8 -> delay(5000).also { currentStep = 9 }
             9 -> delay(5000).also { currentStep = 10 }
             10 -> delay(5000).also { currentStep = 11 }
-            11 -> delay(5000).also { navController.navigate("home") }
+            11 -> delay(3000).also { navController.navigate("home") }
         }
     }
 
@@ -58,12 +60,12 @@ fun DemoScreen(navController: NavController) {
                 onChooseHetero = { auto = false; currentStep = 2 }
             )
             2 -> HomeScreen1(onNextStep = { currentStep = 3 })
-            3 -> InstructionScreen1(auto)
+            3 -> InstructionScreen1(auto, onNextStep = { currentStep = 4 })
             4 -> InstructionScreen2(onNextStep = { currentStep = 5 })
-            5 -> InstructionScreen3(auto)
+            5 -> InstructionScreen3(auto, onNextStep = { currentStep = 6 })
             6 -> TextScreen1(auto)
             7 -> InstructionScreen4(auto, onNextStep = { currentStep = 8 })
-            8 -> ConfirmationScreen1()
+            8 -> ConfirmationScreen1(onNextStep = { currentStep = 9 })
             9 -> ConfirmationScreen2(onNextStep = { currentStep = 10 })
             10 -> TextScreen2(auto)
             11 -> EndScreen()
@@ -109,11 +111,11 @@ fun ChoixScreen(onChooseAuto: () -> Unit, onChooseHetero: () -> Unit) {
             .fillMaxSize()
             .background(Blue40)
             .padding(20.dp)
+            .systemBarsPadding()
     ) {
         Column(
             modifier = Modifier
-                .fillMaxSize()
-                .padding(20.dp),
+                .fillMaxSize(),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
@@ -164,14 +166,15 @@ fun HomeScreen1(onNextStep: () -> Unit) {
             Column(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(bottom = 70.dp)
+                    .padding(bottom = 70.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 // Rectangle bleu pâle en haut
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(75.dp)
-                        .background(Color(0xFFD0EEED)), // Bleu pâle
+                        .background(Color(0xFFD0EEED)),
                     contentAlignment = Alignment.Center
                 ) {
                     Row(
@@ -179,7 +182,7 @@ fun HomeScreen1(onNextStep: () -> Unit) {
                         horizontalArrangement = Arrangement.SpaceBetween,
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(horizontal = 3.dp) // Diminuer la marge horizontale pour éloigner les éléments
+                            .padding(horizontal = 3.dp)
                     ) {
                         // Logo
                         Image(
@@ -196,7 +199,7 @@ fun HomeScreen1(onNextStep: () -> Unit) {
                                 fontSize = 28.sp,
                                 color = MaterialTheme.colorScheme.onBackground
                             ),
-                            modifier = Modifier.padding(horizontal = 16.dp) // Espace autour du titre
+                            modifier = Modifier.padding(horizontal = 16.dp)
                         )
                         // Icône utilisateur
                         Image(
@@ -222,7 +225,7 @@ fun HomeScreen1(onNextStep: () -> Unit) {
                         .padding(16.dp)
                 ) {
                     Text(
-                        text = "Dernière test\n" +
+                        text = "Dernier test\n" +
                                 "date : XX/XX/XXXX   durée : XX:XX",
                         style = MaterialTheme.typography.bodyLarge.copy(
                             fontSize = 16.sp,
@@ -258,46 +261,53 @@ fun HomeScreen1(onNextStep: () -> Unit) {
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                // Bouton "Commencer un test"
-                Button(
-                    onClick = {onNextStep()},
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(horizontal = 16.dp)
-                        .height(56.dp),
-                    shape = RoundedCornerShape(50),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = Color(0xFF31D2B6)
-                    )
                 ) {
+                    // Bouton "Commencer un test"
+                    Button(
+                        onClick = { onNextStep() },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(56.dp),
+                        shape = RoundedCornerShape(50),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Color(0xFF31D2B6)
+                        )
+                    ) {
+                        Text(
+                            text = "Commencer un test",
+                            style = MaterialTheme.typography.labelLarge,
+                            fontSize = 30.sp
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(4.dp))
+
+                    Image(
+                        painter = painterResource(id = R.mipmap.ic_dark_arrow_foreground),
+                        contentDescription = "Flèche vers bouton suivant",
+                        modifier = Modifier
+                            .size(90.dp)
+                            .rotate(-180f)
+                    )
+
+                    Spacer(modifier = Modifier.height(4.dp))
+
                     Text(
-                        text = "Commencer un test",
-                        style = MaterialTheme.typography.labelLarge,
-                        fontSize = 30.sp
+                        text = "Une crise se déclenche. Tu peux alors cliquer sur \"Commencer un test\".",
+                        fontSize = 20.sp,
+                        textAlign = TextAlign.Center,
+                        color = MaterialTheme.colorScheme.onBackground,
+                        modifier = Modifier.padding(horizontal = 16.dp)
                     )
                 }
+
             }
 
-            // Phrase de démo
-            Text(
-                text = "Une crise se déclenche. Tu peux alors cliquer sur \"Commencer un test\".",
-                fontSize = 24.sp,
-                textAlign = TextAlign.Center,
-                color = MaterialTheme.colorScheme.onBackground,
-                modifier = Modifier
-                    .align(Alignment.Center)
-                    .padding(horizontal = 32.dp)
-                    .offset(y = (40).dp)
-            )
-            Image(
-                painter = painterResource(id = R.mipmap.ic_dark_arrow_foreground),
-                contentDescription = "Flèche vers bouton suivant",
-                modifier = Modifier
-                    .size(110.dp)
-                    .align(Alignment.Center)
-                    .offset(x = 20.dp, y = (-70).dp)
-                    .rotate(-180f)
-            )
 
             // Barre de navigation en bas
             Box(
@@ -310,7 +320,7 @@ fun HomeScreen1(onNextStep: () -> Unit) {
                     modifier = Modifier
                         .fillMaxWidth()
                         .background(MaterialTheme.colorScheme.primary)
-                        .height(70.dp), // Hauteur de la barre de navigation
+                        .height(70.dp),
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.SpaceAround
                 ) {
@@ -351,9 +361,13 @@ fun HomeScreen1(onNextStep: () -> Unit) {
 
 
 @Composable
-fun InstructionScreen1(auto: Boolean) {
+fun InstructionScreen1(auto: Boolean, onNextStep: () -> Unit) {
 
     var cameraError by remember { mutableStateOf(false) }
+
+    // Récupération de la hauteur de l'écran via LocalConfiguration
+    val configuration = LocalConfiguration.current
+    val screenHeight = configuration.screenHeightDp.dp
 
     Box(modifier = Modifier.fillMaxSize()) {
         // Fond noir au lieu de la CameraPreview
@@ -373,33 +387,48 @@ fun InstructionScreen1(auto: Boolean) {
             )
         }
 
-        // Consigne au centre de l'écran
-        Text(
-            text = "Quel est ton mot code ?",
+        Box(
             modifier = Modifier
-                .align(Alignment.Center)
-                .padding(16.dp),
-            style = MaterialTheme.typography.headlineSmall.copy(color = Color.White),
-            maxLines = 2
-        )
+                .fillMaxWidth()
+                .align(Alignment.TopCenter)
+                .padding(top = screenHeight / 2, start = 16.dp, end = 16.dp),
+            contentAlignment = Alignment.TopCenter
+        ) {
 
-        //Phrases de démo
-        Text(
-            text = if (auto) "Suis les instructions" else "Lis les instructions à voix haute",
-            fontSize = 24.sp,
-            color = Blue40,
-            modifier = Modifier
-                .align(Alignment.Center)
-                .offset(y = (130).dp)
-        )
-        Image(
-            painter = painterResource(id = R.mipmap.ic_arrow_foreground),
-            contentDescription = "Flèche vers bouton suivant",
-            modifier = Modifier.size(120.dp)
-                .align(Alignment.Center)
-                .offset(x = 20.dp, y = 60.dp)
-                .rotate(-180f)
-        )
+            Column(
+                modifier = Modifier
+                    .align(Alignment.Center)
+                    .padding(16.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                // Consigne au centre de l'écran
+                Text(
+                    text = "Quel est ton mot code ?",
+                    style = MaterialTheme.typography.headlineSmall.copy(color = Color.White),
+                    maxLines = 2,
+                    textAlign = TextAlign.Center
+                )
+
+                Spacer(modifier = Modifier.height(4.dp))
+
+                //Phrase de démo
+                Image(
+                    painter = painterResource(id = R.mipmap.ic_arrow_foreground),
+                    contentDescription = "Flèche vers bouton suivant",
+                    modifier = Modifier.size(120.dp)
+                        .rotate(-180f)
+                )
+
+                Spacer(modifier = Modifier.height(2.dp))
+
+                Text(
+                    text = if (auto) "Suis les instructions" else "Lis les instructions à voix haute",
+                    fontSize = 24.sp,
+                    color = Blue40,
+                    textAlign = TextAlign.Center
+                )
+            }
+        }
 
         // Boutons en bas de l'écran
         Row(
@@ -425,6 +454,7 @@ fun InstructionScreen1(auto: Boolean) {
                 modifier = Modifier
                     .size(180.dp)
                     .padding(6.dp)
+                    .clickable { onNextStep() }
             )
         }
     }
@@ -437,7 +467,12 @@ fun InstructionScreen2(onNextStep: () -> Unit) {
         onNextStep()
     }
 
+
     var cameraError by remember { mutableStateOf(false) }
+
+    // Récupération de la hauteur de l'écran via LocalConfiguration
+    val configuration = LocalConfiguration.current
+    val screenHeight = configuration.screenHeightDp.dp
 
     Box(modifier = Modifier.fillMaxSize()) {
         // Fond noir au lieu de la CameraPreview
@@ -457,33 +492,48 @@ fun InstructionScreen2(onNextStep: () -> Unit) {
             )
         }
 
-        // Consigne au centre de l'écran
-        Text(
-            text = "Quel est ton mot code ?",
+        Box(
             modifier = Modifier
-                .align(Alignment.Center)
-                .padding(16.dp),
-            style = MaterialTheme.typography.headlineSmall.copy(color = Color.White),
-            maxLines = 2
-        )
+                .fillMaxWidth()
+                .align(Alignment.TopCenter)
+                .padding(top = screenHeight / 2, start = 16.dp, end = 16.dp),
+            contentAlignment = Alignment.TopCenter
+        ) {
 
-        //Phrases de démo
-        Text(
-            text = "Passe à l'instruction suivante",
-            fontSize = 24.sp,
-            color = Blue40,
-            modifier = Modifier
-                .align(Alignment.Center)
-                .offset(y = (180).dp)
-        )
-        Image(
-            painter = painterResource(id = R.mipmap.ic_arrow_foreground),
-            contentDescription = "Flèche vers bouton suivant",
-            modifier = Modifier.size(120.dp)
-                .align(Alignment.Center)
-                .offset(x = 20.dp, y = 250.dp)
-                .rotate(-30f)
-        )
+            Column(
+                modifier = Modifier
+                    .align(Alignment.Center)
+                    .padding(16.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                // Consigne au centre de l'écran
+                Text(
+                    text = "Quel est ton mot code ?",
+                    style = MaterialTheme.typography.headlineSmall.copy(color = Color.White),
+                    maxLines = 2,
+                    textAlign = TextAlign.Center
+                )
+
+                Spacer(modifier = Modifier.height(70.dp))
+
+                //Phrase de démo
+                Text(
+                    text = "Passe à l'instruction suivante",
+                    fontSize = 24.sp,
+                    color = Blue40,
+                    textAlign = TextAlign.Center
+                )
+
+                Spacer(modifier = Modifier.height(2.dp))
+
+                Image(
+                    painter = painterResource(id = R.mipmap.ic_arrow_foreground),
+                    contentDescription = "Flèche vers bouton suivant",
+                    modifier = Modifier.size(120.dp)
+                        .rotate(-30f)
+                )
+            }
+        }
 
         // Boutons en bas de l'écran
         Row(
@@ -517,8 +567,13 @@ fun InstructionScreen2(onNextStep: () -> Unit) {
 
 
 @Composable
-fun InstructionScreen3(auto: Boolean) {
+fun InstructionScreen3(auto: Boolean, onNextStep: () -> Unit) {
+
     var cameraError by remember { mutableStateOf(false) }
+
+    // Récupération de la hauteur de l'écran via LocalConfiguration
+    val configuration = LocalConfiguration.current
+    val screenHeight = configuration.screenHeightDp.dp
 
     Box(modifier = Modifier.fillMaxSize()) {
         // Fond noir au lieu de la CameraPreview
@@ -538,15 +593,29 @@ fun InstructionScreen3(auto: Boolean) {
             )
         }
 
-        // Consigne au centre de l'écran
-        Text(
-            text = if (auto) "Montre la main gauche à la caméra" else  "Lève les deux bras devant toi",
+        Box(
             modifier = Modifier
-                .align(Alignment.Center)
-                .padding(16.dp),
-            style = MaterialTheme.typography.headlineSmall.copy(color = Color.White),
-            maxLines = 2
-        )
+                .fillMaxWidth()
+                .align(Alignment.TopCenter)
+                .padding(top = screenHeight / 2, start = 16.dp, end = 16.dp),
+            contentAlignment = Alignment.TopCenter
+        ) {
+
+            Column(
+                modifier = Modifier
+                    .align(Alignment.Center)
+                    .padding(16.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                // Consigne au centre de l'écran
+                Text(
+                    text = if (auto) "Montre la main gauche à la caméra" else  "Lève les deux bras devant toi",
+                    style = MaterialTheme.typography.headlineSmall.copy(color = Color.White),
+                    maxLines = 2,
+                    textAlign = TextAlign.Center
+                )
+            }
+        }
 
         // Boutons en bas de l'écran
         Row(
@@ -572,6 +641,7 @@ fun InstructionScreen3(auto: Boolean) {
                 modifier = Modifier
                     .size(180.dp)
                     .padding(6.dp)
+                    .clickable { onNextStep() }
             )
         }
     }
@@ -588,14 +658,18 @@ fun TextScreen1(auto: Boolean) {
         contentAlignment = Alignment.Center
     ) {
         Text(
-            text = if (auto) "Plusieurs consignes vont\nsuivre, suis-les autant que\ntu peux. Tu peux parler,\ntes gestes et tes paroles\nseront enregistrés et\npourront ensuite être\ntransmis à ton\nneurologue." else "Plusieurs consignes vont suivre. Vous pouvez parler, vos gestes et paroles seront enregistrés et pourront ensuite être transmis au neurologue.",
+            text = if (auto) "Plusieurs consignes vont suivre, suis-les autant que tu peux. Tu peux parler, tes gestes et tes paroles seront enregistrés et pourront ensuite être transmis à ton neurologue." else "Plusieurs consignes vont suivre. Vous pouvez parler, vos gestes et paroles seront enregistrés et pourront ensuite être transmis au neurologue.",
             fontSize = 28.sp,
             color = MaterialTheme.colorScheme.onBackground,
             textAlign = TextAlign.Center,
-            style = MaterialTheme.typography.bodyLarge.copy(lineHeight = 40.sp)
+            style = MaterialTheme.typography.bodyLarge.copy(lineHeight = 40.sp),
+            modifier = Modifier.padding(horizontal = 24.dp),
+            maxLines = 10,
+            overflow = TextOverflow.Ellipsis
         )
     }
 }
+
 
 @Composable
 fun InstructionScreen4(auto: Boolean, onNextStep: () -> Unit) {
@@ -604,7 +678,12 @@ fun InstructionScreen4(auto: Boolean, onNextStep: () -> Unit) {
         onNextStep()
     }
 
+
     var cameraError by remember { mutableStateOf(false) }
+
+    // Récupération de la hauteur de l'écran via LocalConfiguration
+    val configuration = LocalConfiguration.current
+    val screenHeight = configuration.screenHeightDp.dp
 
     Box(modifier = Modifier.fillMaxSize()) {
         // Fond noir au lieu de la CameraPreview
@@ -624,35 +703,49 @@ fun InstructionScreen4(auto: Boolean, onNextStep: () -> Unit) {
             )
         }
 
-        // Consigne au centre de l'écran
-        Text(
-            text = if (auto) "Montre la main gauche à la caméra" else  "Lève les deux bras devant toi",
+        Box(
             modifier = Modifier
-                .align(Alignment.Center)
-                .padding(16.dp),
-            style = MaterialTheme.typography.headlineSmall.copy(color = Color.White),
-            maxLines = 2
-        )
+                .fillMaxWidth()
+                .align(Alignment.TopCenter)
+                .padding(top = screenHeight / 2, start = 16.dp, end = 16.dp),
+            contentAlignment = Alignment.TopCenter
+        ) {
 
-        //Phrases de démo
-        Text(
-            text = "Si la crise est finie, tu peux\narrêter le test en cliquant ici",
-            fontSize = 24.sp,
-            color = Blue40,
-            modifier = Modifier
-                .align(Alignment.Center)
-                .offset(y = (180).dp)
-                .padding(5.dp)
-        )
-        Image(
-            painter = painterResource(id = R.mipmap.ic_arrow_foreground),
-            contentDescription = "Flèche vers bouton suivant",
-            modifier = Modifier.size(120.dp)
-                .align(Alignment.Center)
-                .offset(x = -20.dp, y = 250.dp)
-                .rotate(30f)
-                .scale(-1f, 1f)
-        )
+            Column(
+                modifier = Modifier
+                    .align(Alignment.Center)
+                    .padding(16.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                // Consigne au centre de l'écran
+                Text(
+                    text = if (auto) "Montre la main gauche à la caméra" else  "Lève les deux bras devant toi",
+                    style = MaterialTheme.typography.headlineSmall.copy(color = Color.White),
+                    maxLines = 2,
+                    textAlign = TextAlign.Center
+                )
+
+                Spacer(modifier = Modifier.height(50.dp))
+
+                //Phrase de démo
+                Text(
+                    text = "Si la crise est finie, tu peux arrêter le test en cliquant ici",
+                    fontSize = 24.sp,
+                    color = Blue40,
+                    textAlign = TextAlign.Center
+                )
+
+                Spacer(modifier = Modifier.height(2.dp))
+
+                Image(
+                    painter = painterResource(id = R.mipmap.ic_arrow_foreground),
+                    contentDescription = "Flèche vers bouton suivant",
+                    modifier = Modifier.size(120.dp)
+                        .rotate(30f)
+                        .scale(-1f, 1f)
+                )
+            }
+        }
 
         // Boutons en bas de l'écran
         Row(
@@ -686,7 +779,11 @@ fun InstructionScreen4(auto: Boolean, onNextStep: () -> Unit) {
 
 
 @Composable
-fun ConfirmationScreen1() {
+fun ConfirmationScreen1(onNextStep: () -> Unit) {
+
+    val configuration = LocalConfiguration.current
+    val screenHeight = configuration.screenHeightDp.dp
+
     AppTheme {
         Box(
             modifier = Modifier
@@ -694,74 +791,85 @@ fun ConfirmationScreen1() {
                 .background(MaterialTheme.colorScheme.background)
                 .padding(16.dp)
         ) {
-            // Titre
-            Text(
-                text = "Arrêter\nle test\nen cours ?",
-                style = MaterialTheme.typography.headlineSmall.copy(
-                    fontSize = 60.sp,
-                    lineHeight = 60.sp,
-                    textAlign = TextAlign.Center
-                ),
-                modifier = Modifier
-                    .align(Alignment.TopCenter)
-                    .padding(top = 60.dp),
-                color = MaterialTheme.colorScheme.onBackground
-            )
-
-            // Phrases de démo
-            Text(
-                text = "Si tu veux finalement\nreprendre le test en cours,\ncar la crise n'était pas finie,\ntu peux cliquer ici",
-                fontSize = 24.sp,
-                textAlign = TextAlign.Center,
-                color = MaterialTheme.colorScheme.onBackground,
-                modifier = Modifier
-                    .align(Alignment.Center)
-                    .padding(horizontal = 32.dp)
-                    .offset(y = (-110).dp)
-            )
-            Image(
-                painter = painterResource(id = R.mipmap.ic_dark_arrow_foreground),
-                contentDescription = "Flèche vers bouton suivant",
-                modifier = Modifier
-                    .size(110.dp)
-                    .align(Alignment.Center)
-                    .offset(x = 20.dp, y = (-20).dp)
-                    .rotate(-20f)
-            )
-
-            // Boutons d'action
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .align(Alignment.Center),
+                    .fillMaxHeight()
+                    //.fillMaxHeight(0.7f)
+                    .align(Alignment.TopCenter)
+                    .background(MaterialTheme.colorScheme.background),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                Spacer(modifier = Modifier.height(130.dp))
-
-                Row(
+                // Titre
+                Text(
+                    text = "Arrêter\nle test\nen cours ?",
+                    style = MaterialTheme.typography.headlineSmall.copy(
+                        fontSize = 60.sp,
+                        lineHeight = 60.sp,
+                        textAlign = TextAlign.Center
+                    ),
                     modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 32.dp),
-                    horizontalArrangement = Arrangement.SpaceEvenly
-                ) {
-                    // Bouton Oui (Check)
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Image(
-                            painter = painterResource(id = R.mipmap.ic_check_foreground),
-                            contentDescription = "Oui j'arrête le test",
-                            modifier = Modifier.size(140.dp)
-                        )
-                        Text("Oui j'arrête\nle test", fontSize = 24.sp, color = MaterialTheme.colorScheme.onBackground, textAlign = TextAlign.Center,)
-                    }
+                        .padding(top = 60.dp),
+                    color = MaterialTheme.colorScheme.onBackground
+                )
 
-                    // Bouton Non (Retour à l'origine)
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Image(
-                            painter = painterResource(id = R.mipmap.ic_close_foreground),
-                            contentDescription = "Non je continue le test",
-                            modifier = Modifier.size(140.dp)
-                        )
-                        Text("Non je continue\nle test", fontSize = 24.sp, color = MaterialTheme.colorScheme.onBackground, textAlign = TextAlign.Center,)
+                Spacer(modifier = Modifier.height(24.dp))
+
+                // Phrases de démo
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(
+                        text = "Si tu veux finalement reprendre\nle test en cours, car la crise n'était\npas finie, tu peux cliquer ici",
+                        fontSize = (18.sp),
+                        textAlign = TextAlign.Center,
+                        color = MaterialTheme.colorScheme.onBackground,
+                        modifier = Modifier
+                            .padding(horizontal = 32.dp)
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(34.dp))
+
+
+                    // Boutons d'action
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 32.dp),
+                        horizontalArrangement = Arrangement.SpaceEvenly
+                    ) {
+                        // Bouton Oui (Check)
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Image(
+                                painter = painterResource(id = R.mipmap.ic_check_foreground),
+                                contentDescription = "Oui j'arrête le test",
+                                modifier = Modifier.size(140.dp)
+                            )
+                            Text(
+                                "Oui j'arrête\nle test",
+                                fontSize = 18.sp,
+                                color = MaterialTheme.colorScheme.onBackground,
+                                textAlign = TextAlign.Center,
+                            )
+                        }
+
+                        // Bouton Non (Retour à l'origine)
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Image(
+                                painter = painterResource(id = R.mipmap.ic_close_foreground),
+                                contentDescription = "Non je continue le test",
+                                modifier = Modifier.size(140.dp)
+                                    .clickable { onNextStep() }
+                            )
+                            Text(
+                                "Non je continue\nle test",
+                                fontSize = 18.sp,
+                                color = MaterialTheme.colorScheme.onBackground,
+                                textAlign = TextAlign.Center,
+                            )
+
                     }
                 }
             }
@@ -773,16 +881,27 @@ fun ConfirmationScreen1() {
                     .align(Alignment.BottomCenter),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                Spacer(modifier = Modifier.height(32.dp))
                 Image(
                     painter = painterResource(id = R.mipmap.ic_brain_logo_foreground),
                     contentDescription = "Logo",
                     modifier = Modifier.size(140.dp)
                 )
             }
+
+            Image(
+                painter = painterResource(id = R.mipmap.ic_dark_arrow_foreground),
+                contentDescription = "Flèche vers bouton suivant",
+                modifier = Modifier
+                    .align(Alignment.TopCenter)
+                    .offset(y = screenHeight * 0.38f)
+                    .size(90.dp)
+                    .rotate(-20f)
+            )
+
         }
     }
 }
+
 
 @Composable
 fun ConfirmationScreen2(onNextStep: () -> Unit) {
@@ -790,6 +909,10 @@ fun ConfirmationScreen2(onNextStep: () -> Unit) {
         delay(5000)
         onNextStep()
     }
+
+    val configuration = LocalConfiguration.current
+    val screenHeight = configuration.screenHeightDp.dp
+
     AppTheme {
         Box(
             modifier = Modifier
@@ -797,51 +920,49 @@ fun ConfirmationScreen2(onNextStep: () -> Unit) {
                 .background(MaterialTheme.colorScheme.background)
                 .padding(16.dp)
         ) {
-            // Titre
-            Text(
-                text = "Arrêter\nle test\nen cours ?",
-                style = MaterialTheme.typography.headlineSmall.copy(
-                    fontSize = 60.sp,
-                    lineHeight = 60.sp,
-                    textAlign = TextAlign.Center
-                ),
-                modifier = Modifier
-                    .align(Alignment.TopCenter)
-                    .padding(top = 60.dp),
-                color = MaterialTheme.colorScheme.onBackground
-            )
-
-            // Phrases de démo
-            Text(
-                text = "Si la crise est bien finie,\nclique ici",
-                fontSize = 24.sp,
-                textAlign = TextAlign.Center,
-                color = MaterialTheme.colorScheme.onBackground,
-                modifier = Modifier
-                    .align(Alignment.Center)
-                    .padding(horizontal = 32.dp)
-                    .offset(y = (-90).dp)
-            )
-            Image(
-                painter = painterResource(id = R.mipmap.ic_dark_arrow_foreground),
-                contentDescription = "Flèche vers bouton suivant",
-                modifier = Modifier
-                    .size(110.dp)
-                    .align(Alignment.Center)
-                    .offset(x = -20.dp, y = (-20).dp)
-                    .rotate(20f)
-                    .scale(-1f, 1f)
-            )
-
-            // Boutons d'action
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .align(Alignment.Center),
+                    .fillMaxHeight()
+                    //.fillMaxHeight(0.7f)
+                    .align(Alignment.TopCenter)
+                    .background(MaterialTheme.colorScheme.background),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                Spacer(modifier = Modifier.height(130.dp))
+                // Titre
+                Text(
+                    text = "Arrêter\nle test\nen cours ?",
+                    style = MaterialTheme.typography.headlineSmall.copy(
+                        fontSize = 60.sp,
+                        lineHeight = 60.sp,
+                        textAlign = TextAlign.Center
+                    ),
+                    modifier = Modifier
+                        .padding(top = 60.dp),
+                    color = MaterialTheme.colorScheme.onBackground
+                )
 
+                Spacer(modifier = Modifier.height(14.dp))
+
+                // Phrases de démo
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(
+                        text = "Si la crise\nest bien finie,\nclique ici",
+                        fontSize = (20.sp),
+                        textAlign = TextAlign.Center,
+                        color = MaterialTheme.colorScheme.onBackground,
+                        modifier = Modifier
+                            .padding(horizontal = 32.dp)
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(24.dp))
+
+
+                // Boutons d'action
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -856,7 +977,12 @@ fun ConfirmationScreen2(onNextStep: () -> Unit) {
                             modifier = Modifier.size(140.dp)
                                 .clickable { onNextStep() }
                         )
-                        Text("Oui j'arrête\nle test", fontSize = 24.sp, color = MaterialTheme.colorScheme.onBackground, textAlign = TextAlign.Center,)
+                        Text(
+                            "Oui j'arrête\nle test",
+                            fontSize = 18.sp,
+                            color = MaterialTheme.colorScheme.onBackground,
+                            textAlign = TextAlign.Center,
+                        )
                     }
 
                     // Bouton Non (Retour à l'origine)
@@ -865,8 +991,15 @@ fun ConfirmationScreen2(onNextStep: () -> Unit) {
                             painter = painterResource(id = R.mipmap.ic_close_foreground),
                             contentDescription = "Non je continue le test",
                             modifier = Modifier.size(140.dp)
+                                .clickable { onNextStep() }
                         )
-                        Text("Non je continue\nle test", fontSize = 24.sp, color = MaterialTheme.colorScheme.onBackground, textAlign = TextAlign.Center,)
+                        Text(
+                            "Non je continue\nle test",
+                            fontSize = 18.sp,
+                            color = MaterialTheme.colorScheme.onBackground,
+                            textAlign = TextAlign.Center,
+                        )
+
                     }
                 }
             }
@@ -878,13 +1011,24 @@ fun ConfirmationScreen2(onNextStep: () -> Unit) {
                     .align(Alignment.BottomCenter),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                Spacer(modifier = Modifier.height(32.dp))
                 Image(
                     painter = painterResource(id = R.mipmap.ic_brain_logo_foreground),
                     contentDescription = "Logo",
                     modifier = Modifier.size(140.dp)
                 )
             }
+
+            Image(
+                painter = painterResource(id = R.mipmap.ic_dark_arrow_foreground),
+                contentDescription = "Flèche vers bouton suivant",
+                modifier = Modifier
+                    .align(Alignment.TopCenter)
+                    .offset(y = screenHeight * 0.38f)
+                    .size(90.dp)
+                    .rotate(20f)
+                    .scale(-1f, 1f)
+            )
+
         }
     }
 }
@@ -903,10 +1047,14 @@ fun TextScreen2(auto: Boolean) {
             fontSize = 28.sp,
             color = MaterialTheme.colorScheme.onBackground,
             textAlign = TextAlign.Center,
-            style = MaterialTheme.typography.bodyLarge.copy(lineHeight = 40.sp)
+            style = MaterialTheme.typography.bodyLarge.copy(lineHeight = 40.sp),
+            modifier = Modifier.padding(horizontal = 24.dp),
+            maxLines = 10,
+            overflow = TextOverflow.Ellipsis
         )
     }
 }
+
 
 
 @Composable

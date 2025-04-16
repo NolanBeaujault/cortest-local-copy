@@ -13,11 +13,13 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.ViewModel
 import androidx.navigation.NavHostController
 import com.example.epilepsytestapp.R
 import com.example.epilepsytestapp.model.Patient
@@ -28,9 +30,11 @@ fun SettingsPage(
     navController: NavHostController,
     onLogout: () -> Unit,
     onModifyConfiguration: () -> Unit,
-    patient: List<Patient>
+    patient: List<Patient>,
+    cameraViewModel: CameraViewModel
 ) {
-    val isFrontCamera = remember { mutableStateOf(true) } // ✅ Stockage de l'état de la caméra
+    val isFrontCamera = cameraViewModel.isFrontCamera
+
 
     AppTheme {
         Box(
@@ -68,7 +72,7 @@ fun SettingsPage(
                                 .padding(end = 16.dp) // Espace supplémentaire à droite du logo
                         )
 
-                        // Titre "Home"
+                        // Titre "Paramètres"
                         Text(
                             text = "Paramètres",
                             style = MaterialTheme.typography.displayLarge.copy(
@@ -97,10 +101,14 @@ fun SettingsPage(
                 SettingsOption(text = "Gérer les autorisations") { openAppSettings(navController.context) }
                 SettingsOption(text = "Déconnexion") { onLogout(); navController.navigate("login") }
                 SettingsOption(text = "Modifier la configuration", onClick = onModifyConfiguration)
+                SettingsOption(text = "Modifier le questionnaire") {
+                    navController.navigate("survey_entry")
+                }
+
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                // ✅ Ligne avec le switch caméra et ses labels
+                // Ligne avec le switch caméra et ses labels
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -157,11 +165,18 @@ fun SettingsOption(text: String, onClick: () -> Unit) {
         text = text,
         modifier = Modifier
             .fillMaxWidth()
-            .padding(16.dp)
-            .border(1.dp, Color.Gray, RoundedCornerShape(4.dp))
+            .padding(horizontal = 16.dp, vertical = 8.dp)
+            .clip(RoundedCornerShape(16.dp))
+            .background(Color(0xFFD0EEED))
+            .border(
+                width = 2.dp,
+                color = MaterialTheme.colorScheme.primary,
+                shape = RoundedCornerShape(16.dp)
+            )
             .clickable { onClick() }
             .padding(12.dp),
         style = MaterialTheme.typography.bodyLarge.copy(
+            color = MaterialTheme.colorScheme.primary,
             textAlign = TextAlign.Start
         )
     )
@@ -173,4 +188,8 @@ fun openAppSettings(context: Context) {
         data = android.net.Uri.fromParts("package", context.packageName, null)
     }
     context.startActivity(intent)
+}
+
+class CameraViewModel : ViewModel() {
+    var isFrontCamera = mutableStateOf(true)
 }

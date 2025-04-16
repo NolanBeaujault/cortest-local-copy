@@ -21,9 +21,9 @@ import android.util.Log
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.content.ContextCompat
-import androidx.navigation.NavType
-import androidx.navigation.navArgument
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.epilepsytestapp.network.loadPatientsFromNetwork
+import com.example.epilepsytestapp.savefiles.SurveyEntryScreen
 import com.google.firebase.auth.FirebaseAuth
 
 
@@ -191,9 +191,10 @@ fun NavigationGraph(
     startDestination: String,
     onAuthenticated: () -> Unit,
     onRememberMe: (Boolean) -> Unit,
-    onLogout: () -> Unit
+    onLogout: () -> Unit,
 ) {
     val recordedVideos = remember { mutableStateListOf<String>() }
+    val cameraViewModel: CameraViewModel = viewModel()
 
     NavHost(
         navController = navController,
@@ -270,7 +271,8 @@ fun NavigationGraph(
                     onModifyConfiguration = {
                         navController.navigate("testTypeSelectionScreen")
                     },
-                    patient = patients
+                    patient = patients,
+                    cameraViewModel = cameraViewModel
                 )
             } else {
                 navController.navigate("login")
@@ -297,7 +299,7 @@ fun NavigationGraph(
         // Test
         composable("test/{currentInstructionIndex}") {
             if (isAuthenticated) {
-                TestScreen(navController = navController, recordedVideos = recordedVideos)
+                TestScreen(navController = navController, recordedVideos = recordedVideos, cameraViewModel = cameraViewModel)
             } else {
                 navController.navigate("login")
             }
@@ -324,6 +326,11 @@ fun NavigationGraph(
                 }
             )
         }
+
+        composable("survey_entry") {
+            SurveyEntryScreen(navController = navController)
+        }
+
 
         composable("testEnregistre") {
             TestEnregistre(navController = navController)

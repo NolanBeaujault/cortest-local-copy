@@ -6,7 +6,6 @@ import androidx.camera.core.*
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.video.*
 import androidx.compose.foundation.layout.*
-import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -20,44 +19,37 @@ import androidx.lifecycle.LifecycleOwner
 import androidx.navigation.NavHostController
 import com.example.epilepsytestapp.R
 import com.example.epilepsytestapp.category.LocalCatManager
-import com.example.epilepsytestapp.category.Test
-import com.example.epilepsytestapp.category.TestDisplay
 import com.example.epilepsytestapp.savefiles.saveTestInstructionsAsPDF
 import com.example.epilepsytestapp.savefiles.startRecording
 import com.example.epilepsytestapp.savefiles.stopRecording
 import com.google.common.util.concurrent.ListenableFuture
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import com.example.epilepsytestapp.category.Test
+import com.example.epilepsytestapp.category.TestDisplay
 
 @Composable
 fun TestScreen(navController: NavHostController, recordedVideos: MutableList<String>, cameraViewModel: CameraViewModel) {
-
-    val isFrontCamera by cameraViewModel.isFrontCamera
-
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
+    val isFrontCamera by cameraViewModel.isFrontCamera
 
     val tests = remember { mutableStateListOf<Test>() }
-
-    val instructionsA = remember { mutableStateListOf<String>() }
-    val instructionsH = remember { mutableStateListOf<String>() }
     var currentInstructionIndex by remember { mutableIntStateOf(0) }
-    val currentInstruction = remember { mutableStateOf("Chargement...") }
 
-    var isRecording by remember { mutableStateOf(false) }
+    val currentInstruction = remember { mutableStateOf("Chargement...") }
     val videoCapture = remember { mutableStateOf<VideoCapture<Recorder>?>(null) }
     val recording = remember { mutableStateOf<Recording?>(null) }
     val videoFilePath = remember { mutableStateOf<String?>(null) }
 
     val instructionsLog = remember { mutableListOf<Pair<String, Int>>() }
     var elapsedTime by remember { mutableIntStateOf(0) }
+    var isRecording by remember { mutableStateOf(false) }
 
     val coroutineScope = rememberCoroutineScope()
-
     val currentTest = tests.getOrNull(currentInstructionIndex)
 
-
-    // 📂 Chargement des consignes (une seule fois)
+    // 📂 Charger les tests
     LaunchedEffect(Unit) {
         coroutineScope.launch {
             Log.d("TestScreen", "📂 Chargement des tests depuis le fichier local...")
@@ -69,7 +61,7 @@ fun TestScreen(navController: NavHostController, recordedVideos: MutableList<Str
         }
     }
 
-    // ⏳ Gestion du timer
+    // ⏳ Timer pendant l'enregistrement
     LaunchedEffect(isRecording) {
         while (isRecording) {
             delay(1000L)
@@ -86,33 +78,24 @@ fun TestScreen(navController: NavHostController, recordedVideos: MutableList<Str
             cameraViewModel = cameraViewModel
         )
 
+        // 🔸 Affichage de la consigne/image/mot
         Box(
-            modifier = Modifier.fillMaxSize()
+            modifier = Modifier
+                .fillMaxWidth()
+                .align(Alignment.TopCenter)
+                .padding(bottom = 32.dp) // Marge en haut pour éviter la barre de statut
         ) {
-            Box(
-                modifier = Modifier
-                    .fillMaxHeight(1 / 3f)
-                    .align(Alignment.BottomCenter)
-                    .padding(bottom = 16.dp)
-            ) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .align(Alignment.TopCenter)
-                        .padding(bottom = 32.dp) // Marge en haut pour éviter la barre de statut
-                ) {
-                    currentTest?.let {
-                        // Passage de currentInstructionIndex en paramètre à TestDisplay
-                        TestDisplay(
-                            test = it,
-                            isFrontCamera = isFrontCamera,
-                            key = currentInstructionIndex // Utilisation de currentInstructionIndex comme clé
-                        ) }
-                }
+            currentTest?.let {
+                // Passage de currentInstructionIndex en paramètre à TestDisplay
+                TestDisplay(
+                    test = it,
+                    isFrontCamera = isFrontCamera,
+                    key = currentInstructionIndex // Utilisation de currentInstructionIndex comme clé
+                )
             }
         }
 
-        // 🔹 Boutons de contrôle
+        // 🔘 Boutons bas
         Row(
             modifier = Modifier
                 .align(Alignment.BottomCenter)
@@ -120,27 +103,29 @@ fun TestScreen(navController: NavHostController, recordedVideos: MutableList<Str
                 .padding(15.dp),
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
+            // Arrêter le test
             ImageClickable(
                 imageResId = R.mipmap.ic_close_foreground,
                 contentDescription = "Arrêter le test",
                 onClick = {
                     if (isRecording) {
-                        stopRecording(context, recording, videoFilePath)
+                        val path = stopRecording(context, recording, videoFilePath, recordedVideos)
                         isRecording = false
                     }
                     currentTest?.let {
                         instructionsLog.add(Pair(currentInstruction.value, elapsedTime))
-                        }
+                    }
 
                     val pdfFile = saveTestInstructionsAsPDF(context, instructionsLog, elapsedTime)
                     pdfFile?.let {
-                        Log.d("TestScreen", "PDF généré avec succès : ${it.absolutePath}")
+                        Log.d("TestScreen", "📄 PDF généré : ${it.absolutePath}")
                     }
 
                     navController.navigate("confirmation")
                 }
             )
 
+            // Passer à la consigne suivante
             ImageClickable(
                 imageResId = R.mipmap.ic_next_foreground,
                 contentDescription = "Instruction suivante",
@@ -148,36 +133,31 @@ fun TestScreen(navController: NavHostController, recordedVideos: MutableList<Str
                     currentTest?.let {
                         instructionsLog.add(Pair(currentInstruction.value, elapsedTime))
                     }
+
                     if (currentInstructionIndex < tests.size - 1) {
                         currentInstructionIndex++
                         val consigne = if (isFrontCamera) currentTest?.consigneA else currentTest?.consigneH
                         currentInstruction.value = consigne ?: "Aucune consigne"
                     } else {
                         if (isRecording) {
-                            stopRecording(context, recording, videoFilePath)
+                            stopRecording(context, recording, videoFilePath, recordedVideos)
                             isRecording = false
                         }
-                        instructionsLog.add(Pair(currentInstruction.value, elapsedTime))
                         navController.navigate("confirmation")
                     }
                 }
             )
         }
 
-        // 🔄 Changer de caméra
+        // 🔄 Switch caméra
         ImageClickable(
             imageResId = R.mipmap.ic_switch_camera_foreground,
             contentDescription = "Changer de caméra",
             onClick = {
                 if (isRecording) {
-                    stopRecording(context, recording, videoFilePath)
+                    stopRecording(context, recording, videoFilePath, recordedVideos)
                     isRecording = false
                 }
-
-                val cameraLabel =
-                    if (!cameraViewModel.isFrontCamera.value) "Caméra frontale" else "Caméra arrière"
-                instructionsLog.add(Pair("Changement de caméra : $cameraLabel", elapsedTime))
-
                 cameraViewModel.isFrontCamera.value = !cameraViewModel.isFrontCamera.value
                 val consigne = if (cameraViewModel.isFrontCamera.value) {
                     currentTest?.consigneA
@@ -187,30 +167,26 @@ fun TestScreen(navController: NavHostController, recordedVideos: MutableList<Str
                 currentInstruction.value = consigne ?: "Aucune consigne"
                 Log.d("TestScreen", "🎥 Changement de caméra : ${cameraViewModel.isFrontCamera.value}")
                 videoCapture.value = null
-
-                // 💡 Redémarre le chrono uniquement après la nouvelle caméra
-                coroutineScope.launch {
-                    delay(500) // attendre que la nouvelle vidéo démarre
-                }
             },
-                    modifier = Modifier
+            modifier = Modifier
                 .padding(10.dp)
                 .align(Alignment.TopEnd)
                 .size(80.dp)
         )
 
-        // 🎥 Démarrer l'enregistrement automatiquement après changement de caméra
+        // 🎬 Démarrage de l'enregistrement automatique
         LaunchedEffect(videoCapture.value, isFrontCamera) {
-            if (!isRecording) {
-                delay(300L)
-                videoCapture.value?.let {
-                    recording.value = startRecording(context, it, recording, videoFilePath, recordedVideos)
-                    isRecording = true
-                }
+            if (videoCapture.value != null && recording.value == null) {
+                recording.value = startRecording(context, videoCapture.value!!, recording, videoFilePath, recordedVideos)
+                isRecording = true
+                elapsedTime = 0
+            } else {
+                Log.d("TestScreen", "🎥 Enregistrement déjà en cours ou caméra pas encore prête.")
             }
         }
     }
 }
+
 
 @Composable
 fun CameraPreview(
@@ -221,7 +197,7 @@ fun CameraPreview(
     cameraViewModel: CameraViewModel
 ) {
     val cameraProviderFuture = remember { ProcessCameraProvider.getInstance(context) }
-    val isFrontCamera by cameraViewModel.isFrontCamera
+    val isFrontCamera by cameraViewModel.isFrontCamera // ✅ Liaison au ViewModel
 
     AndroidView(
         factory = { ctx ->
@@ -231,6 +207,7 @@ fun CameraPreview(
         },
         modifier = modifier,
         update = { previewView ->
+            // ✅ Mise à jour de la caméra seulement si nécessaire
             if (videoCapture.value == null) {
                 bindCamera(previewView, context, lifecycleOwner, videoCapture, isFrontCamera, cameraProviderFuture)
                 Log.d("CameraPreview", "📷 Caméra mise à jour : isFrontCamera = $isFrontCamera")
@@ -238,6 +215,7 @@ fun CameraPreview(
         }
     )
 }
+
 
 fun bindCamera(
     previewView: androidx.camera.view.PreviewView,

@@ -9,47 +9,52 @@ import kotlinx.coroutines.withContext
 import java.io.File
 
 object LocalCatManager {
-    private const val FILE_NAME = "localtestconfiguration.json"
     private val gson = Gson()
 
-    suspend fun loadLocalTests(context: Context): Map<String, List<Test>> {
+    suspend fun loadLocalTests(context: Context, filename: String = "localtestconfiguration.json"): List<Test> {
         return withContext(Dispatchers.IO) {
             try {
-                val file = File(context.filesDir, FILE_NAME)
-                if (!file.exists()) return@withContext emptyMap()
+                val file = File(context.filesDir, filename)
+                if (!file.exists()) return@withContext emptyList()
 
                 val json = file.readText()
-                val type = object : TypeToken<Map<String, List<Test>>>() {}.type
-                gson.fromJson(json, type) ?: emptyMap()
+                val type = object : TypeToken<List<Test>>() {}.type
+                gson.fromJson(json, type) ?: emptyList()
             } catch (e: Exception) {
                 Log.e("LocalCategory", "Erreur : Lecture du JSON local: ${e.message}")
-                emptyMap()
+                emptyList()
             }
         }
     }
 
-    suspend fun saveLocalTests(context: Context, selectedTests: Map<String, List<Test>>) {
+    suspend fun saveLocalTests(context: Context, filename: String, selectedTests: List<Test>) {
         withContext(Dispatchers.IO) {
             try {
-                val filteredTests = selectedTests.mapValues { (categories, tests) ->
-                    tests.map { test ->
-                        test.copy(
-                            affichage = test.affichage,
-                            mot_set = test.mot_set?.takeIf { it.isNotEmpty() },
-                            image = test.image?.takeIf { it.isNotEmpty() },
-                            couleur = test.couleur?.takeIf { it.isNotEmpty() },
-                            mot = test.mot?.takeIf { it.isNotEmpty() },
-                            groupe = test.groupe?.takeIf { it.isNotEmpty() }
-                        )
-                    }
-
+                val filteredTests = selectedTests.map { test ->
+                    test.copy(
+                        a_consigne = test.a_consigne?.takeIf { it.isNotEmpty() },
+                        h_consigne = test.h_consigne?.takeIf { it.isNotEmpty() },
+                        affichage = test.affichage,
+                        mot_set = test.mot_set?.takeIf { it.isNotEmpty() },
+                        image = test.image?.takeIf { it.isNotEmpty() },
+                        couleur = test.couleur?.takeIf { it.isNotEmpty() },
+                        mot = test.mot?.takeIf { it.isNotEmpty() },
+                        groupe = test.groupe?.let { groupe ->
+                            if (groupe.id_groupe != null && groupe.nom.isNotEmpty()) {
+                                groupe
+                            } else {
+                                null
+                            }
+                        }
+                    )
                 }
                 Log.d("LocalCategory", "Affichage : ${filteredTests}")
+
                 val updatedTestsJson = gson.toJson(filteredTests)
-                val file = File(context.filesDir, FILE_NAME)
+                val file = File(context.filesDir, filename)
                 file.writeText(updatedTestsJson)
 
-                Log.d("LocalCategory", "Tests enregistrés dans $FILE_NAME")
+                Log.d("LocalCategory", "Tests enregistrés dans $filename")
             } catch (e: Exception) {
                 Log.e("LocalCategory", "Erreur : Sauvegarde du JSON local: ${e.message}")
             }

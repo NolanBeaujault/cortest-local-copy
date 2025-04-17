@@ -6,6 +6,7 @@ import androidx.camera.core.*
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.video.*
 import androidx.compose.foundation.layout.*
+import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -57,8 +58,8 @@ fun TestScreen(navController: NavHostController, recordedVideos: MutableList<Str
             coroutineScope.launch {
                 Log.d("TestScreen", "📂 Chargement des tests depuis le fichier local...")
                 val localTests = LocalCatManager.loadLocalTests(context)
-                tests.addAll(localTests.values.flatten())
-                val consigne = if (isFrontCamera) currentTest?.consigneA else currentTest?.consigneH
+                tests.addAll(localTests)
+                val consigne = if (isFrontCamera) currentTest?.a_consigne else currentTest?.h_consigne
                 currentInstruction.value = consigne ?: "Aucune consigne"
                 Log.d("TestScreen", "✅ Consigne initiale : ${currentInstruction.value}")
             }
@@ -140,7 +141,7 @@ fun TestScreen(navController: NavHostController, recordedVideos: MutableList<Str
 
                     if (currentInstructionIndex < tests.size - 1) {
                         currentInstructionIndex++
-                        val consigne = if (isFrontCamera) currentTest?.consigneA else currentTest?.consigneH
+                        val consigne = if (isFrontCamera) currentTest?.a_consigne else currentTest?.h_consigne
                         currentInstruction.value = consigne ?: "Aucune consigne"
                     } else {
                         if (isRecording) {
@@ -168,9 +169,9 @@ fun TestScreen(navController: NavHostController, recordedVideos: MutableList<Str
 
                 cameraViewModel.isFrontCamera.value = !cameraViewModel.isFrontCamera.value
                 val consigne = if (cameraViewModel.isFrontCamera.value) {
-                    currentTest?.consigneA
+                    currentTest?.a_consigne
                 } else {
-                    currentTest?.consigneH
+                    currentTest?.h_consigne
                 }
                 currentInstruction.value = consigne ?: "Aucune consigne"
                 Log.d("TestScreen", "🎥 Changement de caméra : ${cameraViewModel.isFrontCamera.value}")

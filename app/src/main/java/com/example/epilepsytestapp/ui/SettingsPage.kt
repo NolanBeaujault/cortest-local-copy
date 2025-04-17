@@ -9,6 +9,8 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -16,6 +18,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -34,6 +37,8 @@ fun SettingsPage(
     cameraViewModel: CameraViewModel
 ) {
     val isFrontCamera = cameraViewModel.isFrontCamera
+    var showDialogConfig by remember { mutableStateOf(false) }
+    var showDialogQuestionnaire by remember { mutableStateOf(false) }
 
 
     AppTheme {
@@ -100,9 +105,9 @@ fun SettingsPage(
 
                 SettingsOption(text = "Gérer les autorisations") { openAppSettings(navController.context) }
                 SettingsOption(text = "Déconnexion") { onLogout(); navController.navigate("login") }
-                SettingsOption(text = "Modifier la configuration", onClick = onModifyConfiguration)
+                SettingsOption(text = "Modifier la configuration") { showDialogConfig = true }
                 SettingsOption(text = "Modifier le questionnaire") {
-                    navController.navigate("survey_entry")
+                    showDialogQuestionnaire = true
                 }
 
 
@@ -150,6 +155,91 @@ fun SettingsPage(
 
 
             }
+
+            // Affichage de la boite d'alerte avant de naviguer vers la configuration des tests
+            if (showDialogConfig) {
+                AlertDialog(
+                    onDismissRequest = { showDialogConfig = false },
+                    confirmButton = {
+                        TextButton(onClick = {
+                            showDialogConfig = false
+                            onModifyConfiguration() // Navigation vers la page de config
+                        }) {
+                            Text("Continuer", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
+                        }
+                    },
+                    dismissButton = {
+                        TextButton(onClick = { showDialogConfig = false }) {
+                            Text("Retour", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
+                        }
+                    },
+                    title = {
+                        Row(verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ){
+                            Icon(
+                                imageVector = Icons.Default.Warning,
+                                contentDescription = "ATTENTION !",
+                                tint = Color(0xFFFFA726),
+                                modifier = Modifier.size(36.dp)
+                                    .offset(y = (-1).dp)
+                            )
+                            Text("ATTENTION !", fontWeight = FontWeight.Bold)
+                        }
+                    },
+                    text = {
+                        Text("La page suivante permet de modifier la configuration des tests. \n\nCette configuration ne doit être modifiée qu'avec la présence ou l'autorisation de votre neurologue, veuillez retourner en arrière si ce n'est pas le cas.")
+                    },
+                    containerColor = MaterialTheme.colorScheme.surface,
+                    titleContentColor = MaterialTheme.colorScheme.primary,
+                    textContentColor = MaterialTheme.colorScheme.onSurface,
+                )
+
+
+            }
+
+            // Affichage de la boîte d'alerte avant de naviguer vers la page de modif. du questionnaire
+            if (showDialogQuestionnaire) {
+                AlertDialog(
+                    onDismissRequest = { showDialogQuestionnaire = false },
+                    confirmButton = {
+                        TextButton(onClick = {
+                            showDialogQuestionnaire = false
+                            navController.navigate("survey_entry") // Navigation vers la modif. du questionnaire
+                        }) {
+                            Text("Continuer", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
+                        }
+                    },
+                    dismissButton = {
+                        TextButton(onClick = { showDialogQuestionnaire = false }) {
+                            Text("Retour", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
+                        }
+                    },
+                    title = {
+                        Row(verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ){
+                            Icon(
+                                imageVector = Icons.Default.Warning,
+                                contentDescription = "ATTENTION !",
+                                tint = Color(0xFFFFA726),
+                                modifier = Modifier.size(36.dp)
+                                    .offset(y = (-1).dp)
+                            )
+                            Text("ATTENTION !", fontWeight = FontWeight.Bold)
+                        }
+                    },
+                    text = {
+                        Text("La page suivante permet de modifier le questionnaire post-test. \n\nCe questionnaire ne doit être modifié qu'avec la présence ou l'autorisation de votre neurologue, veuillez retourner en arrière si ce n'est pas le cas.")
+                    },
+                    containerColor = MaterialTheme.colorScheme.surface,
+                    titleContentColor = MaterialTheme.colorScheme.primary,
+                    textContentColor = MaterialTheme.colorScheme.onSurface,
+                )
+
+
+            }
+
             NavigationBar(
                     navController = navController,
             modifier = Modifier.align(Alignment.BottomCenter) // Fixe la barre en bas

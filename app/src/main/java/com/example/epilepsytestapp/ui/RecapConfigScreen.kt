@@ -27,15 +27,13 @@ import kotlinx.coroutines.launch
 
 @Composable
 fun RecapScreen(navController: NavController) {
-    // Récupérer les tests sélectionnés à partir de `savedStateHandle`
     val selectedTests = remember {
         mutableStateListOf<Test>().apply {
             navController.previousBackStackEntry?.savedStateHandle
-                ?.get<Map<String, List<Test>>>("selectedTests")
-                ?.values?.flatten()
-                ?.let { addAll(it) }
+                ?.get<List<Test>>("selectedTests")?.let { addAll(it) }
         }
     }
+
 
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
@@ -63,22 +61,21 @@ fun RecapScreen(navController: NavController) {
                     .padding(8.dp)
                     .background(MaterialTheme.colorScheme.surface, shape = RoundedCornerShape(8.dp))
                     .padding(16.dp)
-                    .verticalScroll(rememberScrollState())  // Activation du défilement vertical
+                    .verticalScroll(rememberScrollState())
             ) {
-                // Affichage des tests sélectionnés
                 ReorderableList(selectedTests)
             }
 
             Spacer(modifier = Modifier.height(10.dp))
 
-            // Bouton Retour
             CustomButton(text = "Retour") {
                 try {
                     val backStackEntry = navController.previousBackStackEntry
                     if (backStackEntry != null) {
-                        // Sauvegarder les tests sélectionnés dans le `savedStateHandle`
-                        backStackEntry.savedStateHandle["selectedTests"] = mapOf("Tous les tests" to selectedTests.toList())
-                        navController.navigate("testConfigScreen")
+                        val updatedList = selectedTests.toList().map { it.copy() }
+                        Log.d("RecapScreen", "📌 Enregistrement des tests avant retour : $updatedList")
+                        backStackEntry.savedStateHandle["selectedTests"] = updatedList
+                        navController.popBackStack()
                     } else {
                         Log.e("Navigation", "Impossible de revenir en arrière, backStackEntry est null")
                     }
@@ -89,11 +86,11 @@ fun RecapScreen(navController: NavController) {
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            // Bouton Enregistrer
             CustomButton(text = "Enregistrer la configuration") {
                 coroutineScope.launch {
-                    // Sauvegarder les tests sélectionnés de manière structurée
-                    LocalCatManager.saveLocalTests(context, mapOf("Tous les tests" to selectedTests))
+                    LocalCatManager.saveLocalTests(context, "localtestconfiguration.json", selectedTests.toList())
+                    val fileName = "test_config_${System.currentTimeMillis()}.json"
+                    LocalCatManager.saveLocalTests(context, fileName, selectedTests.toList())
                 }
                 navController.navigate("home") {
                     popUpTo("home") { inclusive = true }
@@ -176,7 +173,6 @@ fun TestItem(test: Test, index: Int, tests: MutableList<Test>, onListUpdate: (Li
     }
 }
 
-// ✅ Fonction utilitaire pour échanger deux éléments
 fun <T> MutableList<T>.swap(index1: Int, index2: Int) {
     val temp = this[index1]
     this[index1] = this[index2]

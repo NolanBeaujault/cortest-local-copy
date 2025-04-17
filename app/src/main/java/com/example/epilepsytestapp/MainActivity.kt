@@ -244,6 +244,7 @@ fun NavigationGraph(
         composable("testConfigScreen") {
             ConfigScreen(
                 navController = navController,
+
                 )
         }
 

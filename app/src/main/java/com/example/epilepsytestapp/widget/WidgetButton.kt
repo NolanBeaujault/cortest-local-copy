@@ -24,7 +24,7 @@ class TestAppWidgetProvider : AppWidgetProvider() {
 
     private fun createWidgetRemoteViews(context: Context): RemoteViews {
         val intent = Intent(context, MainActivity::class.java).apply {
-            putExtra("startScreen", "test")
+            putExtra("startScreen", "test/0")
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
         }
         val pendingIntent = PendingIntent.getActivity(

@@ -22,6 +22,7 @@ import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.navArgument
 import com.example.epilepsytestapp.network.loadPatientsFromNetwork
 import com.example.epilepsytestapp.savefiles.SurveyEntryScreen
 import com.google.firebase.auth.FirebaseAuth
@@ -50,16 +51,19 @@ class MainActivity : ComponentActivity() {
             }
 
             val lastScreen = sharedPreferences.getString("lastScreen","login") ?: "login"
-            val startDestination = remember{
+            val startDestination = remember {
                 mutableStateOf(
-                    when{
-                        intent.getStringExtra("startScreen") == "test" -> "test"
+                    when {
+                        intent.getStringExtra("startScreen")?.startsWith("test/") == true -> {
+                            intent.getStringExtra("startScreen") ?: "test/0"
+                        }
                         isAuthenticated && lastScreen == "infoPerso" -> "infoPerso"
                         isAuthenticated -> "home"
                         else -> "login"
                     }
                 )
             }
+
 
             LaunchedEffect(Unit) {
                 firebaseAuth.addAuthStateListener { auth ->
@@ -148,23 +152,6 @@ fun EpilepsyTestApp(
         LoadingScreen()
     } else {
         AppTheme {
-            LaunchedEffect(startDestination) {
-                Log.d("MainActivity", "startDestination = $startDestination")
-                if (startDestination == "test") {
-                    navController.navigate("test") {
-                        popUpTo(0) { inclusive = true } // Supprimer toute la pile
-                    }
-                } else if (isAuthenticated) {
-                    navController.navigate("home") {
-                        popUpTo("login") { inclusive = true }
-                    }
-                } else {
-                    navController.navigate("login") {
-                        popUpTo("login") { inclusive = true }
-                    }
-                }
-            }
-
             NavigationGraph(
                 navController = navController,
                 patients = patients,
@@ -297,13 +284,21 @@ fun NavigationGraph(
         }
 
         // Test
-        composable("test/{currentInstructionIndex}") {
+        composable(
+            route = "test/{currentInstructionIndex}",
+            arguments = listOf(navArgument("currentInstructionIndex") { defaultValue = 0 })
+        ) {
             if (isAuthenticated) {
-                TestScreen(navController = navController, recordedVideos = recordedVideos, cameraViewModel = cameraViewModel)
+                TestScreen(
+                    navController = navController,
+                    recordedVideos = recordedVideos,
+                    cameraViewModel = cameraViewModel
+                )
             } else {
                 navController.navigate("login")
             }
         }
+
 
         composable("confirmation") {
             ConfirmationScreen(

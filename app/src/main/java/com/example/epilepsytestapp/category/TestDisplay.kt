@@ -1,26 +1,15 @@
 package com.example.epilepsytestapp.category
 
+import android.media.MediaPlayer
 import android.util.Log
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.aspectRatio
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.*
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
@@ -34,76 +23,70 @@ fun TestDisplay(
     test: Test,
     isFrontCamera: Boolean,
     onImageClick: (String) -> Unit = {},
-    key: Int // Paramètre pour la clé
+    key: Int
 ) {
     val context = LocalContext.current
 
-    // Utilisation de `remember` et `mutableStateOf` pour stocker l'état mutable
     var randomMot by remember { mutableStateOf("") }
     var selectedImage by remember { mutableStateOf<String?>(null) }
+    var motColor by remember { mutableStateOf(Color.Unspecified) }
 
-    // 🎲 Sélection du mot aléatoire indépendamment
-    // Observe `currentInstructionIndex` pour réinitialiser et choisir un nouveau mot à chaque nouvelle instruction
-    LaunchedEffect(key1 = key) {  // key est currentInstructionIndex ici
-        randomMot = ""  // Réinitialisation du mot aléatoire au début du test
-        selectedImage = null  // Réinitialisation de l'image sélectionnée au début du test
+    var mediaPlayer by remember { mutableStateOf<MediaPlayer?>(null) }
 
-        // Si mot_set n'est pas vide, sélectionne un mot aléatoire
+    // 🎲 Initialisation à chaque nouvelle instruction
+    LaunchedEffect(key1 = key) {
+        randomMot = ""
+        selectedImage = null
+        motColor = Color.Unspecified
+
+        // 🎲 Choix du mot
         if (!test.mot_set.isNullOrEmpty()) {
-            // Affiche la valeur de mot_set dans le log
-            Log.d("TestDisplay", "🔍 Valeur de mot_set: ${test.mot_set}")
-
             randomMot = test.mot_set.random()
-            Log.d("TestDisplay", "🎲 Mot aléatoire sélectionné: $randomMot")
-        } else {
-            Log.w("TestDisplay", "⚠️ mot_set est vide, aucun mot aléatoire sélectionné.")
-        }
-    }
+            Log.d("TestDisplay", "🎲 Mot sélectionné: $randomMot")
 
-    // 🎲 Gestion des images selon l'affichage
-    LaunchedEffect(test.image, test.affichage) {
-        if (!test.image.isNullOrEmpty()) {
-            Log.d("TestDisplay", "📷 Images disponibles: ${test.image}")
-            Log.d("TestDisplay", "🧩 Clé affichage: ${test.affichage}")
-
-            if (test.image.size == 1) {
-                selectedImage = test.image.first()
-                Log.d("TestDisplay", "📷 Une seule image -> sélectionnée directement: $selectedImage")
-            } else {
-                when (test.affichage) {
-                    "hasard" -> {
-                        selectedImage = test.image.random()
-                        Log.d("TestDisplay", "🔀 Mode hasard -> image choisie: $selectedImage")
-                    }
-                    "complet" -> {
-                        Log.d("TestDisplay", "🧩 Mode complet avec 4 images.")
-                    }
-                    else -> {
-                        Log.w("TestDisplay", "⚠️ Mode affichage inconnu ou non supporté: '${test.affichage}'")
+            // 🎨 Si test.couleur est défini : appliquer une couleur différente du mot
+            if (!test.couleur.isNullOrEmpty()) {
+                val filteredColors = test.couleur.filterNot {
+                    it.equals(randomMot, ignoreCase = true)
+                }
+                val selectedColorName = filteredColors.randomOrNull()
+                selectedColorName?.let { colorName ->
+                    frenchColorToHex(colorName)?.let { hex ->
+                        motColor = Color(android.graphics.Color.parseColor(hex))
+                        Log.d("TestDisplay", "🎨 Couleur appliquée : $colorName → $hex")
+                    } ?: run {
+                        Log.w("TestDisplay", "⚠️ Couleur inconnue : $colorName")
                     }
                 }
             }
-        } else {
-            Log.w("TestDisplay", "⚠️ Aucune image fournie dans le test")
+
+            // 🔊 Jouer l'audio si caméra frontale
+            if (isFrontCamera && test.audio.isNotEmpty()) {
+                val filename = test.audio.removeSuffix(".m4a")
+                val resId = context.resources.getIdentifier(filename, "raw", context.packageName)
+
+                if (resId != 0) {
+                    mediaPlayer?.release()
+                    mediaPlayer = MediaPlayer.create(context, resId)
+                    mediaPlayer?.start()
+                    Log.d("TestDisplay", "▶️ Audio joué : ${test.audio}")
+                } else {
+                    Log.w("TestDisplay", "⚠️ Audio non trouvé : ${test.audio}")
+                }
+            }
         }
     }
 
-    fun getMipmapResId(name: String): Int {
-        val imageNameWithForeground = "${name}_foreground"
-        return try {
-            val resId = R.mipmap::class.java.getField(imageNameWithForeground).getInt(null)
-            Log.d("TestDisplay", "✅ Image trouvée: R.mipmap.$imageNameWithForeground (resId=$resId)")
-            resId
-        } catch (e: Exception) {
-            Log.e("TestDisplay", "❌ Erreur: image '$imageNameWithForeground' introuvable dans mipmap", e)
-            0
+    DisposableEffect(Unit) {
+        onDispose {
+            mediaPlayer?.stop()
+            mediaPlayer?.release()
+            mediaPlayer = null
         }
     }
 
-    Box(
-        modifier = Modifier.fillMaxSize()
-    ) {
-        // 🖼 Image unique ou aléatoire
+    // 🖼️ Interface visuelle
+    Box(modifier = Modifier.fillMaxSize()) {
         selectedImage?.let { imageName ->
             val resId = getMipmapResId(imageName)
             if (resId != 0) {
@@ -115,12 +98,9 @@ fun TestDisplay(
                         .align(Alignment.Center)
                         .padding(top = 16.dp)
                 )
-            } else {
-                Log.w("TestDisplay", "⚠️ Image non affichée: resId invalide pour '$imageName'")
             }
         }
 
-        // 🖼 Grille de 4 images
         if (test.image?.size == 4 && test.affichage == "complet") {
             Column(
                 modifier = Modifier
@@ -145,8 +125,6 @@ fun TestDisplay(
                                         .weight(1f)
                                         .aspectRatio(1f)
                                 )
-                            } else {
-                                Log.w("TestDisplay", "⚠️ Image ignorée dans le grid: $img (resId invalide)")
                             }
                         }
                     }
@@ -154,31 +132,58 @@ fun TestDisplay(
             }
         }
 
-        // 📝 Consigne
-        val consigne = if (isFrontCamera) test.consigneA else test.consigneH
-        Text(
-            text = consigne,
-            style = MaterialTheme.typography.headlineSmall.copy(fontSize = 30.sp),
-            color = MaterialTheme.colorScheme.background,
-            textAlign = TextAlign.Center,
-            modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .padding(bottom = 250.dp) // Remontée de la consigne
-        )
-
-        // 🟡 Mot aléatoire affiché en-dessous
-        if (randomMot.isNotEmpty()) {
+        val consigne = if (isFrontCamera) test.a_consigne else test.h_consigne
+        if (!consigne.isNullOrEmpty()) {
             Text(
-                text = randomMot,
-                style = MaterialTheme.typography.headlineSmall.copy(fontSize = 50.sp),
+                text = consigne,
+                style = MaterialTheme.typography.headlineSmall.copy(fontSize = 30.sp),
                 color = MaterialTheme.colorScheme.background,
                 textAlign = TextAlign.Center,
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
-                    .padding(bottom = 180.dp) // Ajustement de l'espace pour éviter chevauchement
+                    .padding(bottom = 250.dp)
             )
-        } else {
-            Log.w("TestDisplay", "⚠️ Aucune valeur pour randomMot à afficher.")
+        }
+
+        if (randomMot.isNotEmpty()) {
+            Text(
+                text = randomMot,
+                style = MaterialTheme.typography.headlineSmall.copy(fontSize = 50.sp),
+                color = if (motColor != Color.Unspecified) motColor else MaterialTheme.colorScheme.background,
+                textAlign = TextAlign.Center,
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .padding(bottom = 180.dp)
+            )
         }
     }
 }
+
+fun getMipmapResId(name: String): Int {
+    val imageNameWithForeground = "${name}_foreground"
+    return try {
+        val resId = R.mipmap::class.java.getField(imageNameWithForeground).getInt(null)
+        Log.d("TestDisplay", "✅ Image trouvée: R.mipmap.$imageNameWithForeground (resId=$resId)")
+        resId
+    } catch (e: Exception) {
+        Log.e("TestDisplay", "❌ Image introuvable: $imageNameWithForeground", e)
+        0
+    }
+}
+
+fun frenchColorToHex(colorName: String): String? {
+    return when (colorName.lowercase()) {
+        "rouge" -> "#FF0000"
+        "bleu" -> "#0000FF"
+        "vert" -> "#008000"
+        "jaune" -> "#FFFF00"
+        "noir" -> "#000000"
+        "blanc" -> "#FFFFFF"
+        "gris" -> "#808080"
+        "orange" -> "#FFA500"
+        "violet" -> "#800080"
+        "rose" -> "#FFC0CB"
+        else -> null
+    }
+}
+

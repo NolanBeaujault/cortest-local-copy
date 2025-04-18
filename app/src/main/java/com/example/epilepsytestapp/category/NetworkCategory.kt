@@ -70,6 +70,7 @@ suspend fun loadCategoriesFromNetwork(): Map<String, List<Test>> {
                         val affichage = value["affichage"] as? String ?: "Affichage inconnu"
                         Log.d("NetworkCategory", "Affichage récupéré : $affichage")
                         val testType = value["type"] as? String ?: "Type inconnu"
+                        val audio = value["audio"] as? String ?: "Audio indisponible"
                         val a_consigne = value["a_consigne"] as? String ?: "Consigne Auto inconnue"
                         val h_consigne = value["h_consigne"] as? String ?: "Consigne Hetero inconnue"
                         val idTest = when (val id = value["id_test"]) {
@@ -100,7 +101,8 @@ suspend fun loadCategoriesFromNetwork(): Map<String, List<Test>> {
                             couleur = couleur,
                             mot = mot,
                             mot_set = motset,
-                            groupe = groupe
+                            groupe = groupe,
+                            audio = audio,
                         )
 
                         testsList.add(test)

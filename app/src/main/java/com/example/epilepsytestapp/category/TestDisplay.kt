@@ -155,9 +155,9 @@ fun TestDisplay(
         }
 
         // 📝 Consigne
-        val consigne = if (isFrontCamera) test.a_consigne else test.h_consigne
+        val consigne = if (isFrontCamera) test.consigneA else test.consigneH
         Text(
-            text = consigne ?: "NULL",
+            text = consigne,
             style = MaterialTheme.typography.headlineSmall.copy(fontSize = 30.sp),
             color = MaterialTheme.colorScheme.background,
             textAlign = TextAlign.Center,

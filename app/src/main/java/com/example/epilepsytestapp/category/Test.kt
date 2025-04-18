@@ -10,6 +10,7 @@ data class Test(
     val nom: String,
     val type : String,
     val affichage: String,
+    val audio: String,
 
     val a_consigne: String? = null,
     val h_consigne: String? = null,

@@ -30,53 +30,73 @@ fun TestDisplay(
     var randomMot by remember { mutableStateOf("") }
     var selectedImage by remember { mutableStateOf<String?>(null) }
     var motColor by remember { mutableStateOf(Color.Unspecified) }
-
     var mediaPlayer by remember { mutableStateOf<MediaPlayer?>(null) }
 
-    // 🎲 Initialisation à chaque nouvelle instruction
+    // 🎲 Sélection du mot aléatoire + couleur + audio
     LaunchedEffect(key1 = key) {
         randomMot = ""
         selectedImage = null
         motColor = Color.Unspecified
 
-        // 🎲 Choix du mot
         if (!test.mot_set.isNullOrEmpty()) {
+            Log.d("TestDisplay", "🔍 mot_set: ${test.mot_set}")
             randomMot = test.mot_set.random()
             Log.d("TestDisplay", "🎲 Mot sélectionné: $randomMot")
+        } else {
+            Log.w("TestDisplay", "⚠️ Aucun mot disponible dans mot_set")
+        }
 
-            // 🎨 Si test.couleur est défini : appliquer une couleur différente du mot
-            if (!test.couleur.isNullOrEmpty()) {
-                val filteredColors = test.couleur.filterNot {
-                    it.equals(randomMot, ignoreCase = true)
-                }
-                val selectedColorName = filteredColors.randomOrNull()
-                selectedColorName?.let { colorName ->
-                    frenchColorToHex(colorName)?.let { hex ->
-                        motColor = Color(android.graphics.Color.parseColor(hex))
-                        Log.d("TestDisplay", "🎨 Couleur appliquée : $colorName → $hex")
-                    } ?: run {
-                        Log.w("TestDisplay", "⚠️ Couleur inconnue : $colorName")
-                    }
-                }
-            }
-
-            // 🔊 Jouer l'audio si caméra frontale
-            if (isFrontCamera && test.audio.isNotEmpty()) {
-                val filename = test.audio.removeSuffix(".m4a")
-                val resId = context.resources.getIdentifier(filename, "raw", context.packageName)
-
-                if (resId != 0) {
-                    mediaPlayer?.release()
-                    mediaPlayer = MediaPlayer.create(context, resId)
-                    mediaPlayer?.start()
-                    Log.d("TestDisplay", "▶️ Audio joué : ${test.audio}")
-                } else {
-                    Log.w("TestDisplay", "⚠️ Audio non trouvé : ${test.audio}")
+        // 🎨 Couleur aléatoire (différente du mot)
+        if (!test.couleur.isNullOrEmpty()) {
+            val filteredColors = test.couleur.filterNot { it.equals(randomMot, ignoreCase = true) }
+            val colorName = filteredColors.randomOrNull()
+            colorName?.let { name ->
+                frenchColorToHex(name)?.let { hex ->
+                    motColor = Color(android.graphics.Color.parseColor(hex))
+                    Log.d("TestDisplay", "🎨 Couleur choisie : $name → $hex")
                 }
             }
         }
+
+        // 🎧 Audio auto si caméra frontale
+        if (isFrontCamera && test.audio.isNotEmpty()) {
+            val filename = test.audio.removeSuffix(".m4a")
+            val resId = context.resources.getIdentifier(filename, "raw", context.packageName)
+            if (resId != 0) {
+                mediaPlayer?.release()
+                mediaPlayer = MediaPlayer.create(context, resId)
+                mediaPlayer?.start()
+                Log.d("TestDisplay", "▶️ Lecture audio : ${test.audio}")
+            } else {
+                Log.w("TestDisplay", "⚠️ Audio non trouvé : ${test.audio}")
+            }
+        }
+
+        // ✅ Logique d’image
+        if (!test.image.isNullOrEmpty()) {
+            when (test.affichage) {
+                "hasard" -> {
+                    selectedImage = test.image.random()
+                    Log.d("TestDisplay", "🔀 Image choisie (hasard) : $selectedImage")
+                }
+                "complet" -> {
+                    Log.d("TestDisplay", "🧩 Mode complet (4 images affichées en grille)")
+                }
+                else -> {
+                    if (test.image.size == 1) {
+                        selectedImage = test.image.first()
+                        Log.d("TestDisplay", "📷 Image unique : $selectedImage")
+                    } else {
+                        Log.w("TestDisplay", "⚠️ Affichage inconnu, image non sélectionnée")
+                    }
+                }
+            }
+        } else {
+            Log.w("TestDisplay", "⚠️ test.image est vide ou null")
+        }
     }
 
+    // 🔁 Stop audio à la fin
     DisposableEffect(Unit) {
         onDispose {
             mediaPlayer?.stop()
@@ -85,8 +105,10 @@ fun TestDisplay(
         }
     }
 
-    // 🖼️ Interface visuelle
-    Box(modifier = Modifier.fillMaxSize()) {
+    // 🖼 Interface
+    Box(
+        modifier = Modifier.fillMaxSize()
+    ) {
         selectedImage?.let { imageName ->
             val resId = getMipmapResId(imageName)
             if (resId != 0) {
@@ -133,23 +155,21 @@ fun TestDisplay(
         }
 
         val consigne = if (isFrontCamera) test.a_consigne else test.h_consigne
-        if (!consigne.isNullOrEmpty()) {
-            Text(
-                text = consigne,
-                style = MaterialTheme.typography.headlineSmall.copy(fontSize = 30.sp),
-                color = MaterialTheme.colorScheme.background,
-                textAlign = TextAlign.Center,
-                modifier = Modifier
-                    .align(Alignment.BottomCenter)
-                    .padding(bottom = 250.dp)
-            )
-        }
+        Text(
+            text = consigne ?: "NULL",
+            style = MaterialTheme.typography.headlineSmall.copy(fontSize = 30.sp),
+            color = MaterialTheme.colorScheme.background,
+            textAlign = TextAlign.Center,
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .padding(bottom = 250.dp)
+        )
 
         if (randomMot.isNotEmpty()) {
             Text(
                 text = randomMot,
                 style = MaterialTheme.typography.headlineSmall.copy(fontSize = 50.sp),
-                color = if (motColor != Color.Unspecified) motColor else MaterialTheme.colorScheme.background,
+                color = motColor,
                 textAlign = TextAlign.Center,
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
@@ -186,4 +206,3 @@ fun frenchColorToHex(colorName: String): String? {
         else -> null
     }
 }
-

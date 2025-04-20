@@ -74,9 +74,9 @@ fun saveTestInstructionsAsPDF(
     pdfDocument.finishPage(page)
 
     // Création du nom de fichier avec la date et l'heure actuelles
-    val dateTimeFormat = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault())
-    val dateTime = dateTimeFormat.format(Date())
-    val fileName = "test_instructions_$dateTime.pdf"
+    val formatter = SimpleDateFormat("dd-MM-yyyy_HH:mm", Locale.getDefault())
+    val formattedDate = formatter.format(Date())
+    val fileName = "Instructions_$formattedDate.pdf"
 
     // Dossier de sauvegarde
     val directory = File(context.getExternalFilesDir(null), "EpilepsyTests/Consignes")

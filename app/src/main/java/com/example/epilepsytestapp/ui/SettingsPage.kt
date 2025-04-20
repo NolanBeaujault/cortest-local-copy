@@ -251,11 +251,11 @@ fun SettingsPage(
 
 @Composable
 fun SettingsOption(text: String, onClick: () -> Unit) {
-    Text(
-        text = text,
+    Box(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 16.dp, vertical = 8.dp)
+            .height(60.dp) // ⬅️ Hauteur augmentée
             .clip(RoundedCornerShape(16.dp))
             .background(Color(0xFFD0EEED))
             .border(
@@ -263,14 +263,19 @@ fun SettingsOption(text: String, onClick: () -> Unit) {
                 color = MaterialTheme.colorScheme.primary,
                 shape = RoundedCornerShape(16.dp)
             )
-            .clickable { onClick() }
-            .padding(12.dp),
-        style = MaterialTheme.typography.bodyLarge.copy(
-            color = MaterialTheme.colorScheme.primary,
-            textAlign = TextAlign.Start
+            .clickable { onClick() },
+        contentAlignment = Alignment.CenterStart // ⬅️ Texte aligné à gauche verticalement centré
+    ) {
+        Text(
+            text = text,
+            modifier = Modifier.padding(start = 16.dp),
+            style = MaterialTheme.typography.bodyLarge.copy(
+                color = MaterialTheme.colorScheme.primary
+            )
         )
-    )
+    }
 }
+
 
 // Fonction pour ouvrir les paramètres de l'application
 fun openAppSettings(context: Context) {

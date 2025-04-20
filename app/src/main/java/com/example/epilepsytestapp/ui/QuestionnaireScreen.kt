@@ -1,5 +1,6 @@
 package com.example.epilepsytestapp.ui
 
+import android.content.Context
 import android.widget.Toast
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
@@ -9,6 +10,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
@@ -19,6 +21,9 @@ import com.example.epilepsytestapp.savefiles.QuestionType
 import com.example.epilepsytestapp.savefiles.SurveyQuestion
 import com.example.epilepsytestapp.savefiles.SurveyStorage
 import com.example.epilepsytestapp.savefiles.saveQuestionnaireAsPDF
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 @Composable
 fun PostTestQuestionnaireScreen(onSaveTest: () -> Unit) {
@@ -26,6 +31,11 @@ fun PostTestQuestionnaireScreen(onSaveTest: () -> Unit) {
     val questionnaireAnswers = remember { mutableStateListOf<String>() }
     val questionnaireDetails = remember { mutableStateListOf<Pair<String, String>>() }
     var questions by remember { mutableStateOf<List<SurveyQuestion>>(emptyList()) }
+
+    val formatter = SimpleDateFormat("dd-MM-yyyy_HH:mm", Locale.getDefault())
+    val formattedDate = formatter.format(Date())
+    val fileName = "Questionnaire_$formattedDate"
+
 
     LaunchedEffect(Unit) {
         questions = SurveyStorage.loadSurvey(context)
@@ -93,7 +103,7 @@ fun PostTestQuestionnaireScreen(onSaveTest: () -> Unit) {
                 val pdfFile = saveQuestionnaireAsPDF(
                     context = context,
                     questionnaireData = questionnaireDetails,
-                    fileName = "Questionnaire_${System.currentTimeMillis()}"
+                    fileName = fileName
                 )
 
                 if (pdfFile != null) {
@@ -101,6 +111,8 @@ fun PostTestQuestionnaireScreen(onSaveTest: () -> Unit) {
                 } else {
                     Toast.makeText(context, "Échec de l'enregistrement du PDF", Toast.LENGTH_LONG).show()
                 }
+                context.getSharedPreferences("AppPrefs", Context.MODE_PRIVATE)
+                    .edit().putBoolean("questionnaireFilled", true).apply()
 
                 onSaveTest()
             },
@@ -116,6 +128,26 @@ fun PostTestQuestionnaireScreen(onSaveTest: () -> Unit) {
         }
 
         Spacer(modifier = Modifier.height(16.dp))
+
+        Button(
+            onClick = {
+                // Marque le questionnaire comme non rempli
+                val sharedPrefs = context.getSharedPreferences("AppPrefs", Context.MODE_PRIVATE)
+                sharedPrefs.edit().putBoolean("questionnaireFilled", false).apply()
+
+                Toast.makeText(context, "📌 Vous pourrez le remplir plus tard", Toast.LENGTH_SHORT).show()
+                onSaveTest()
+            },
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(60.dp),
+            colors = ButtonDefaults.buttonColors(
+                containerColor = Color(0xFF31D2B6)
+            )
+        ) {
+            Text("Remplir plus tard", fontSize = 18.sp)
+        }
+
 
         Image(
             painter = painterResource(id = R.mipmap.ic_brain_logo_foreground),

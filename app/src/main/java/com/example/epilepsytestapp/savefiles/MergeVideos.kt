@@ -9,6 +9,9 @@ import android.media.MediaScannerConnection
 import android.util.Log
 import java.io.File
 import java.nio.ByteBuffer
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 fun mergeVideos(context: Context, recordedVideos: List<String>): String? {
     Log.d("MergeVideo", "📋 Contenu de recordedVideos : $recordedVideos")
@@ -21,7 +24,10 @@ fun mergeVideos(context: Context, recordedVideos: List<String>): String? {
     val videosDirectory = File(context.getExternalFilesDir(null), "EpilepsyTests/Videos")
     if (!videosDirectory.exists()) videosDirectory.mkdirs()
 
-    val outputFile = File(videosDirectory, "final_test_video_${System.currentTimeMillis()}.mp4")
+    val formatter = SimpleDateFormat("dd-MM-yyyy_HH:mm", Locale.getDefault())
+    val formattedDate = formatter.format(Date())
+    val outputFile = File(videosDirectory, "Vidéo_$formattedDate.mp4")
+
     Log.d("MergeVideo", "📌 Début de la fusion des vidéos, destination : ${outputFile.absolutePath}")
 
     try {

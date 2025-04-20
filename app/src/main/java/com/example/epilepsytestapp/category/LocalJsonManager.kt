@@ -8,9 +8,11 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.File
 
+// Gestion du fichier .json pour la configuration et l'utilisation des tests
 object LocalCatManager {
     private val gson = Gson()
 
+    // Chargement des données configurées depuis le fichier json local spécifié dans filename
     suspend fun loadLocalTests(context: Context, filename: String = "localtestconfiguration.json"): List<Test> {
         return withContext(Dispatchers.IO) {
             try {
@@ -27,15 +29,18 @@ object LocalCatManager {
         }
     }
 
+    // Sauvegarde du fichier json pendant la configuration
     suspend fun saveLocalTests(context: Context, filename: String, selectedTests: List<Test>) {
         withContext(Dispatchers.IO) {
             try {
                 val filteredTests = selectedTests.map { test ->
+                    // Copie de chaque test selectionné pendant la configuration en filtrant tous les champs inutiles (valeur null)
                     test.copy(
                         a_consigne = test.a_consigne?.takeIf { it.isNotEmpty() },
                         h_consigne = test.h_consigne?.takeIf { it.isNotEmpty() },
-                        affichage = test.affichage,
+                        affichage = test.affichage?.takeIf{ it.isNotEmpty() },
                         mot_set = test.mot_set?.takeIf { it.isNotEmpty() },
+                        mot_set_audio = test.mot_set_audio?.takeIf { it.isNotEmpty() },
                         image = test.image?.takeIf { it.isNotEmpty() },
                         couleur = test.couleur?.takeIf { it.isNotEmpty() },
                         mot = test.mot?.takeIf { it.isNotEmpty() },
@@ -50,6 +55,7 @@ object LocalCatManager {
                 }
                 Log.d("LocalCategory", "Affichage : ${filteredTests}")
 
+                // Ajout du test filtré dans le fichier json sous la forme d'une liste de tests
                 val updatedTestsJson = gson.toJson(filteredTests)
                 val file = File(context.filesDir, filename)
                 file.writeText(updatedTestsJson)

@@ -57,6 +57,22 @@ fun ConfigScreen(navController: NavController, testViewModel: TestViewModel = vi
 
                 Log.d("TestConfig", "✅ Tests pré-cochés (local) : $preSelectedTests")
 
+                if (preSelectedTests.isEmpty()) {
+                    Log.d("TestConfig", "Aucun test n'a été pré-coché")
+                    // On récupère les tests de la catégorie examen-type par défaut
+                    val defaultTests = loadedCategories.entries
+                        .firstOrNull { it.key.equals("Examen type", ignoreCase = true) }
+                        ?.value
+                        ?.toSet() ?: emptySet()
+
+                    if (defaultTests.isNotEmpty()) {
+                        Log.d("TestConfig", "Sélection par défaut des tests de la catégorie examen-type : $defaultTests")
+                        selectedTests.value.clear()
+                        selectedTests.value.addAll(defaultTests)
+                        Log.d("TestConfig", "Contenu de selectedTests : $selectedTests")
+                    }
+                }
+
                 val restoredSelectedTests =
                     navController.currentBackStackEntry?.savedStateHandle?.get<List<Test>>("selectedTests")
 

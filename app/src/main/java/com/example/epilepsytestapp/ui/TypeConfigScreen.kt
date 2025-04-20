@@ -17,12 +17,9 @@ import androidx.navigation.NavController
 import com.example.epilepsytestapp.ui.theme.AppTheme
 import com.example.epilepsytestapp.ui.theme.PrimaryColor
 
-class TestViewModel : ViewModel() {
-    var selectedType = mutableStateOf("both")
-}
-
 @Composable
-fun TypeConfigScreen(navController: NavController, testViewModel: TestViewModel = viewModel()) {
+fun TypeConfigScreen(navController: NavController, cameraViewModel: CameraViewModel = viewModel())
+{
     AppTheme {
         Column(
             modifier = Modifier
@@ -40,8 +37,7 @@ fun TypeConfigScreen(navController: NavController, testViewModel: TestViewModel 
 
             OutlinedButton(
                 onClick = {
-                    testViewModel.selectedType.value = "hetero"
-                    Log.d("TestTypeConfig", "Affichage des tests de type : ${testViewModel.selectedType.value}")
+                    cameraViewModel.isFrontCamera.value = false
                     navController.navigate("testConfigScreen")
                 },
                 shape = RoundedCornerShape(16.dp),
@@ -59,8 +55,7 @@ fun TypeConfigScreen(navController: NavController, testViewModel: TestViewModel 
 
             OutlinedButton(
                 onClick = {
-                    testViewModel.selectedType.value = "auto"
-                    Log.d("TestTypeConfig", "Affichage des tests de type : ${testViewModel.selectedType.value}")
+                    cameraViewModel.isFrontCamera.value = true
                     navController.navigate("testConfigScreen")
                 },
                 shape = RoundedCornerShape(16.dp),

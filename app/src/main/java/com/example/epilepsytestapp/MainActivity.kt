@@ -225,13 +225,13 @@ fun NavigationGraph(
         }
 
         composable("testTypeSelectionScreen") {
-            TypeConfigScreen(navController = navController)
+            TypeConfigScreen(navController = navController, cameraViewModel = cameraViewModel)
         }
 
         composable("testConfigScreen") {
             ConfigScreen(
                 navController = navController,
-
+                cameraViewModel = cameraViewModel
                 )
         }
 

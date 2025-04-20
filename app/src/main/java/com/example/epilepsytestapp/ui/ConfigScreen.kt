@@ -25,8 +25,9 @@ import kotlinx.coroutines.launch
 
 
 @Composable
-fun ConfigScreen(navController: NavController, testViewModel: TestViewModel = viewModel()) {
-    val selectedType = testViewModel.selectedType.value
+fun ConfigScreen(navController: NavController, cameraViewModel: CameraViewModel = viewModel()) {
+    val isFrontCamera by cameraViewModel.isFrontCamera
+    val effectiveType = if (isFrontCamera) "auto" else "hetero"
     val selectedTests = remember { mutableStateOf(mutableSetOf<Test>()) }
     val scrollState = rememberScrollState()
     val categories = remember { mutableStateOf<Map<String, List<Test>>>(emptyMap()) }
@@ -34,12 +35,11 @@ fun ConfigScreen(navController: NavController, testViewModel: TestViewModel = vi
     val coroutineScope = rememberCoroutineScope()
     val context = LocalContext.current
 
-    LaunchedEffect(selectedType) {
-
+    LaunchedEffect(effectiveType) {
 
         coroutineScope.launch {
             Log.d("TestConfig", "🔄 Chargement des catégories depuis l'API...")
-            Log.d("TestTypeConfig", "Affichage des tests de type : ${selectedType}")
+            Log.d("TestTypeConfig", "Affichage des tests de type : ${effectiveType}")
 
             try {
                 val loadedCategories = loadCategoriesFromNetwork()
@@ -48,8 +48,10 @@ fun ConfigScreen(navController: NavController, testViewModel: TestViewModel = vi
                 categories.value = loadedCategories
 
                 val preSelectedTests = loadedCategories.values.flatten()
-                    //.filter { test -> test.type == "both" || test.type == selectedType }
-                    .filter { test -> localTestConfiguration.any { it.id_test == test.id_test } }
+                    .filter { test ->
+                        (test.type == effectiveType || test.type == "both") &&
+                                localTestConfiguration.any { it.id_test == test.id_test }
+                    }
                     .toMutableSet()
 
                 selectedTests.value.clear()
@@ -111,7 +113,11 @@ fun ConfigScreen(navController: NavController, testViewModel: TestViewModel = vi
             } else {
                 Log.d("TestConfig", "📌 Affichage des catégories et tests...")
                 categories.value.forEach { (categoryName, testList) ->
-                    CategoryItem(categoryName, testList, selectedTests.value) { test, checked ->
+                    val filteredTests = testList.filter {
+                        it.type == effectiveType || it.type == "both"
+                    }
+                    if (filteredTests.isNotEmpty()) {
+                    CategoryItem(categoryName, filteredTests, selectedTests.value) { test, checked ->
                         val updatedSet = selectedTests.value.toMutableSet()
                         if (checked) {
                             updatedSet.add(test)
@@ -119,6 +125,7 @@ fun ConfigScreen(navController: NavController, testViewModel: TestViewModel = vi
                             updatedSet.removeIf { it.id_test == test.id_test }
                         }
                         selectedTests.value = updatedSet
+                        }
                     }
                 }
             }

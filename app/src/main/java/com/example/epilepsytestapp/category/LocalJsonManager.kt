@@ -30,7 +30,7 @@ object LocalCatManager {
     }
 
     // Sauvegarde du fichier json pendant la configuration
-    suspend fun saveLocalTests(context: Context, filename: String, selectedTests: List<Test>) {
+    suspend fun saveLocalTests(context: Context, fileName: String, selectedTests: List<Test>, historic : Boolean = false) {
         withContext(Dispatchers.IO) {
             try {
                 val filteredTests = selectedTests.map { test ->
@@ -55,12 +55,29 @@ object LocalCatManager {
                 }
                 Log.d("LocalCategory", "Affichage : ${filteredTests}")
 
-                // Ajout du test filtré dans le fichier json sous la forme d'une liste de tests
-                val updatedTestsJson = gson.toJson(filteredTests)
-                val file = File(context.filesDir, filename)
-                file.writeText(updatedTestsJson)
+                if (historic)
+                {
+                    // Ajout du test dans le fichier json sous la forme d'une liste de tests, pour l'historique
+                    val configDirectory = File(context.getExternalFilesDir(null), "EpilepsyTests/Configurations")
+                    if (!configDirectory.exists()) {
+                        configDirectory.mkdirs() // Création du répertoire s'il n'existe pas
+                    }
 
-                Log.d("LocalCategory", "Tests enregistrés dans $filename")
+                    val file = File(configDirectory, fileName)
+                    val updatedTestsJson = gson.toJson(filteredTests)
+                    file.writeText(updatedTestsJson)
+
+                    Log.d("LocalCategory", "Tests enregistrés dans l'historique sous le nom $fileName")
+                }
+
+                else {
+                    // Ajout du test filtré dans le fichier json sous la forme d'une liste de tests
+                    val updatedTestsJson = gson.toJson(filteredTests)
+                    val file = File(context.filesDir, fileName)
+                    file.writeText(updatedTestsJson)
+
+                    Log.d("LocalCategory", "Tests enregistrés dans $fileName")
+                }
             } catch (e: Exception) {
                 Log.e("LocalCategory", "Erreur : Sauvegarde du JSON local: ${e.message}")
             }

@@ -24,6 +24,9 @@ import com.example.epilepsytestapp.category.LocalCatManager
 import com.example.epilepsytestapp.category.Test
 import com.example.epilepsytestapp.ui.theme.AppTheme
 import kotlinx.coroutines.launch
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 @Composable
 fun RecapScreen(navController: NavController) {
@@ -89,8 +92,13 @@ fun RecapScreen(navController: NavController) {
             CustomButton(text = "Enregistrer la configuration") {
                 coroutineScope.launch {
                     LocalCatManager.saveLocalTests(context, "localtestconfiguration.json", selectedTests.toList())
-                    val fileName = "test_config_${System.currentTimeMillis()}.json"
-                    LocalCatManager.saveLocalTests(context, fileName, selectedTests.toList())
+
+                    // Copie de la configuration actuelle avec sa date pour l'historique des configurations
+                    val dateFormat = SimpleDateFormat("yyyy-MM-dd_HH:mm:ss", Locale.getDefault())
+                    val timestamp = dateFormat.format(Date())
+                    val fileName = "configuration_$timestamp.json"
+
+                    LocalCatManager.saveLocalTests(context, fileName, selectedTests.toList(), true)
                 }
                 navController.navigate("home") {
                     popUpTo("home") { inclusive = true }

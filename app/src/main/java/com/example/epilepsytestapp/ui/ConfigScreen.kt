@@ -93,55 +93,65 @@ fun ConfigScreen(navController: NavController, cameraViewModel: CameraViewModel 
     }
 
     AppTheme {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(16.dp)
-                .verticalScroll(scrollState),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Text(
-                text = "Configuration des tests",
-                style = MaterialTheme.typography.displayLarge,
-                textAlign = TextAlign.Center,
-                color = MaterialTheme.colorScheme.primary
-            )
-            Spacer(modifier = Modifier.height(16.dp))
+        Surface(
+            modifier = Modifier.fillMaxSize(),
+            color = MaterialTheme.colorScheme.background
+        )
+        {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(16.dp)
+                    .verticalScroll(scrollState),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Text(
+                    text = "Configuration des tests",
+                    style = MaterialTheme.typography.displayLarge,
+                    textAlign = TextAlign.Center,
+                    color = MaterialTheme.colorScheme.primary
+                )
+                Spacer(modifier = Modifier.height(16.dp))
 
-            if (loading.value) {
-                CircularProgressIndicator()
-            } else {
-                Log.d("TestConfig", "📌 Affichage des catégories et tests...")
-                categories.value.forEach { (categoryName, testList) ->
-                    val filteredTests = testList.filter {
-                        it.type == effectiveType || it.type == "both"
-                    }
-                    if (filteredTests.isNotEmpty()) {
-                    CategoryItem(categoryName, filteredTests, selectedTests.value) { test, checked ->
-                        val updatedSet = selectedTests.value.toMutableSet()
-                        if (checked) {
-                            updatedSet.add(test)
-                        } else {
-                            updatedSet.removeIf { it.id_test == test.id_test }
+                if (loading.value) {
+                    CircularProgressIndicator()
+                } else {
+                    Log.d("TestConfig", "📌 Affichage des catégories et tests...")
+                    categories.value.forEach { (categoryName, testList) ->
+                        val filteredTests = testList.filter {
+                            it.type == effectiveType || it.type == "both"
                         }
-                        selectedTests.value = updatedSet
+                        if (filteredTests.isNotEmpty()) {
+                            CategoryItem(
+                                categoryName,
+                                filteredTests,
+                                selectedTests.value
+                            ) { test, checked ->
+                                val updatedSet = selectedTests.value.toMutableSet()
+                                if (checked) {
+                                    updatedSet.add(test)
+                                } else {
+                                    updatedSet.removeIf { it.id_test == test.id_test }
+                                }
+                                selectedTests.value = updatedSet
+                            }
                         }
                     }
                 }
-            }
 
-            Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(16.dp))
 
-            CustomButton(text = "Suivant") {
-                navController.currentBackStackEntry?.savedStateHandle?.set(
-                    "selectedTests",
-                    selectedTests.value.toList()
-                )
-                navController.navigate("recapScreen")
-            }
-            Spacer(modifier = Modifier.height(8.dp))
-            CustomButton(text = "Annuler") {
-                navController.popBackStack()
+                CustomButton(text = "Suivant") {
+                    navController.currentBackStackEntry?.savedStateHandle?.set(
+                        "selectedTests",
+                        selectedTests.value.toList()
+                    )
+                    navController.navigate("recapScreen")
+                }
+                Spacer(modifier = Modifier.height(8.dp))
+                CustomButton(text = "Annuler") {
+                    navController.popBackStack()
+                }
             }
         }
     }

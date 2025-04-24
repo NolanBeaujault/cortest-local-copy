@@ -36,6 +36,8 @@ class TestAppWidgetProvider : AppWidgetProvider() {
         val remoteViews = RemoteViews(context.packageName, R.layout.widget_layout)
 
         remoteViews.setOnClickPendingIntent(R.id.widget_container, pendingIntent)
+
+        remoteViews.setOnClickPendingIntent(R.id.widget_container, pendingIntent)
         remoteViews.setTextViewText(R.id.widget_text, context.getString(R.string.widget_text))
         remoteViews.setTextColor(R.id.widget_text, context.getColor(R.color.button_text_color))
 

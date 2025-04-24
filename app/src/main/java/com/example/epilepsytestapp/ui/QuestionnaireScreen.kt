@@ -3,7 +3,6 @@ package com.example.epilepsytestapp.ui
 import android.content.Context
 import android.widget.Toast
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -48,86 +47,84 @@ fun PostTestQuestionnaireScreen(onSaveTest: () -> Unit) {
         }
     }
 
-    Surface(
+    Column(
         modifier = Modifier
-            .fillMaxSize(),
-        color = MaterialTheme.colorScheme.surface
+            .fillMaxSize()
+            .verticalScroll(rememberScrollState())
+            .padding(16.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Column(
+        Text(
+            text = "Questionnaire\nPost-test",
+            style = MaterialTheme.typography.displayLarge,
+            fontSize = 40.sp,
+            color = MaterialTheme.colorScheme.primary,
+            textAlign = TextAlign.Center,
             modifier = Modifier
-                .fillMaxSize()
-                .verticalScroll(rememberScrollState())
-                .padding(16.dp)
-                .background(MaterialTheme.colorScheme.background),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Text(
-                text = "Questionnaire\nPost-test",
-                style = MaterialTheme.typography.displayLarge,
-                fontSize = 40.sp,
-                color = MaterialTheme.colorScheme.primary,
-                textAlign = TextAlign.Center,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(bottom = 24.dp)
-            )
+                .fillMaxWidth()
+                .padding(bottom = 24.dp)
+        )
 
-            questions.forEachIndexed { index, question ->
-                when (QuestionType.valueOf(question.type)) {
-                    QuestionType.TEXTE -> QuestionInput(question.label) {
-                        questionnaireAnswers[index] = it
-                        questionnaireDetails[index] = question.label to "Réponse : $it"
-                    }
+        questions.forEachIndexed { index, question ->
+            when (QuestionType.valueOf(question.type)) {
+                QuestionType.TEXTE -> QuestionInput(question.label) {
+                    questionnaireAnswers[index] = it
+                    questionnaireDetails[index] = question.label to "Réponse : $it"
+                }
 
-                    QuestionType.CHOIX_UNIQUE -> QuestionOptionsUnique(
-                        question.label,
-                        question.options
-                    ) {
-                        questionnaireAnswers[index] = it
-                        questionnaireDetails[index] = question.label to "Réponse : $it"
-                    }
+                QuestionType.CHOIX_UNIQUE -> QuestionOptionsUnique(
+                    question.label,
+                    question.options
+                ) {
+                    questionnaireAnswers[index] = it
+                    questionnaireDetails[index] = question.label to "Réponse : $it"
+                }
 
-                    QuestionType.CHOIX_MULTIPLE -> QuestionOptionsMultiple(
-                        question.label,
-                        question.options
-                    ) { selected ->
-                        questionnaireAnswers[index] = selected.joinToString(", ")
-                        questionnaireDetails[index] =
-                            question.label to "Réponses : ${selected.joinToString(", ")}"
-                    }
+                QuestionType.CHOIX_MULTIPLE -> QuestionOptionsMultiple(
+                    question.label,
+                    question.options
+                ) { selected ->
+                    questionnaireAnswers[index] = selected.joinToString(", ")
+                    questionnaireDetails[index] =
+                        question.label to "Réponses : ${selected.joinToString(", ")}"
+                }
 
-                    QuestionType.CURSEUR_1_10 -> QuestionSlider(question.label, 0f..10f, 9) {
-                        questionnaireAnswers[index] = it.toString()
-                        questionnaireDetails[index] = question.label to "Valeur : $it"
-                    }
+                QuestionType.CURSEUR_1_10 -> QuestionSlider(question.label, 0f..10f, 9) {
+                    questionnaireAnswers[index] = it.toString()
+                    questionnaireDetails[index] = question.label to "Valeur : $it"
                 }
             }
+        }
 
-            Spacer(modifier = Modifier.height(24.dp))
+        Spacer(modifier = Modifier.height(24.dp))
 
         Button(
             onClick = {
+                context.getSharedPreferences("AppPrefs", Context.MODE_PRIVATE)
+                    .edit().putBoolean("questionnaireFilled", true).apply()
+
                 val pdfFile = saveQuestionnaireAsPDF(
                     context = context,
                     questionnaireData = questionnaireDetails,
                     fileName = fileName
                 )
-            }
 
                 if (pdfFile != null) {
                     Toast.makeText(context, "Questionnaire enregistré en PDF : ${pdfFile.name}", Toast.LENGTH_LONG).show()
                 } else {
                     Toast.makeText(context, "Échec de l'enregistrement du PDF", Toast.LENGTH_LONG).show()
                 }
-                context.getSharedPreferences("AppPrefs", Context.MODE_PRIVATE)
-                    .edit().putBoolean("questionnaireFilled", true).apply()
 
-            Image(
-                painter = painterResource(id = R.mipmap.ic_brain_logo_foreground),
-                contentDescription = "Logo",
-                modifier = Modifier
-                    .size(80.dp)
-                    .padding(bottom = 16.dp)
+                onSaveTest()
+            },
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(70.dp)
+        ) {
+            Text(
+                text = "Enregistrer le test",
+                style = MaterialTheme.typography.labelLarge,
+                fontSize = 25.sp
             )
         }
 
@@ -135,9 +132,8 @@ fun PostTestQuestionnaireScreen(onSaveTest: () -> Unit) {
 
         Button(
             onClick = {
-                // Marque le questionnaire comme non rempli
-                val sharedPrefs = context.getSharedPreferences("AppPrefs", Context.MODE_PRIVATE)
-                sharedPrefs.edit().putBoolean("questionnaireFilled", false).apply()
+                context.getSharedPreferences("AppPrefs", Context.MODE_PRIVATE)
+                    .edit().putBoolean("questionnaireFilled", false).apply()
 
                 Toast.makeText(context, "📌 Vous pourrez le remplir plus tard", Toast.LENGTH_SHORT).show()
                 onSaveTest()
@@ -145,12 +141,11 @@ fun PostTestQuestionnaireScreen(onSaveTest: () -> Unit) {
             modifier = Modifier
                 .fillMaxWidth()
                 .height(60.dp),
-            colors = ButtonDefaults.buttonColors(
-                containerColor = Color(0xFF31D2B6)
-            )
+            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF31D2B6))
         ) {
             Text("Remplir plus tard", fontSize = 18.sp)
         }
+
 
 
         Image(
@@ -163,21 +158,11 @@ fun PostTestQuestionnaireScreen(onSaveTest: () -> Unit) {
     }
 }
 
-
 @Composable
-fun QuestionSlider(
-    label: String,
-    range: ClosedFloatingPointRange<Float>,
-    steps: Int,
-    onValueChange: (Float) -> Unit
-) {
+fun QuestionSlider(label: String, range: ClosedFloatingPointRange<Float>, steps: Int, onValueChange: (Float) -> Unit) {
     val sliderValue = remember { mutableFloatStateOf(range.start) }
 
-    Column(
-        Modifier
-            .fillMaxWidth()
-            .padding(vertical = 8.dp)
-    ) {
+    Column(Modifier.fillMaxWidth().padding(vertical = 8.dp)) {
         Text(label, style = MaterialTheme.typography.bodyLarge, modifier = Modifier.padding(8.dp))
 
         Slider(
@@ -206,11 +191,7 @@ fun QuestionSlider(
 fun QuestionInput(label: String, onInput: (String) -> Unit) {
     var inputValue by remember { mutableStateOf("") }
 
-    Column(
-        Modifier
-            .fillMaxWidth()
-            .padding(vertical = 8.dp)
-    ) {
+    Column(Modifier.fillMaxWidth().padding(vertical = 8.dp)) {
         Text(label, style = MaterialTheme.typography.bodyLarge)
         OutlinedTextField(
             value = inputValue,
@@ -225,18 +206,10 @@ fun QuestionInput(label: String, onInput: (String) -> Unit) {
 }
 
 @Composable
-fun QuestionOptionsUnique(
-    label: String,
-    options: List<String>,
-    onSelectionChange: (String) -> Unit
-) {
+fun QuestionOptionsUnique(label: String, options: List<String>, onSelectionChange: (String) -> Unit) {
     var selectedOption by remember { mutableStateOf("") }
 
-    Column(
-        Modifier
-            .fillMaxWidth()
-            .padding(vertical = 8.dp)
-    ) {
+    Column(Modifier.fillMaxWidth().padding(vertical = 8.dp)) {
         Text(label, style = MaterialTheme.typography.bodyLarge)
 
         options.forEach { option ->
@@ -255,18 +228,10 @@ fun QuestionOptionsUnique(
 }
 
 @Composable
-fun QuestionOptionsMultiple(
-    label: String,
-    options: List<String>,
-    onSelectionChange: (List<String>) -> Unit
-) {
+fun QuestionOptionsMultiple(label: String, options: List<String>, onSelectionChange: (List<String>) -> Unit) {
     val selectedOptions = remember { mutableStateListOf<String>() }
 
-    Column(
-        Modifier
-            .fillMaxWidth()
-            .padding(vertical = 8.dp)
-    ) {
+    Column(Modifier.fillMaxWidth().padding(vertical = 8.dp)) {
         Text(label, style = MaterialTheme.typography.bodyLarge)
 
         options.forEach { option ->
@@ -287,5 +252,3 @@ fun QuestionOptionsMultiple(
         }
     }
 }
-
-

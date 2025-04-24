@@ -16,6 +16,7 @@ import kotlinx.coroutines.launch
 import androidx.compose.runtime.rememberCoroutineScope
 import android.content.SharedPreferences
 import android.Manifest
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.util.Log
 import android.widget.Toast
@@ -52,17 +53,27 @@ class MainActivity : ComponentActivity() {
 
             val lastScreen = sharedPreferences.getString("lastScreen","login") ?: "login"
             val startDestination = remember {
+                val startScreen = intent.getStringExtra("startScreen")
+                Log.d("MainActivity", "Received startScreen: $startScreen")
                 mutableStateOf(
-                    when {
-                        intent.getStringExtra("startScreen") == "test" -> {
-                            "test" // Assurez-vous que "test" reste inchangé
+                    if (!startScreen.isNullOrEmpty()) {
+                        Log.d("MainActivity", "Widget navigates to: $startScreen")
+                        startScreen // Priorise la destination venant du widget
+                    } else {
+                        when {
+                            isAuthenticated && lastScreen == "infoPerso" -> {
+                                Log.d("MainActivity", "Navigates to: infoPerso")
+                                "infoPerso"
+                            }
+                            isAuthenticated -> {
+                                Log.d("MainActivity", "Navigates to: home")
+                                "home"
+                            }
+                            else -> {
+                                Log.d("MainActivity", "Navigates to: login")
+                                "login"
+                            }
                         }
-                        intent.getStringExtra("startScreen")?.startsWith("test/") == true -> {
-                            intent.getStringExtra("startScreen") ?: "test" // Cela pourrait ajouter des sous-routes, si nécessaire
-                        }
-                        isAuthenticated && lastScreen == "infoPerso" -> "infoPerso"
-                        isAuthenticated -> "home"
-                        else -> "login"
                     }
                 )
             }
@@ -104,6 +115,16 @@ class MainActivity : ComponentActivity() {
                     sharedPreferences.edit().putBoolean("isLoggedIn", false).apply()
                 },
             )
+        }
+    }
+    override fun onNewIntent(intent: Intent?) {
+        super.onNewIntent(intent)
+        setIntent(intent) // Mettez à jour l'intention reçue
+        val startScreen = intent?.getStringExtra("startScreen")
+        Log.d("MainActivity", "New intent received: startScreen = $startScreen")
+        if (!startScreen.isNullOrEmpty()) {
+            // Naviguez directement vers la destination spécifiée par le widget
+            recreate() // Recharge l'activité avec la nouvelle intention
         }
     }
 
@@ -325,15 +346,5 @@ fun NavigationGraph(
         composable("testEnregistre") {
             TestEnregistre(navController = navController)
         }
-
-        // Gestion des routes invalides
-        composable("test/{invalid}") { backStackEntry ->
-            val invalidRoute = backStackEntry.arguments?.getString("invalid")
-            Log.w("NavigationGraph", "Route invalide : test/$invalidRoute")
-            navController.navigate("test") {
-                popUpTo("test") { inclusive = true }
-            }
-        }
-
     }
 }

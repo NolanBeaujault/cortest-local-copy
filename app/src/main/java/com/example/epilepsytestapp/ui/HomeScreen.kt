@@ -211,7 +211,6 @@ fun HomePage(navController: NavHostController, patient: List<Patient>) {
 
                 Spacer(modifier = Modifier.height(25.dp))
 
-                // 🧾 Accès au questionnaire
                 Button(
                     onClick = {
                         if (!isQuestionnaireFilled) navController.navigate("questionnaire")
@@ -232,6 +231,7 @@ fun HomePage(navController: NavHostController, patient: List<Patient>) {
                         fontSize = 20.sp
                     )
                 }
+
             }
 
             Spacer(modifier = Modifier.height(16.dp))

@@ -11,7 +11,8 @@ data class UserProfileResponse(
     val prenom: String,
     val date_naissance: String?,
     val adresse: String,
-    val neurologue: String
+    val neurologue: String,
+    val mot_code: String
 )
 
 interface APIGetProfil{

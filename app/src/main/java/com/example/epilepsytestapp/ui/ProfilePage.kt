@@ -158,6 +158,7 @@ fun ProfilePage(navController: NavHostController) {
                         ProfileInfoRow(label = "Adresse", value = patient.adresse)
                         ProfileInfoRow(label = "Neurologue", value = patient.neurologue)
                         ProfileInfoRow(label = "Date de naissance", value = patient.date_naissance ?: "Non renseignée")
+                        ProfileInfoRow(label = "Mot code", value = patient.mot_code)
                     }
                 }
             }

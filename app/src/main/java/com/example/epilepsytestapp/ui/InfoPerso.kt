@@ -32,6 +32,7 @@ fun InfoPersoScreen(navController: NavHostController, onContinue: () -> Unit) {
     var neurologue by remember { mutableStateOf("") }
     var date_naissance by remember { mutableStateOf("") }
     var date_affichee by remember { mutableStateOf("") }
+    var mot_code by remember { mutableStateOf("") }
 
     var isLoading by remember { mutableStateOf(false) }
     val coroutineScope = rememberCoroutineScope()
@@ -206,6 +207,23 @@ fun InfoPersoScreen(navController: NavHostController, onContinue: () -> Unit) {
                     .height(56.dp)
             )
 
+            Spacer(modifier = Modifier.height(12.dp))
+
+            OutlinedTextField(
+                value = mot_code,
+                onValueChange = { mot_code = it },
+                label = { Text("Mot code") },
+                shape = RoundedCornerShape(50),
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = MaterialTheme.colorScheme.primary,
+                    unfocusedBorderColor = MaterialTheme.colorScheme.primary
+                ),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(56.dp)
+            )
+
+
             Spacer(modifier = Modifier.height(20.dp))
 
             Button(
@@ -214,7 +232,7 @@ fun InfoPersoScreen(navController: NavHostController, onContinue: () -> Unit) {
                         isLoading = true
                         coroutineScope.launch {
                             try {
-                                val request = RegisterRequest(userId, nom, prenom, date_naissance, adresse, neurologue)
+                                val request = RegisterRequest(userId, nom, prenom, date_naissance, adresse, neurologue, mot_code)
                                 RetrofitInstance.api.registerUser(request)
                                 Log.d("API", "Utilisateur enregistré avec succès")
                                 isLoading = false

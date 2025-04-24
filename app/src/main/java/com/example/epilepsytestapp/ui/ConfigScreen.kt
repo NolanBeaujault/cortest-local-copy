@@ -25,8 +25,9 @@ import kotlinx.coroutines.launch
 
 
 @Composable
-fun ConfigScreen(navController: NavController, testViewModel: TestViewModel = viewModel()) {
-    val selectedType = testViewModel.selectedType.value
+fun ConfigScreen(navController: NavController, cameraViewModel: CameraViewModel = viewModel()) {
+    val isFrontCamera by cameraViewModel.isFrontCamera
+    val effectiveType = if (isFrontCamera) "auto" else "hetero"
     val selectedTests = remember { mutableStateOf(mutableSetOf<Test>()) }
     val scrollState = rememberScrollState()
     val categories = remember { mutableStateOf<Map<String, List<Test>>>(emptyMap()) }
@@ -34,12 +35,11 @@ fun ConfigScreen(navController: NavController, testViewModel: TestViewModel = vi
     val coroutineScope = rememberCoroutineScope()
     val context = LocalContext.current
 
-    LaunchedEffect(selectedType) {
-
+    LaunchedEffect(effectiveType) {
 
         coroutineScope.launch {
             Log.d("TestConfig", "🔄 Chargement des catégories depuis l'API...")
-            Log.d("TestTypeConfig", "Affichage des tests de type : ${selectedType}")
+            Log.d("TestTypeConfig", "Affichage des tests de type : ${effectiveType}")
 
             try {
                 val loadedCategories = loadCategoriesFromNetwork()
@@ -48,14 +48,32 @@ fun ConfigScreen(navController: NavController, testViewModel: TestViewModel = vi
                 categories.value = loadedCategories
 
                 val preSelectedTests = loadedCategories.values.flatten()
-                    //.filter { test -> test.type == "both" || test.type == selectedType }
-                    .filter { test -> localTestConfiguration.any { it.id_test == test.id_test } }
+                    .filter { test ->
+                        (test.type == effectiveType || test.type == "both") &&
+                                localTestConfiguration.any { it.id_test == test.id_test }
+                    }
                     .toMutableSet()
 
                 selectedTests.value.clear()
                 selectedTests.value.addAll(preSelectedTests)
 
                 Log.d("TestConfig", "✅ Tests pré-cochés (local) : $preSelectedTests")
+
+                if (preSelectedTests.isEmpty()) {
+                    Log.d("TestConfig", "Aucun test n'a été pré-coché")
+                    // On récupère les tests de la catégorie examen-type par défaut
+                    val defaultTests = loadedCategories.entries
+                        .firstOrNull { it.key.equals("Examen type", ignoreCase = true) }
+                        ?.value
+                        ?.toSet() ?: emptySet()
+
+                    if (defaultTests.isNotEmpty()) {
+                        Log.d("TestConfig", "Sélection par défaut des tests de la catégorie examen-type : $defaultTests")
+                        selectedTests.value.clear()
+                        selectedTests.value.addAll(defaultTests)
+                        Log.d("TestConfig", "Contenu de selectedTests : $selectedTests")
+                    }
+                }
 
                 val restoredSelectedTests =
                     navController.currentBackStackEntry?.savedStateHandle?.get<List<Test>>("selectedTests")
@@ -75,50 +93,65 @@ fun ConfigScreen(navController: NavController, testViewModel: TestViewModel = vi
     }
 
     AppTheme {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(16.dp)
-                .verticalScroll(scrollState),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Text(
-                text = "Configuration des tests",
-                style = MaterialTheme.typography.displayLarge,
-                textAlign = TextAlign.Center,
-                color = MaterialTheme.colorScheme.primary
-            )
-            Spacer(modifier = Modifier.height(16.dp))
+        Surface(
+            modifier = Modifier.fillMaxSize(),
+            color = MaterialTheme.colorScheme.background
+        )
+        {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(16.dp)
+                    .verticalScroll(scrollState),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Text(
+                    text = "Configuration des tests",
+                    style = MaterialTheme.typography.displayLarge,
+                    textAlign = TextAlign.Center,
+                    color = MaterialTheme.colorScheme.primary
+                )
+                Spacer(modifier = Modifier.height(16.dp))
 
-            if (loading.value) {
-                CircularProgressIndicator()
-            } else {
-                Log.d("TestConfig", "📌 Affichage des catégories et tests...")
-                categories.value.forEach { (categoryName, testList) ->
-                    CategoryItem(categoryName, testList, selectedTests.value) { test, checked ->
-                        val updatedSet = selectedTests.value.toMutableSet()
-                        if (checked) {
-                            updatedSet.add(test)
-                        } else {
-                            updatedSet.removeIf { it.id_test == test.id_test }
+                if (loading.value) {
+                    CircularProgressIndicator()
+                } else {
+                    Log.d("TestConfig", "📌 Affichage des catégories et tests...")
+                    categories.value.forEach { (categoryName, testList) ->
+                        val filteredTests = testList.filter {
+                            it.type == effectiveType || it.type == "both"
                         }
-                        selectedTests.value = updatedSet
+                        if (filteredTests.isNotEmpty()) {
+                            CategoryItem(
+                                categoryName,
+                                filteredTests,
+                                selectedTests.value
+                            ) { test, checked ->
+                                val updatedSet = selectedTests.value.toMutableSet()
+                                if (checked) {
+                                    updatedSet.add(test)
+                                } else {
+                                    updatedSet.removeIf { it.id_test == test.id_test }
+                                }
+                                selectedTests.value = updatedSet
+                            }
+                        }
                     }
                 }
-            }
 
-            Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(16.dp))
 
-            CustomButton(text = "Suivant") {
-                navController.currentBackStackEntry?.savedStateHandle?.set(
-                    "selectedTests",
-                    selectedTests.value.toList()
-                )
-                navController.navigate("recapScreen")
-            }
-            Spacer(modifier = Modifier.height(8.dp))
-            CustomButton(text = "Annuler") {
-                navController.popBackStack()
+                CustomButton(text = "Suivant") {
+                    navController.currentBackStackEntry?.savedStateHandle?.set(
+                        "selectedTests",
+                        selectedTests.value.toList()
+                    )
+                    navController.navigate("recapScreen")
+                }
+                Spacer(modifier = Modifier.height(8.dp))
+                CustomButton(text = "Annuler") {
+                    navController.popBackStack()
+                }
             }
         }
     }

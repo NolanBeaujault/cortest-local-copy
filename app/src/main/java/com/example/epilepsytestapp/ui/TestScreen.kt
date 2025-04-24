@@ -2,6 +2,7 @@ package com.example.epilepsytestapp.ui
 
 import android.content.Context
 import android.util.Log
+import androidx.activity.compose.BackHandler
 import androidx.camera.core.*
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.video.*
@@ -51,6 +52,8 @@ fun TestScreen(navController: NavHostController, recordedVideos: MutableList<Str
     val currentTest = tests.getOrNull(currentInstructionIndex)
 
     val hasLoadedInstructions = remember { mutableStateOf(false) }
+
+    BackHandler(enabled = true) {}
 
     // 📂 Charger les tests
     LaunchedEffect(Unit) {

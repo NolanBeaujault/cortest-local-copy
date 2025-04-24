@@ -38,11 +38,12 @@ fun ProfilePage(navController: NavHostController) {
 
     val coroutineScope = rememberCoroutineScope()
 
-    // Effect pour récupérer les données de l'utilisateur
-    LaunchedEffect(userId) {
+    // Fonction pour charger la page en récupérant les données de l'utilisateur
+    fun loadProfile(userId : String) {
         if (userId.isNotEmpty()) {
             coroutineScope.launch {
                 try {
+                    isLoading = true
                     val response = RetrofitInstance.api.getUserProfile(userId)
                     profile = response
                     isLoading = false
@@ -55,6 +56,11 @@ fun ProfilePage(navController: NavHostController) {
             errorMessage = "Aucun utilisateur connecté."
             isLoading = false
         }
+    }
+
+    // LaunchedEffect pour récupérer les données de l'utilisateur
+    LaunchedEffect(userId) {
+        loadProfile(userId)
     }
 
     AppTheme {
@@ -104,7 +110,7 @@ fun ProfilePage(navController: NavHostController) {
                                 .fillMaxHeight()
                                 .padding(start = 16.dp)
                                 .clickable {
-                                    navController.navigate("profile/$userId")
+                                    loadProfile(userId)
                                 }
                         )
                     }

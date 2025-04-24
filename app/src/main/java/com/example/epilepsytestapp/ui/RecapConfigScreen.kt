@@ -1,6 +1,9 @@
 package com.example.epilepsytestapp.ui
 
 import android.util.Log
+import android.widget.Toast
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -12,6 +15,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
@@ -24,6 +28,9 @@ import com.example.epilepsytestapp.category.LocalCatManager
 import com.example.epilepsytestapp.category.Test
 import com.example.epilepsytestapp.ui.theme.AppTheme
 import kotlinx.coroutines.launch
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 @Composable
 fun RecapScreen(navController: NavController) {
@@ -39,61 +46,95 @@ fun RecapScreen(navController: NavController) {
     val coroutineScope = rememberCoroutineScope()
 
     AppTheme {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(16.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Text(
-                text = "Récapitulatif de la configuration",
-                style = MaterialTheme.typography.displayLarge,
-                textAlign = TextAlign.Center,
-                color = MaterialTheme.colorScheme.primary,
-                fontSize = 24.sp
-            )
-            Spacer(modifier = Modifier.height(16.dp))
-
+        Surface(
+            modifier = Modifier.fillMaxSize(),
+            color = MaterialTheme.colorScheme.background
+        )
+        {
             Column(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .weight(1f)
-                    .padding(8.dp)
-                    .background(MaterialTheme.colorScheme.surface, shape = RoundedCornerShape(8.dp))
-                    .padding(16.dp)
-                    .verticalScroll(rememberScrollState())
+                    .fillMaxSize()
+                    .padding(16.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                ReorderableList(selectedTests)
-            }
+                Text(
+                    text = "Récapitulatif de la configuration",
+                    style = MaterialTheme.typography.displayLarge,
+                    textAlign = TextAlign.Center,
+                    color = MaterialTheme.colorScheme.primary,
+                    fontSize = 24.sp
+                )
+                Spacer(modifier = Modifier.height(16.dp))
 
-            Spacer(modifier = Modifier.height(10.dp))
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .weight(1f)
+                        .padding(8.dp)
+                        .background(
+                            MaterialTheme.colorScheme.surface,
+                            shape = RoundedCornerShape(8.dp)
+                        )
+                        .padding(16.dp)
+                        .verticalScroll(rememberScrollState())
+                ) {
+                    ReorderableList(selectedTests)
+                }
 
-            CustomButton(text = "Retour") {
-                try {
-                    val backStackEntry = navController.previousBackStackEntry
-                    if (backStackEntry != null) {
-                        val updatedList = selectedTests.toList().map { it.copy() }
-                        Log.d("RecapScreen", "📌 Enregistrement des tests avant retour : $updatedList")
-                        backStackEntry.savedStateHandle["selectedTests"] = updatedList
-                        navController.popBackStack()
-                    } else {
-                        Log.e("Navigation", "Impossible de revenir en arrière, backStackEntry est null")
+                Spacer(modifier = Modifier.height(10.dp))
+
+                CustomButton(text = "Retour") {
+                    try {
+                        val backStackEntry = navController.previousBackStackEntry
+                        if (backStackEntry != null) {
+                            val updatedList = selectedTests.toList().map { it.copy() }
+                            Log.d(
+                                "RecapScreen",
+                                "📌 Enregistrement des tests avant retour : $updatedList"
+                            )
+                            backStackEntry.savedStateHandle["selectedTests"] = updatedList
+                            navController.popBackStack()
+                        } else {
+                            Log.e(
+                                "Navigation",
+                                "Impossible de revenir en arrière, backStackEntry est null"
+                            )
+                        }
+                    } catch (e: Exception) {
+                        Log.e(
+                            "Navigation",
+                            "Erreur lors du retour à la page précédente : ${e.message}"
+                        )
                     }
-                } catch (e: Exception) {
-                    Log.e("Navigation", "Erreur lors du retour à la page précédente : ${e.message}")
                 }
-            }
 
-            Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(8.dp))
 
-            CustomButton(text = "Enregistrer la configuration") {
-                coroutineScope.launch {
-                    LocalCatManager.saveLocalTests(context, "localtestconfiguration.json", selectedTests.toList())
-                    val fileName = "test_config_${System.currentTimeMillis()}.json"
-                    LocalCatManager.saveLocalTests(context, fileName, selectedTests.toList())
-                }
-                navController.navigate("home") {
-                    popUpTo("home") { inclusive = true }
+                CustomButton(text = "Enregistrer la configuration") {
+                    coroutineScope.launch {
+                        LocalCatManager.saveLocalTests(
+                            context,
+                            "localtestconfiguration.json",
+                            selectedTests.toList()
+                        )
+
+                        // Copie de la configuration actuelle avec sa date pour l'historique des configurations
+                        val dateFormat =
+                            SimpleDateFormat("yyyy-MM-dd_HH:mm:ss", Locale.getDefault())
+                        val timestamp = dateFormat.format(Date())
+                        val fileName = "configuration_$timestamp.json"
+
+                        LocalCatManager.saveLocalTests(
+                            context,
+                            fileName,
+                            selectedTests.toList(),
+                            true
+                        )
+                    }
+                    Toast.makeText(context, "Configuration enregistrée !", Toast.LENGTH_LONG).show()
+                    navController.navigate("home") {
+                        popUpTo("home") { inclusive = true }
+                    }
                 }
             }
         }
@@ -102,22 +143,54 @@ fun RecapScreen(navController: NavController) {
 
 @Composable
 fun ReorderableList(tests: MutableList<Test>) {
+    val versionMap = remember { mutableStateMapOf<Test, Int>() }
+
     Column {
         tests.forEachIndexed { index, test ->
-            TestItem(test, index, tests) { updatedList ->
-                tests.clear()
-                tests.addAll(updatedList)
+            val version = versionMap[test] ?: 0
+
+            key(test.hashCode() to version) {
+                TestItem(test, index, tests, versionMap) { updatedList ->
+                    tests.clear()
+                    tests.addAll(updatedList)
+                }
             }
         }
     }
 }
 
 @Composable
-fun TestItem(test: Test, index: Int, tests: MutableList<Test>, onListUpdate: (List<Test>) -> Unit) {
-    Column(
+fun TestItem(test: Test, index: Int, tests: MutableList<Test>, versionMap: MutableMap<Test, Int>, onListUpdate: (List<Test>) -> Unit) {
+    var animateTrigger by remember { mutableStateOf(false) }
+
+    val elevation by animateDpAsState(
+        targetValue = if (animateTrigger) 16.dp else 1.dp,
+        label = "elevationAnim"
+    )
+
+    val scale by animateFloatAsState(
+        targetValue = if (animateTrigger) 1.02f else 1f,
+        label = "scale"
+    )
+
+    // Déclenchement de l’animation (swap dans la liste) à chaque fois qu'on appuie sur une flèche
+    LaunchedEffect(Unit) {
+        animateTrigger = true
+        kotlinx.coroutines.delay(100)
+        animateTrigger = false
+    }
+
+    Card(
         modifier = Modifier
             .fillMaxWidth()
             .padding(bottom = 8.dp)
+            .graphicsLayer(
+                scaleX = scale,
+                scaleY = scale
+            ),
+        elevation = CardDefaults.cardElevation(defaultElevation = elevation),
+        shape = RoundedCornerShape(8.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
     ) {
         Box(
             modifier = Modifier
@@ -142,6 +215,10 @@ fun TestItem(test: Test, index: Int, tests: MutableList<Test>, onListUpdate: (Li
                         val newList = tests.toMutableList().apply {
                             swap(index, index - 1)
                         }
+
+                        // Utilisation de versionMap pour pouvoir lancer l'animation quand on clique sur une flèche
+                        versionMap[test] = (versionMap[test] ?: 0) + 1
+                        versionMap[tests[index - 1]] = (versionMap[tests[index - 1]] ?: 0) + 1
                         onListUpdate(newList)
                     }
                 }) {
@@ -158,6 +235,10 @@ fun TestItem(test: Test, index: Int, tests: MutableList<Test>, onListUpdate: (Li
                         val newList = tests.toMutableList().apply {
                             swap(index, index + 1)
                         }
+
+                        // Utilisation de versionMap pour pouvoir lancer l'animation quand on clique sur une flèche
+                        versionMap[test] = (versionMap[test] ?: 0) + 1
+                        versionMap[tests[index + 1]] = (versionMap[tests[index + 1]] ?: 0) + 1
                         onListUpdate(newList)
                     }
                 }) {
@@ -173,6 +254,7 @@ fun TestItem(test: Test, index: Int, tests: MutableList<Test>, onListUpdate: (Li
     }
 }
 
+// Fonction de swapping des éléments de la liste réorganisable
 fun <T> MutableList<T>.swap(index1: Int, index2: Int) {
     val temp = this[index1]
     this[index1] = this[index2]

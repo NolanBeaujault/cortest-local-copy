@@ -1,5 +1,6 @@
 package com.example.epilepsytestapp.ui
 
+import android.content.Context
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -8,9 +9,11 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -19,22 +22,53 @@ import androidx.navigation.NavHostController
 import com.example.epilepsytestapp.R
 import com.example.epilepsytestapp.model.Patient
 import com.example.epilepsytestapp.ui.theme.AppTheme
+import java.io.File
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 @Composable
 fun HomePage(navController: NavHostController, patient: List<Patient>) {
+
+    val context = LocalContext.current
+    val videoDir = File(context.getExternalFilesDir(null), "EpilepsyTests/Videos")
+    val questionnaireDir = File(context.getExternalFilesDir(null), "EpilepsyTests/Questionnaires")
+    val configDir = context.filesDir
+
+    val latestVideo = videoDir.listFiles()?.maxByOrNull { it.lastModified() }
+    val totalTests = videoDir.listFiles { _, name ->
+        name.startsWith("Vidéo_") && name.endsWith(".mp4")
+    }?.size ?: 0
+
+    val lastQuestionnaire = questionnaireDir.listFiles()?.maxByOrNull { it.lastModified() }
+    val lastConfig = configDir.listFiles { _, name -> name.startsWith("test_config") }?.maxByOrNull { it.lastModified() }
+
+    val videoDate = latestVideo?.let { SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(
+        Date(it.lastModified())
+    ) } ?: "N/A"
+    val videoTime = latestVideo?.let { SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date(it.lastModified())) } ?: "N/A"
+
+    val questionnaireDate = lastQuestionnaire?.let { SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(Date(it.lastModified())) } ?: "N/A"
+    val configDate = lastConfig?.let { SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(Date(it.lastModified())) } ?: "N/A"
+
+    val isQuestionnaireFilled = remember {
+        context.getSharedPreferences("AppPrefs", Context.MODE_PRIVATE)
+            .getBoolean("questionnaireFilled", true) // true par défaut
+    }
+
     AppTheme {
         Box(
             modifier = Modifier
                 .fillMaxSize()
                 .background(MaterialTheme.colorScheme.background)
-                .border(4.dp, Color(0xFF2B4765), RoundedCornerShape(1.dp)) // Bordure autour de l'écran
+                .border(4.dp, Color(0xFF2B4765), RoundedCornerShape(1.dp))
         ) {
             Column(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(bottom = 70.dp) // Espace pour la barre de navigation
+                    .padding(bottom = 70.dp), // ✅ Ajout de padding global
+                verticalArrangement = Arrangement.spacedBy(16.dp) // ✅ Espacement entre tous les éléments
             ) {
-                // Rectangle bleu pâle en haut
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -62,7 +96,7 @@ fun HomePage(navController: NavHostController, patient: List<Patient>) {
                         Text(
                             text = "Home",
                             style = MaterialTheme.typography.displayLarge.copy(
-                                fontSize = 28.sp,
+                                fontSize = 35.sp,
                                 color = MaterialTheme.colorScheme.onBackground
                             ),
                             modifier = Modifier.padding(horizontal = 16.dp) // Espace autour du titre
@@ -76,26 +110,30 @@ fun HomePage(navController: NavHostController, patient: List<Patient>) {
                                 .fillMaxHeight()
                                 .padding(start = 16.dp)
                                 .clickable {
-                                     navController.navigate("profile")
+                                    navController.navigate("profile")
                                 }
                         )
                     }
                 }
+            }
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(top = 90.dp, bottom = 70.dp), // ⬅️ padding vertical seulement ici
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
 
-                Spacer(modifier = Modifier.height(16.dp))
-
-                // Dernier test avec cadre bleu foncé
+                // 📅 Dernier test
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 24.dp) // Réduction de la largeur
-                        .border(2.dp, Color(0xFF004D61), RoundedCornerShape(12.dp)) // Bordure bleu foncé
+                        .padding(horizontal = 16.dp) // ⬅️ Espacement latéral ici
+                        .border(2.dp, Color(0xFF004D61), RoundedCornerShape(12.dp))
                         .background(Color(0xFFD0EEED), RoundedCornerShape(12.dp))
                         .padding(16.dp)
                 ) {
                     Text(
-                        text = "Dernière test\n" +
-                                "date : XX/XX/XXXX   durée : XX:XX",
+                        text = "Dernier test : $videoDate\nHeure : $videoTime",
                         style = MaterialTheme.typography.bodyLarge.copy(
                             fontSize = 16.sp,
                             textAlign = TextAlign.Start,
@@ -104,60 +142,110 @@ fun HomePage(navController: NavHostController, patient: List<Patient>) {
                     )
                 }
 
-                Spacer(modifier = Modifier.height(16.dp))
-
-                // Prochain rendez-vous avec cadre bleu foncé
+                // 📊 Total de tests
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 24.dp) // Réduction de la largeur
-                        .border(2.dp, Color(0xFF004D61), RoundedCornerShape(12.dp)) // Bordure bleu foncé
-                        .background(Color(0xFFD0EEED), RoundedCornerShape(12.dp))
-                        .padding(16.dp)
-                ) {
-                    Text(
-                        text = "Prochain RDV\n" +
-                                "le XX/XX/XXXX à lieu avec Dr XXX",
-                        style = MaterialTheme.typography.bodyLarge.copy(
-                            fontSize = 16.sp,
-                            textAlign = TextAlign.Start,
-                            color = MaterialTheme.colorScheme.onBackground
-                        )
-                    )
-                }
-
-                Spacer(modifier = Modifier.height(16.dp))
-
-                Spacer(modifier = Modifier.height(16.dp))
-
-                // Bouton "Commencer un test"
-                Button(
-                    onClick = { navController.navigate("test/0") },
-                    modifier = Modifier
-                        .fillMaxWidth() // Pleine largeur
                         .padding(horizontal = 16.dp)
-                        .height(56.dp),
+                        .border(2.dp, Color(0xFF004D61), RoundedCornerShape(12.dp))
+                        .background(Color(0xFFD0EEED), RoundedCornerShape(12.dp))
+                        .padding(16.dp)
+                ) {
+                    Text(
+                        text = "Nombre total de tests : $totalTests",
+                        style = MaterialTheme.typography.bodyLarge.copy(
+                            fontSize = 16.sp,
+                            color = MaterialTheme.colorScheme.onBackground
+                        )
+                    )
+                }
+
+                // 🛠️ Questionnaire / Configuration
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp)
+                        .border(2.dp, Color(0xFF004D61), RoundedCornerShape(12.dp))
+                        .background(Color(0xFFD0EEED), RoundedCornerShape(12.dp))
+                        .padding(16.dp)
+                ) {
+                    Column {
+                        Text(
+                            text = "📝 Questionnaire modifié : $questionnaireDate",
+                            style = MaterialTheme.typography.bodyLarge.copy(
+                                fontSize = 16.sp,
+                                color = MaterialTheme.colorScheme.onBackground
+                            )
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            text = "⚙️ Configuration modifiée : $configDate",
+                            style = MaterialTheme.typography.bodyLarge.copy(
+                                fontSize = 16.sp,
+                                color = MaterialTheme.colorScheme.onBackground
+                            )
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(25.dp))
+
+                // ▶️ Commencer un test
+                Button(
+                    onClick = { navController.navigate("test") },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp)
+                        .height(80.dp),
                     shape = RoundedCornerShape(50),
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = Color(0xFF31D2B6) // Couleur bouton vert
+                        containerColor = Color(0xFF31D2B6)
                     )
                 ) {
                     Text(
                         text = "Commencer un test",
                         style = MaterialTheme.typography.labelLarge,
-                        fontSize = 30.sp
+                        fontSize = 32.sp
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(25.dp))
+
+                // 🧾 Accès au questionnaire
+                Button(
+                    onClick = {
+                        if (!isQuestionnaireFilled) navController.navigate("questionnaire")
+                    },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp)
+                        .height(56.dp),
+                    shape = RoundedCornerShape(50),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = if (isQuestionnaireFilled) Color.Gray else Color(0xFF6CA0DC)
+                    ),
+                    enabled = !isQuestionnaireFilled
+                ) {
+                    Text(
+                        text = "Remplir questionnaire",
+                        style = MaterialTheme.typography.labelLarge,
+                        fontSize = 20.sp
                     )
                 }
             }
 
-            // Barre de navigation en bas
+            Spacer(modifier = Modifier.height(16.dp))
+
+                // ▶️ Lancer test
+
             NavigationBar(
                 navController = navController,
-                modifier = Modifier.align(Alignment.BottomCenter) // Fixe la barre en bas
+                modifier = Modifier.align(Alignment.BottomCenter)
             )
         }
     }
 }
+
 
 @Composable
 fun NavigationBar(navController: NavHostController, modifier: Modifier = Modifier) {

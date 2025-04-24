@@ -4,6 +4,8 @@ import android.Manifest
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.media.ThumbnailUtils
+import android.provider.MediaStore
 import android.util.Log
 import android.widget.Toast
 import androidx.activity.ComponentActivity
@@ -19,7 +21,9 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
@@ -31,6 +35,9 @@ import com.example.epilepsytestapp.R
 import com.example.epilepsytestapp.model.Patient
 import com.example.epilepsytestapp.ui.theme.AppTheme
 import java.io.File
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 
 @Composable
@@ -65,7 +72,11 @@ fun FilesPage(navController: NavHostController, patient: List<Patient>) {
             consigneFiles.addAll(consigneDirectory.listFiles { file -> file.extension == "pdf" }?.toList() ?: emptyList())
         }
         if (videoDirectory.exists()) {
-            videoFiles.addAll(videoDirectory.listFiles { file -> file.extension == "mp4" }?.toList() ?: emptyList())
+            videoFiles.addAll(
+                videoDirectory.listFiles { file ->
+                    file.extension == "mp4" && file.name.startsWith("Vidéo_")
+                }?.toList() ?: emptyList()
+            )
         }
     }
 
@@ -204,33 +215,122 @@ fun DisplayFileList(
         text = title,
         style = MaterialTheme.typography.headlineSmall.copy(
             color = MaterialTheme.colorScheme.onBackground,
-            fontSize = 28.sp
+            fontSize = 22.sp
         ),
+        modifier = Modifier.padding(bottom = 8.dp)
     )
 
-    Spacer(modifier = Modifier.height(16.dp))
-
     if (files.isEmpty()) {
-        Text(text = "Aucun fichier trouvé.", modifier = Modifier.padding(16.dp))
+        Text("Aucun fichier trouvé.", style = MaterialTheme.typography.bodyMedium)
     } else {
-        LazyColumn {
+        LazyColumn(verticalArrangement = Arrangement.spacedBy(12.dp)) {
             items(files) { file ->
+                if (isVideo) {
+                    VideoCard(file, context)
+                } else {
+                    FileCard(file, context)
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun FileCard(file: File, context: Context) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { openPDF(context, file) },
+        shape = RoundedCornerShape(12.dp),
+        elevation = CardDefaults.cardElevation(2.dp)
+    ) {
+        Row(modifier = Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
+            Image(
+                painter = painterResource(id = R.mipmap.ic_pdf_foreground), // ajoute une icône PDF générique dans drawable
+                contentDescription = null,
+                modifier = Modifier.size(30.dp)
+            )
+
+            Spacer(modifier = Modifier.width(12.dp))
+
+            Column {
+                Text(text = file.name, style = MaterialTheme.typography.bodyLarge)
+                Text(
+                    text = "Modifié : ${SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault()).format(
+                        Date(file.lastModified())
+                    )}",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = Color.Gray
+                )
+            }
+        }
+    }
+}
+
+@Composable
+fun VideoCard(file: File, context: Context) {
+    val thumbnailBitmap by remember(file) {
+        mutableStateOf(
+            ThumbnailUtils.createVideoThumbnail(
+                file.absolutePath,  // ✅ Le chemin absolu est nécessaire
+                MediaStore.Video.Thumbnails.MINI_KIND
+            )
+        )
+    }
+
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { openVideo(context, file) },
+        shape = RoundedCornerShape(12.dp),
+        elevation = CardDefaults.cardElevation(4.dp)
+    ) {
+        Row(
+            modifier = Modifier
+                .padding(12.dp)
+                .height(100.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            // ✅ Affichage de la miniature si dispo
+            if (thumbnailBitmap != null) {
+                Image(
+                    bitmap = thumbnailBitmap!!.asImageBitmap(),
+                    contentDescription = "Aperçu vidéo",
+                    modifier = Modifier
+                        .size(120.dp)
+                        .aspectRatio(16f / 9f)
+                        .clip(RoundedCornerShape(8.dp))
+                )
+            } else {
+                // ✅ Icône fallback propre si la miniature échoue
+                Box(
+                    modifier = Modifier
+                        .size(120.dp)
+                        .background(Color.LightGray),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        painter = painterResource(id = R.mipmap.ic_video_play_foreground),
+                        contentDescription = "Icône vidéo",
+                        modifier = Modifier.size(40.dp)
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.width(12.dp))
+
+            Column {
                 Text(
                     text = file.name,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clickable {
-                            if (isVideo) {
-                                openVideo(context, file)
-                            } else {
-                                openPDF(context, file)
-                            }
-                        }
-                        .padding(8.dp),
-                    style = MaterialTheme.typography.headlineSmall.copy(
-                        color = MaterialTheme.colorScheme.onBackground,
-                        fontSize = 18.sp
-                    )
+                    style = MaterialTheme.typography.bodyLarge
+                )
+                Text(
+                    text = "Enregistré : ${
+                        SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault())
+                            .format(Date(file.lastModified()))
+                    }",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = Color.Gray
                 )
             }
         }

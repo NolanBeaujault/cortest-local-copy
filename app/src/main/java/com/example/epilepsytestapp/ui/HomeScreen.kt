@@ -33,7 +33,7 @@ fun HomePage(navController: NavHostController, patient: List<Patient>) {
     val context = LocalContext.current
     val videoDir = File(context.getExternalFilesDir(null), "EpilepsyTests/Videos")
     val questionnaireDir = File(context.getExternalFilesDir(null), "EpilepsyTests/Questionnaires")
-    val configDir = File(context.getExternalFilesDir(null), "EpilepsyTests")
+    val configDir = context.filesDir
 
     val latestVideo = videoDir.listFiles()?.maxByOrNull { it.lastModified() }
     val totalTests = videoDir.listFiles { _, name ->

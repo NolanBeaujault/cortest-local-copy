@@ -2,6 +2,7 @@ package com.example.epilepsytestapp.ui
 
 import android.content.Context
 import android.util.Log
+import androidx.activity.compose.BackHandler
 import androidx.camera.core.*
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.video.*
@@ -52,6 +53,8 @@ fun TestScreen(
     var isRecording by remember { mutableStateOf(false) }
 
     val coroutineScope = rememberCoroutineScope()
+
+    BackHandler(enabled = true) {}
 
     // 📂 Charger les tests
     LaunchedEffect(Unit) {

@@ -29,7 +29,7 @@ object RetrofitClient {
     }
 }
 
-
+// Fonction de chargement des tests (fichier json serveur) depuis l'API
 suspend fun loadCategoriesFromNetwork(): Map<String, List<Test>> {
     return withContext(Dispatchers.IO) {
         try {
@@ -58,6 +58,7 @@ suspend fun loadCategoriesFromNetwork(): Map<String, List<Test>> {
 
             val categoriesMap = mutableMapOf<String, List<Test>>()
 
+            // Pour chaque catégorie, on charge les tests qui y correspondent en récupérant chaque clé et valeur associées en s'appuant sur la classe Test
             parsedData.forEach { (_, categoryData) ->
                 val categoryName = categoryData["nom"] as? String ?: "Catégorie inconnue"
                 val testsList = mutableListOf<Test>()
@@ -67,10 +68,10 @@ suspend fun loadCategoriesFromNetwork(): Map<String, List<Test>> {
 
                     if (value is Map<*, *>) {
                         val testName = value["nom"] as? String ?: "Test inconnu"
-                        val affichage = value["affichage"] as? String ?: "Affichage inconnu"
+                        val affichage = value["affichage"] as? String ?: null
                         Log.d("NetworkCategory", "Affichage récupéré : $affichage")
                         val testType = value["type"] as? String ?: "Type inconnu"
-                        val audio = value["audio"] as? String ?: "Audio indisponible"
+                        val audio = value["audio"] as? String ?: "Audio non-reconnu"
                         val a_consigne = value["a_consigne"] as? String ?: "Consigne Auto inconnue"
                         val h_consigne = value["h_consigne"] as? String ?: "Consigne Hetero inconnue"
                         val idTest = when (val id = value["id_test"]) {
@@ -79,6 +80,7 @@ suspend fun loadCategoriesFromNetwork(): Map<String, List<Test>> {
                             else -> -1                            }
 
                         val motset = value["mot_set"] as? List<String> ?: emptyList()
+                        val motsetaudio = value["mot_set_audio"] as? List<String> ?: emptyList()
                         val image = value["image"] as? List<String> ?: emptyList()
                         val couleur = value["couleur"] as? List<String> ?: emptyList()
                         val mot = value["mot"] as? List<String> ?: emptyList()
@@ -89,6 +91,7 @@ suspend fun loadCategoriesFromNetwork(): Map<String, List<Test>> {
                         val nomGroupe = groupeData?.get("nom") as? String ?: ""
 
                         val groupe = Groupe(id_groupe = idGroupe, nom = nomGroupe)
+
 
                         val test = Test(
                             id_test = idTest,
@@ -101,6 +104,7 @@ suspend fun loadCategoriesFromNetwork(): Map<String, List<Test>> {
                             couleur = couleur,
                             mot = mot,
                             mot_set = motset,
+                            mot_set_audio = motsetaudio,
                             groupe = groupe,
                             audio = audio,
                         )

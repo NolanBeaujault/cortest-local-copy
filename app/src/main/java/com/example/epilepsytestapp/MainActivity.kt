@@ -225,17 +225,18 @@ fun NavigationGraph(
 
         composable("infoPerso") {
             Log.d("NavigationGraph", "InfoPersoScreen ajouté au graph")
-            InfoPersoScreen(navController = navController, onContinue = { navController.navigate("testTypeSelectionScreen") })
+            InfoPersoScreen(navController = navController, onContinue = { navController.navigate("testTypeSelectionScreen?from=signup") })
         }
 
-        composable("testTypeSelectionScreen") {
-            TypeConfigScreen(navController = navController)
+        composable("testTypeSelectionScreen?from={from}") { backStackEntry ->
+            val from = backStackEntry.arguments?.getString("from") ?: ""
+            TypeConfigScreen(navController = navController, from = from, cameraViewModel = cameraViewModel)
         }
 
         composable("testConfigScreen") {
             ConfigScreen(
                 navController = navController,
-
+                cameraViewModel = cameraViewModel
                 )
         }
 
@@ -260,7 +261,7 @@ fun NavigationGraph(
                         }
                     },
                     onModifyConfiguration = {
-                        navController.navigate("testTypeSelectionScreen")
+                        navController.navigate("testTypeSelectionScreen?from=settings")
                     },
                     patient = patients,
                     cameraViewModel = cameraViewModel

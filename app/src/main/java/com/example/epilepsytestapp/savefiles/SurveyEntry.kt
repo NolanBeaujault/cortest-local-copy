@@ -5,6 +5,7 @@ import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -14,6 +15,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.*
 import androidx.navigation.NavHostController
+import com.example.epilepsytestapp.ui.theme.PrimaryColor
 
 @Composable
 fun SurveyEntryScreen(navController: NavHostController) {
@@ -28,113 +30,131 @@ fun SurveyEntryScreen(navController: NavHostController) {
         )
     }
 
-    Column(
+    Surface(
         modifier = Modifier
-            .fillMaxSize()
-            .verticalScroll(rememberScrollState())
-            .padding(16.dp)
+            .fillMaxSize(),
+        color = MaterialTheme.colorScheme.surface
     ) {
-        Text(
-            text = "Modifier le Questionnaire",
-            style = MaterialTheme.typography.displayLarge,
-            fontSize = 40.sp,
-            color = MaterialTheme.colorScheme.primary,
-            textAlign = TextAlign.Center,
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(bottom = 24.dp)
-        )
 
-        questions.forEachIndexed { index, question ->
-            Card(
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState())
+                .padding(16.dp)
+        ) {
+            Text(
+                text = "Modifier le Questionnaire",
+                style = MaterialTheme.typography.displayLarge,
+                fontSize = 40.sp,
+                color = MaterialTheme.colorScheme.primary,
+                textAlign = TextAlign.Center,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(vertical = 8.dp),
-                elevation = CardDefaults.cardElevation(4.dp)
-            ) {
-                Column(modifier = Modifier.padding(16.dp)) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        OutlinedTextField(
-                            value = question.label,
-                            onValueChange = { questions[index] = question.copy(label = it) },
-                            label = { Text("Question") },
-                            modifier = Modifier.weight(1f)
-                        )
+                    .padding(bottom = 24.dp)
+            )
 
-                        IconButton(onClick = { questions.removeAt(index) }) {
-                            Icon(Icons.Default.Close, contentDescription = "Supprimer")
-                        }
-                    }
+            questions.forEachIndexed { index, question ->
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 8.dp),
+                    elevation = CardDefaults.cardElevation(4.dp)
+                ) {
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            OutlinedTextField(
+                                value = question.label,
+                                onValueChange = { questions[index] = question.copy(label = it) },
+                                label = { Text("Question") },
+                                modifier = Modifier.weight(1f)
+                            )
 
-                    Spacer(Modifier.height(8.dp))
-
-                    QuestionTypeSelector(
-                        selected = question.type,
-                        onSelected = { questions[index] = question.copy(type = it) }
-                    )
-
-                    if (question.type == QuestionType.CHOIX_UNIQUE || question.type == QuestionType.CHOIX_MULTIPLE) {
-                        Spacer(Modifier.height(8.dp))
-                        question.options.forEachIndexed { optIndex, option ->
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                OutlinedTextField(
-                                    value = option,
-                                    onValueChange = {
-                                        val newOptions = question.options.toMutableList()
-                                        newOptions[optIndex] = it
-                                        questions[index] = question.copy(options = newOptions)
-                                    },
-                                    modifier = Modifier.weight(1f),
-                                    label = { Text("Option ${optIndex + 1}") }
-                                )
-                                IconButton(onClick = {
-                                    val newOptions = question.options.toMutableList()
-                                    newOptions.removeAt(optIndex)
-                                    questions[index] = question.copy(options = newOptions)
-                                }) {
-                                    Icon(Icons.Default.Close, contentDescription = "Supprimer l'option")
-                                }
+                            IconButton(onClick = { questions.removeAt(index) }) {
+                                Icon(Icons.Default.Close, contentDescription = "Supprimer")
                             }
                         }
 
-                        Button(onClick = {
-                            questions[index] =
-                                question.copy(options = question.options + "")
-                        }) {
-                            Text("Ajouter une option")
+                        Spacer(Modifier.height(8.dp))
+
+                        QuestionTypeSelector(
+                            selected = question.type,
+                            onSelected = { questions[index] = question.copy(type = it) }
+                        )
+
+                        if (question.type == QuestionType.CHOIX_UNIQUE || question.type == QuestionType.CHOIX_MULTIPLE) {
+                            Spacer(Modifier.height(8.dp))
+                            question.options.forEachIndexed { optIndex, option ->
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    OutlinedTextField(
+                                        value = option,
+                                        onValueChange = {
+                                            val newOptions = question.options.toMutableList()
+                                            newOptions[optIndex] = it
+                                            questions[index] = question.copy(options = newOptions)
+                                        },
+                                        modifier = Modifier.weight(1f),
+                                        label = { Text("Option ${optIndex + 1}") }
+                                    )
+                                    IconButton(onClick = {
+                                        val newOptions = question.options.toMutableList()
+                                        newOptions.removeAt(optIndex)
+                                        questions[index] = question.copy(options = newOptions)
+                                    }) {
+                                        Icon(
+                                            Icons.Default.Close,
+                                            contentDescription = "Supprimer l'option"
+                                        )
+                                    }
+                                }
+                            }
+
+                            Button(onClick = {
+                                questions[index] =
+                                    question.copy(options = question.options + "")
+                            }) {
+                                Text("Ajouter une option")
+                            }
                         }
                     }
                 }
             }
-        }
 
-        Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(16.dp))
 
-        Button(onClick = {
-            questions.add(SurveyQuestionUI(label = "", type = QuestionType.TEXTE))
-        }) {
-            Text("Ajouter une nouvelle question")
-        }
+            Button(onClick = {
+                questions.add(SurveyQuestionUI(label = "", type = QuestionType.TEXTE))
+            }) {
+                Text("Ajouter une nouvelle question")
+            }
 
-        Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(24.dp))
 
-        Button(
-            onClick = {
-                val success = SurveyStorage.saveSurvey(context, questions.map { it.toData() })
-                if (success) {
-                    Toast.makeText(context, "✅ Questionnaire enregistré localement", Toast.LENGTH_SHORT).show()
-                } else {
-                    Toast.makeText(context, "❌ Erreur lors de l'enregistrement", Toast.LENGTH_LONG).show()
-                }
-                navController.navigate("home")
-            },
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Text("Enregistrer le questionnaire", fontSize = 18.sp)
+            Button(
+                onClick = {
+                    val success = SurveyStorage.saveSurvey(context, questions.map { it.toData() })
+                    if (success) {
+                        Toast.makeText(
+                            context,
+                            "✅ Questionnaire enregistré localement",
+                            Toast.LENGTH_SHORT
+                        ).show()
+                    } else {
+                        Toast.makeText(
+                            context,
+                            "❌ Erreur lors de l'enregistrement",
+                            Toast.LENGTH_LONG
+                        ).show()
+                    }
+                    navController.navigate("home")
+                },
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text("Enregistrer le questionnaire", fontSize = 18.sp)
+            }
         }
     }
 }

@@ -192,7 +192,7 @@ fun HomePage(navController: NavHostController, patient: List<Patient>) {
 
                 // ▶️ Commencer un test
                 Button(
-                    onClick = { navController.navigate("test/0") },
+                    onClick = { navController.navigate("test") },
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(horizontal = 16.dp)

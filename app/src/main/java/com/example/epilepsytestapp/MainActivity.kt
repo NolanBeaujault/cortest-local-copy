@@ -54,8 +54,11 @@ class MainActivity : ComponentActivity() {
             val startDestination = remember {
                 mutableStateOf(
                     when {
+                        intent.getStringExtra("startScreen") == "test" -> {
+                            "test" // Assurez-vous que "test" reste inchangé
+                        }
                         intent.getStringExtra("startScreen")?.startsWith("test/") == true -> {
-                            intent.getStringExtra("startScreen") ?: "test/0"
+                            intent.getStringExtra("startScreen") ?: "test" // Cela pourrait ajouter des sous-routes, si nécessaire
                         }
                         isAuthenticated && lastScreen == "infoPerso" -> "infoPerso"
                         isAuthenticated -> "home"
@@ -179,6 +182,7 @@ fun NavigationGraph(
     onAuthenticated: () -> Unit,
     onRememberMe: (Boolean) -> Unit,
     onLogout: () -> Unit,
+    sharedViewModel: SharedViewModel = viewModel(),
 ) {
     val recordedVideos = remember { mutableStateListOf<String>() }
     val cameraViewModel: CameraViewModel = viewModel()
@@ -283,32 +287,22 @@ fun NavigationGraph(
             }
         }
 
-        // Test
-        composable(
-            route = "test/{currentInstructionIndex}",
-            arguments = listOf(navArgument("currentInstructionIndex") { defaultValue = 0 })
-        ) {
-            if (isAuthenticated) {
-                TestScreen(
-                    navController = navController,
-                    recordedVideos = recordedVideos,
-                    cameraViewModel = cameraViewModel
-                )
-            } else {
-                navController.navigate("login")
-            }
+        composable("test") {
+            TestScreen(
+                navController = navController,
+                recordedVideos = recordedVideos,
+                cameraViewModel = cameraViewModel,
+                sharedViewModel = sharedViewModel
+            )
         }
-
 
         composable("confirmation") {
             ConfirmationScreen(
-                navController = navController, // Pass the navController here
+                navController = navController,
                 recordedVideos = recordedVideos,
+                sharedViewModel = sharedViewModel,
                 onStopTestConfirmed = {
                     navController.navigate("questionnaire")
-                },
-                onCancelTest = {
-                    navController.navigate("test")
                 }
             )
         }
@@ -329,6 +323,15 @@ fun NavigationGraph(
 
         composable("testEnregistre") {
             TestEnregistre(navController = navController)
+        }
+
+        // Gestion des routes invalides
+        composable("test/{invalid}") { backStackEntry ->
+            val invalidRoute = backStackEntry.arguments?.getString("invalid")
+            Log.w("NavigationGraph", "Route invalide : test/$invalidRoute")
+            navController.navigate("test") {
+                popUpTo("test") { inclusive = true }
+            }
         }
 
     }

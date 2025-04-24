@@ -7,8 +7,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -19,6 +18,7 @@ import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
 import com.example.epilepsytestapp.R
 import com.example.epilepsytestapp.savefiles.mergeVideos
+import com.example.epilepsytestapp.savefiles.saveTestInstructionsAsPDF
 import com.example.epilepsytestapp.ui.theme.AppTheme
 import kotlinx.coroutines.launch
 
@@ -26,8 +26,8 @@ import kotlinx.coroutines.launch
 fun ConfirmationScreen(
     navController: NavHostController,
     recordedVideos: MutableList<String>,
-    onStopTestConfirmed: () -> Unit,
-    onCancelTest: () -> Unit
+    sharedViewModel: SharedViewModel,
+    onStopTestConfirmed: () -> Unit
 ) {
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
@@ -65,6 +65,7 @@ fun ConfirmationScreen(
                 Row(
                     modifier = Modifier.align(Alignment.CenterHorizontally)
                 ) {
+                    // Bouton "Oui j'arrête le test"
                     ImageClickableButton(
                         iconResId = R.mipmap.ic_check_foreground,
                         label = "Oui j'arrête\nle test",
@@ -76,16 +77,40 @@ fun ConfirmationScreen(
 
                                 // Vider la liste recordedVideos après la fusion
                                 recordedVideos.clear()
+                                Log.d("ConfirmationScreen", "RecordedVideos : $mergedVideoPath")
+                                // Récupérer les données depuis le SharedViewModel
+                                val instructionsLog = sharedViewModel.instructionsLog.value
+                                val elapsedTime = sharedViewModel.elapsedTime.value
 
+                                // Générer le PDF des instructions
+                                val pdfFile = saveTestInstructionsAsPDF(context, instructionsLog, elapsedTime)
+                                pdfFile?.let {
+                                    Log.d("ConfirmationScreen", "📄 PDF généré : ${it.absolutePath}")
+                                }
+
+                                // Réinitialiser le SharedViewModel : remettre l'index et les logs à 0
+                                sharedViewModel.updateInstructionIndex(0)
+                                sharedViewModel.resetInstructionsLog()
+                                sharedViewModel.resetElapsedTime()
+                                Log.d("ConfirmationScreen", "SharedViewModel réinitialisé")
+
+                                // Confirmer l'arrêt du test
                                 onStopTestConfirmed()
                             }
                         }
                     )
-                    Spacer(modifier = Modifier.width(16.dp)) // Space between buttons
+
+                    Spacer(modifier = Modifier.width(16.dp)) // Espace entre les boutons
+
+                    // Bouton "Non je continue le test"
                     ImageClickableButton(
                         iconResId = R.mipmap.ic_close_foreground,
                         label = "Non je continue\nle test",
-                        onClick = onCancelTest
+                        onClick = {
+                            val currentInstructionIndex = sharedViewModel.currentInstructionIndex.value
+                            Log.d("ConfirmationScreen", "Revenir au TestScreen avec index : $currentInstructionIndex")
+                            navController.navigate("test")
+                        }
                     )
                 }
             }
@@ -104,6 +129,7 @@ fun ConfirmationScreen(
                     modifier = Modifier.size(140.dp)
                 )
             }
+
         }
     }
 }
@@ -149,4 +175,3 @@ fun ImageClickable(
             .clickable(onClick = onClick)
     )
 }
-

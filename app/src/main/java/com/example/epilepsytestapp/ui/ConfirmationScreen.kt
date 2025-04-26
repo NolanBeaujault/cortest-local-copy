@@ -20,6 +20,7 @@ import com.example.epilepsytestapp.R
 import com.example.epilepsytestapp.savefiles.mergeVideos
 import com.example.epilepsytestapp.savefiles.saveTestInstructionsAsPDF
 import com.example.epilepsytestapp.ui.theme.AppTheme
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 @Composable
@@ -71,6 +72,10 @@ fun ConfirmationScreen(
                         label = "Oui j'arrête\nle test",
                         onClick = {
                             coroutineScope.launch {
+                                // Ajouter un délai pour garantir que toutes les vidéos sont finalisées
+                                Log.d("ConfirmationScreen", "Attente de 2 secondes avant la fusion des vidéos...")
+                                delay(1000L) // Attendre 2 secondes
+
                                 // Fusionner les vidéos enregistrées
                                 val mergedVideoPath = mergeVideos(context, recordedVideos)
                                 Log.d("ConfirmationScreen", "Vidéo fusionnée : $mergedVideoPath")
@@ -78,6 +83,7 @@ fun ConfirmationScreen(
                                 // Vider la liste recordedVideos après la fusion
                                 recordedVideos.clear()
                                 Log.d("ConfirmationScreen", "RecordedVideos : $mergedVideoPath")
+
                                 // Récupérer les données depuis le SharedViewModel
                                 val instructionsLog = sharedViewModel.instructionsLog.value
                                 val elapsedTime = sharedViewModel.elapsedTime.value

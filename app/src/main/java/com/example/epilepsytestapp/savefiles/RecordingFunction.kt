@@ -3,6 +3,8 @@ package com.example.epilepsytestapp.savefiles
 import android.Manifest
 import android.content.Context
 import android.content.pm.PackageManager
+import android.os.Handler
+import android.os.Looper
 import android.util.Log
 import android.widget.Toast
 import androidx.camera.video.FileOutputOptions
@@ -23,6 +25,7 @@ fun startRecording(
 ): Recording? {
     Log.d("TestScreen", "Démarrage de l'enregistrement")
 
+    // Vérifiez que les permissions sont bien accordées
     val hasPermissions = ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED &&
             ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED
 
@@ -41,44 +44,69 @@ fun startRecording(
 
     val outputOptions = FileOutputOptions.Builder(outputFile).build()
 
-    if (recordingState.value != null) {
+    // Si un enregistrement est déjà en cours, arrêtez-le proprement
+    recordingState.value?.let {
+        Log.d("TestScreen", "Un enregistrement est déjà en cours. Arrêt en cours...")
         stopRecording(context, recordingState, videoFilePathState)
     }
 
-    return videoCapture.output.prepareRecording(context, outputOptions)
-        .withAudioEnabled()
-        .start(ContextCompat.getMainExecutor(context)) { recordEvent ->
-            when (recordEvent) {
-                is VideoRecordEvent.Start -> {
-                    Log.d("TestScreen", "Enregistrement démarré")
-                    Toast.makeText(context, "Enregistrement en cours", Toast.LENGTH_SHORT).show()
-                }
-                is VideoRecordEvent.Finalize -> {
-                    if (recordEvent.hasError()) {
-                        Log.e("TestScreen", "❌ Erreur à la finalisation de l'enregistrement : ${recordEvent.error}")
-                        Toast.makeText(context, "Erreur lors de l'enregistrement", Toast.LENGTH_SHORT).show()
-                    } else {
-                        Log.d("TestScreen", "✅ Enregistrement terminé avec succès : $videoFilePath")
-                        recordedVideos.add(videoFilePath)  // ✅ Ajout après succès
-                        Toast.makeText(context, "Vidéo enregistrée", Toast.LENGTH_SHORT).show()
+    // Démarrer l'enregistrement
+    return try {
+        videoCapture.output
+            .prepareRecording(context, outputOptions)
+            .withAudioEnabled()
+            .start(ContextCompat.getMainExecutor(context)) { recordEvent ->
+                when (recordEvent) {
+                    is VideoRecordEvent.Start -> {
+                        Log.d("TestScreen", "Enregistrement démarré")
+                        Toast.makeText(context, "Enregistrement en cours", Toast.LENGTH_SHORT).show()
+                    }
+                    is VideoRecordEvent.Finalize -> {
+                        if (recordEvent.hasError()) {
+                            Log.e("TestScreen", "❌ Erreur à la finalisation de l'enregistrement : ${recordEvent.error}")
+                            Toast.makeText(context, "Erreur lors de l'enregistrement", Toast.LENGTH_SHORT).show()
+                        } else {
+                            Log.d("TestScreen", "✅ Enregistrement terminé avec succès : $videoFilePath")
+                            recordedVideos.add(videoFilePath)  // ✅ Ajout après succès
+                            Toast.makeText(context, "Vidéo enregistrée", Toast.LENGTH_SHORT).show()
+                        }
                     }
                 }
+            }.also {
+                Log.d("TestScreen", "🎥 Démarrage de l'enregistrement effectué.")
+                recordingState.value = it
             }
-        }.also {
-            recordingState.value = it
-        }
+    } catch (e: Exception) {
+        Log.e("TestScreen", "Erreur lors du démarrage de l'enregistrement", e)
+        null
+    }
 }
 
-
-fun stopRecording(context: Context, recordingState: MutableState<Recording?>, videoFilePathState: MutableState<String?>): String? {
+fun stopRecording(
+    context: Context,
+    recordingState: MutableState<Recording?>,
+    videoFilePathState: MutableState<String?>
+): String? {
     return try {
-        recordingState.value?.let { recording ->
-            recording.stop()
+        val recording = recordingState.value
+        if (recording == null) {
+            Log.w("TestScreen", "Aucun enregistrement en cours à arrêter.")
+            return null
         }
+
+        // Ajoutez un délai pour donner plus de temps à l'enregistrement pour être finalisé
+        recording.stop() // Arrêt immédiat de l'enregistrement
+        Log.d("TestScreen", "✅ Enregistrement stoppé. Finalisation en cours...")
+
+        Handler(Looper.getMainLooper()).postDelayed({
+            Log.d("TestScreen", "✅ Finalisation de l'enregistrement terminée.")
+        }, 1000) // Assurez une période de stabilisation avant de finaliser
         recordingState.value = null
+
         val videoFilePath = videoFilePathState.value
-        Log.d("TestScreen", "✅ Enregistrement stoppé")
+        Log.d("TestScreen", "✅ Enregistrement finalisé avec succès : $videoFilePath")
         Toast.makeText(context, "Enregistrement arrêté", Toast.LENGTH_SHORT).show()
+
         videoFilePath
     } catch (e: Exception) {
         Log.e("TestScreen", "❌ Erreur lors de l'arrêt de l'enregistrement", e)

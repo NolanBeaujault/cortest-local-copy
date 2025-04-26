@@ -7,21 +7,18 @@ import androidx.camera.core.*
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.video.*
 import androidx.compose.foundation.layout.*
-import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.LifecycleOwner
 import androidx.navigation.NavHostController
 import com.example.epilepsytestapp.R
 import com.example.epilepsytestapp.category.LocalCatManager
-import com.example.epilepsytestapp.savefiles.saveTestInstructionsAsPDF
 import com.example.epilepsytestapp.savefiles.startRecording
 import com.example.epilepsytestapp.savefiles.stopRecording
 import com.google.common.util.concurrent.ListenableFuture
@@ -96,7 +93,19 @@ fun TestScreen(
                 TestDisplay(
                     test = it,
                     isFrontCamera = isFrontCamera,
-                    key = currentInstructionIndex
+                    key = currentInstructionIndex,
+                    sharedViewModel = sharedViewModel,
+                    onImageClick = { image ->
+                        // Logique pour passer à l'instruction suivante quand une image est cliquée
+                        if (currentInstructionIndex < tests.size - 1) {
+                            sharedViewModel.updateInstructionIndex(currentInstructionIndex + 1)
+                            val consigne = if (isFrontCamera) tests[currentInstructionIndex + 1].a_consigne else tests[currentInstructionIndex + 1].h_consigne
+                            currentInstruction.value = consigne ?: "Aucune consigne"
+                        } else {
+                            // Fin des consignes, naviguer vers la confirmation
+                            navController.navigate("confirmation")
+                        }
+                    }
                 )
             }
         }
@@ -193,16 +202,18 @@ fun TestScreen(
 
         // 🎥 Démarrage de l'enregistrement vidéo
         LaunchedEffect(videoCapture.value, isFrontCamera) {
-            if (!isRecording) {
-                delay(300L) // Attendre un moment pour que la caméra soit prête
-                videoCapture.value?.let {
-                    recording.value = startRecording(context, it, recording, videoFilePath, recordedVideos)
-                    isRecording = true
-                }
+            if (videoCapture.value != null && !isRecording) {
+                delay(500L) // Attend un peu plus longtemps pour plus de sûreté
+                recording.value = startRecording(context, videoCapture.value!!, recording, videoFilePath, recordedVideos)
+                isRecording = true
+                Log.d("TestScreen", "🎥 Démarrage de l'enregistrement effectué.")
+            } else {
+                Log.d("TestScreen", "🎥 Démarrage non effectué : videoCapture pas prêt ou déjà enregistrement.")
             }
         }
     }
 }
+
 
 @Composable
 fun CameraPreview(

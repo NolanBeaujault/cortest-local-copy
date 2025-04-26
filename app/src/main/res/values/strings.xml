@@ -1,4 +1,4 @@
 <resources>
-    <string name="app_name">EpilepsyTestApp</string>
+    <string name="app_name">Cortest</string>
     <string name="widget_text">Commencer un test</string>
 </resources>

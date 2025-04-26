@@ -131,18 +131,20 @@ fun TestDisplay(
                     .align(Alignment.TopCenter),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                test.image.chunked(2).forEach { rowImages ->
+                test.image.chunked(2).forEach { rowImages -> // Diviser les images en lignes de 2
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceEvenly
                     ) {
-                        rowImages.forEach { img ->
+                        rowImages.forEach { img -> // Afficher chaque image
                             val resId = getMipmapResId(img)
                             if (resId != 0) {
                                 ImageClickable(
                                     imageResId = resId,
                                     contentDescription = img,
-                                    onClick = { onImageClick(img) },
+                                    onClick = {
+                                        onImageClick(img) // Appeler la fonction onClick passée par le parent
+                                    },
                                     modifier = Modifier
                                         .weight(1f)
                                         .aspectRatio(1f)

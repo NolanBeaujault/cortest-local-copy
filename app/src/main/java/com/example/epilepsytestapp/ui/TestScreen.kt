@@ -202,12 +202,13 @@ fun TestScreen(
 
         // 🎥 Démarrage de l'enregistrement vidéo
         LaunchedEffect(videoCapture.value, isFrontCamera) {
-            if (!isRecording) {
-                delay(300L) // Attendre un moment pour que la caméra soit prête
-                videoCapture.value?.let {
-                    recording.value = startRecording(context, it, recording, videoFilePath, recordedVideos)
-                    isRecording = true
-                }
+            if (videoCapture.value != null && !isRecording) {
+                delay(500L) // Attend un peu plus longtemps pour plus de sûreté
+                recording.value = startRecording(context, videoCapture.value!!, recording, videoFilePath, recordedVideos)
+                isRecording = true
+                Log.d("TestScreen", "🎥 Démarrage de l'enregistrement effectué.")
+            } else {
+                Log.d("TestScreen", "🎥 Démarrage non effectué : videoCapture pas prêt ou déjà enregistrement.")
             }
         }
     }

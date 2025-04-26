@@ -50,14 +50,15 @@ fun saveTestInstructionsAsPDF(
     for ((instruction, timeInSeconds) in instructionsLog) {
         val formattedTime = formatTime(timeInSeconds)
 
-        val isImageInstruction = instruction.startsWith("Image choisie au hasard:") ||
-                instruction.startsWith("Image unique choisie:") ||
-                instruction.startsWith("Image cliquée:")
+        val isImageInstruction = instruction.startsWith(" \uD83D\uDDBC Image choisie au hasard:") ||
+                instruction.startsWith(" \uD83D\uDDBC Image cliquée:")
 
         if (isImageInstruction) {
             val imageName = instruction.substringAfter(":").trim()
 
             // Charger l'image uniquement, ne pas afficher le nom
+            Log.d("SaveTestInstructions", "Recherche de l'image : ${imageName}_foreground dans mipmap")
+
             val resId = context.resources.getIdentifier("${imageName}_foreground", "mipmap", context.packageName)
             if (resId != 0) {
                 val bitmap = BitmapFactory.decodeResource(context.resources, resId)

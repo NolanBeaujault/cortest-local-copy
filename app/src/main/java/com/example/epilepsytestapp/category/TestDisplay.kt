@@ -78,12 +78,7 @@ fun TestDisplay(
                     selectedImage = test.image.random()
                     sharedViewModel.addInstructionLog(Pair(" \uD83D\uDDBC Image choisie au hasard: $selectedImage", elapsedTime)) // Ajout au log
                 }
-                "complet" -> {
-                    val consigne = if (isFrontCamera) test.a_consigne else test.h_consigne
-                    if (!consigne.isNullOrEmpty()) {
-                        sharedViewModel.addInstructionLog(Pair("$consigne", elapsedTime))
-                    }
-                }
+                "complet" -> {}
                 else -> {
                     if (test.image.size == 1) {
                         selectedImage = test.image.first()
@@ -141,7 +136,7 @@ fun TestDisplay(
                                     contentDescription = img,
                                     onClick = {
                                         onImageClick(img) // Appeler la fonction onClick passée par le parent
-                                        sharedViewModel.addInstructionLog(Pair("\uD83D\uDDBC Image cliquée: $img", elapsedTime)) // Ajouter l'image cliquée dans le log
+                                        sharedViewModel.addInstructionLog(Pair(" \uD83D\uDDBC Image cliquée: $img ", elapsedTime)) // Ajouter l'image cliquée dans le log
                                     },
                                     modifier = Modifier
                                         .weight(1f)

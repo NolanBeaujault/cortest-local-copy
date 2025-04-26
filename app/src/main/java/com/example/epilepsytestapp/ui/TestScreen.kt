@@ -94,6 +94,7 @@ fun TestScreen(
                     test = it,
                     isFrontCamera = isFrontCamera,
                     key = currentInstructionIndex,
+                    sharedViewModel = sharedViewModel,
                     onImageClick = { image ->
                         // Logique pour passer à l'instruction suivante quand une image est cliquée
                         if (currentInstructionIndex < tests.size - 1) {

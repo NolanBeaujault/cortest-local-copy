@@ -17,33 +17,34 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.epilepsytestapp.R
 import com.example.epilepsytestapp.ui.ImageClickable
+import com.example.epilepsytestapp.ui.SharedViewModel
 
 @Composable
 fun TestDisplay(
     test: Test,
     isFrontCamera: Boolean,
     onImageClick: (String) -> Unit = {},
+    sharedViewModel: SharedViewModel,
     key: Int
 ) {
     val context = LocalContext.current
+    val elapsedTime by sharedViewModel.elapsedTime.collectAsState() // Obtenez elapsedTime ici
 
     var randomMot by remember { mutableStateOf("") }
     var selectedImage by remember { mutableStateOf<String?>(null) }
-    var motColor by remember { mutableStateOf(Color.Unspecified) }
+    var motColor by remember { mutableStateOf(Color.White) }
     var mediaPlayer by remember { mutableStateOf<MediaPlayer?>(null) }
 
     // 🎲 Sélection du mot aléatoire + couleur + audio
     LaunchedEffect(key1 = key) {
         randomMot = ""
         selectedImage = null
-        motColor = Color.Unspecified
+        motColor = Color.White
 
+        // 🎲 Sélection du mot aléatoire + couleur + audio
         if (!test.mot_set.isNullOrEmpty()) {
-            Log.d("TestDisplay", "🔍 mot_set: ${test.mot_set}")
             randomMot = test.mot_set.random()
-            Log.d("TestDisplay", "🎲 Mot sélectionné: $randomMot")
-        } else {
-            Log.w("TestDisplay", "⚠️ Aucun mot disponible dans mot_set")
+            sharedViewModel.addInstructionLog(Pair(" ❓ Mot : $randomMot", elapsedTime)) // Ajout au log
         }
 
         // 🎨 Couleur aléatoire (différente du mot)
@@ -53,7 +54,8 @@ fun TestDisplay(
             colorName?.let { name ->
                 frenchColorToHex(name)?.let { hex ->
                     motColor = Color(android.graphics.Color.parseColor(hex))
-                    Log.d("TestDisplay", "🎨 Couleur choisie : $name → $hex")
+                    sharedViewModel.addInstructionLog(Pair("\uD83C\uDFA8 Couleur sélectionné: $colorName", elapsedTime))
+
                 }
             }
         }
@@ -66,9 +68,6 @@ fun TestDisplay(
                 mediaPlayer?.release()
                 mediaPlayer = MediaPlayer.create(context, resId)
                 mediaPlayer?.start()
-                Log.d("TestDisplay", "▶️ Lecture audio : ${test.audio}")
-            } else {
-                Log.w("TestDisplay", "⚠️ Audio non trouvé : ${test.audio}")
             }
         }
 
@@ -77,22 +76,20 @@ fun TestDisplay(
             when (test.affichage) {
                 "hasard" -> {
                     selectedImage = test.image.random()
-                    Log.d("TestDisplay", "🔀 Image choisie (hasard) : $selectedImage")
+                    sharedViewModel.addInstructionLog(Pair(" \uD83D\uDDBC Image choisie au hasard: $selectedImage", elapsedTime)) // Ajout au log
                 }
                 "complet" -> {
-                    Log.d("TestDisplay", "🧩 Mode complet (4 images affichées en grille)")
+                    val consigne = if (isFrontCamera) test.a_consigne else test.h_consigne
+                    if (!consigne.isNullOrEmpty()) {
+                        sharedViewModel.addInstructionLog(Pair("$consigne", elapsedTime))
+                    }
                 }
                 else -> {
                     if (test.image.size == 1) {
                         selectedImage = test.image.first()
-                        Log.d("TestDisplay", "📷 Image unique : $selectedImage")
-                    } else {
-                        Log.w("TestDisplay", "⚠️ Affichage inconnu, image non sélectionnée")
                     }
                 }
             }
-        } else {
-            Log.w("TestDisplay", "⚠️ test.image est vide ou null")
         }
     }
 
@@ -144,6 +141,7 @@ fun TestDisplay(
                                     contentDescription = img,
                                     onClick = {
                                         onImageClick(img) // Appeler la fonction onClick passée par le parent
+                                        sharedViewModel.addInstructionLog(Pair("\uD83D\uDDBC Image cliquée: $img", elapsedTime)) // Ajouter l'image cliquée dans le log
                                     },
                                     modifier = Modifier
                                         .weight(1f)

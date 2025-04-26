@@ -24,18 +24,17 @@ fun saveTestInstructionsAsPDF(
 ): File? {
     val pdfDocument = PdfDocument()
     val pageInfo = PdfDocument.PageInfo.Builder(595, 842, 1).create()
-    val page = pdfDocument.startPage(pageInfo)
+    var page = pdfDocument.startPage(pageInfo)
+    var canvas = page.canvas
 
-    val canvas = page.canvas
+    Log.d("SaveTestInstructions", "Instruction log : $instructionsLog")
 
-    // Peinture pour le titre
     val titlePaint = Paint().apply {
         textSize = AppTypography.displayLarge.fontSize.value
         color = TextColor.hashCode()
         typeface = Typeface.create("sans-serif", Typeface.BOLD)
     }
 
-    // Peinture pour le texte normal
     val textPaint = Paint().apply {
         textSize = AppTypography.bodyLarge.fontSize.value
         color = TextColor.hashCode()
@@ -46,39 +45,84 @@ fun saveTestInstructionsAsPDF(
     canvas.drawText("Déroulé du Test", 50f, 50f, titlePaint)
 
     var yPosition = 100f
+    val maxPageHeight = 800f
 
-    // Ajout des consignes et leur temps
     for ((instruction, timeInSeconds) in instructionsLog) {
         val formattedTime = formatTime(timeInSeconds)
-        canvas.drawText("• $instruction ($formattedTime)", 50f, yPosition, textPaint)
-        yPosition += 30f
+
+        val isImageInstruction = instruction.startsWith("Image choisie au hasard:") ||
+                instruction.startsWith("Image unique choisie:") ||
+                instruction.startsWith("Image cliquée:")
+
+        if (isImageInstruction) {
+            val imageName = instruction.substringAfter(":").trim()
+
+            // Charger l'image uniquement, ne pas afficher le nom
+            val resId = context.resources.getIdentifier("${imageName}_foreground", "mipmap", context.packageName)
+            if (resId != 0) {
+                val bitmap = BitmapFactory.decodeResource(context.resources, resId)
+                if (bitmap != null) {
+                    val scaledBitmap = Bitmap.createScaledBitmap(bitmap, 80, 80, true)
+
+                    // Vérifier la place
+                    if (yPosition + 80f > maxPageHeight) {
+                        pdfDocument.finishPage(page)
+                        page = pdfDocument.startPage(pageInfo)
+                        canvas = page.canvas
+                        canvas.drawText("Suite du Test", 50f, 50f, titlePaint)
+                        yPosition = 100f
+                    }
+
+                    // Réduire l'espace avant l'image
+                    yPosition += 10f
+                    canvas.drawBitmap(scaledBitmap, 70f, yPosition, null)
+                    yPosition += 90f // 80px image + 10px marge dessous
+                } else {
+                    canvas.drawText("\t[Image introuvable]", 50f, yPosition, textPaint)
+                    yPosition += 30f
+                }
+            } else {
+                canvas.drawText("\t[Image introuvable]", 50f, yPosition, textPaint)
+                yPosition += 30f
+            }
+        } else {
+            // Instruction normale
+            canvas.drawText("\t$instruction ($formattedTime)", 50f, yPosition, textPaint)
+            yPosition += 30f
+        }
+
+        if (yPosition > maxPageHeight) {
+            pdfDocument.finishPage(page)
+            page = pdfDocument.startPage(pageInfo)
+            canvas = page.canvas
+            canvas.drawText("Suite du Test", 50f, 50f, titlePaint)
+            yPosition = 100f
+        }
     }
 
-    // Ajouter un espace avant le temps final pour que ce soit bien séparé
+    // Espace avant le temps final
     yPosition += 30f
 
-    // Format du temps final du test
     val formattedFinalTime = formatTime(finalTimeInSeconds)
-
-    // Ajouter le temps final à la fin
     canvas.drawText("Temps Final du Test: $formattedFinalTime", 50f, yPosition, textPaint)
 
-    // Ajout du logo en bas du PDF
+    // Logo en bas du PDF
     val logo = BitmapFactory.decodeResource(context.resources, R.mipmap.ic_brain_logo_foreground)
-    val scaledLogo = Bitmap.createScaledBitmap(logo, 100, 100, true)
-
-    val logoX = (pageInfo.pageWidth - 100) / 2f
-    val logoY = pageInfo.pageHeight - 150f
-    canvas.drawBitmap(scaledLogo, logoX, logoY, null)
+    if (logo != null) {
+        val scaledLogo = Bitmap.createScaledBitmap(logo, 100, 100, true)
+        val logoX = (pageInfo.pageWidth - 100) / 2f
+        val logoY = pageInfo.pageHeight - 150f
+        canvas.drawBitmap(scaledLogo, logoX, logoY, null)
+    } else {
+        Log.e("SaveTestInstructions", "Erreur : logo introuvable")
+    }
 
     pdfDocument.finishPage(page)
 
-    // Création du nom de fichier avec la date et l'heure actuelles
     val formatter = SimpleDateFormat("dd-MM-yyyy_HH:mm", Locale.getDefault())
     val formattedDate = formatter.format(Date())
     val fileName = "Instructions_$formattedDate.pdf"
 
-    // Dossier de sauvegarde
     val directory = File(context.getExternalFilesDir(null), "EpilepsyTests/Consignes")
     if (!directory.exists()) directory.mkdirs()
 
@@ -94,8 +138,6 @@ fun saveTestInstructionsAsPDF(
         null
     }
 }
-
-
 
 // Fonction pour formater le temps en hh:mm:ss
 fun formatTime(seconds: Int): String {

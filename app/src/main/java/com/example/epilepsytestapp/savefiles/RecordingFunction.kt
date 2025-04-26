@@ -3,6 +3,8 @@ package com.example.epilepsytestapp.savefiles
 import android.Manifest
 import android.content.Context
 import android.content.pm.PackageManager
+import android.os.Handler
+import android.os.Looper
 import android.util.Log
 import android.widget.Toast
 import androidx.camera.video.FileOutputOptions
@@ -72,17 +74,22 @@ fun startRecording(
 
 fun stopRecording(context: Context, recordingState: MutableState<Recording?>, videoFilePathState: MutableState<String?>): String? {
     return try {
+        Handler(Looper.getMainLooper()).postDelayed({
+            Log.d("TestScreen", "✅ Finalisation de l'enregistrement assurée")
         recordingState.value?.let { recording ->
             recording.stop()
         }
+        }, 500)
         recordingState.value = null
         val videoFilePath = videoFilePathState.value
         Log.d("TestScreen", "✅ Enregistrement stoppé")
         Toast.makeText(context, "Enregistrement arrêté", Toast.LENGTH_SHORT).show()
+
         videoFilePath
     } catch (e: Exception) {
         Log.e("TestScreen", "❌ Erreur lors de l'arrêt de l'enregistrement", e)
         Toast.makeText(context, "Erreur lors de l'arrêt", Toast.LENGTH_SHORT).show()
         null
     }
+
 }

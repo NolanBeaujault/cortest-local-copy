@@ -3,6 +3,7 @@ package com.example.epilepsytestapp.category
 import android.media.MediaPlayer
 import android.util.Log
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -55,7 +56,6 @@ fun TestDisplay(
                 frenchColorToHex(name)?.let { hex ->
                     motColor = Color(android.graphics.Color.parseColor(hex))
                     sharedViewModel.addInstructionLog(Pair("\uD83C\uDFA8 Couleur sélectionné: $colorName", elapsedTime))
-
                 }
             }
         }
@@ -108,9 +108,10 @@ fun TestDisplay(
                     painter = painterResource(id = resId),
                     contentDescription = imageName,
                     modifier = Modifier
-                        .size(200.dp)
-                        .align(Alignment.Center)
-                        .padding(top = 16.dp)
+                        .size(if (test.affichage == "complet") 500.dp else 350.dp)
+                        .aspectRatio(1.5f)
+                        .align(Alignment.TopCenter)
+                        .offset(y = 100.dp)
                 )
             }
         }
@@ -119,11 +120,12 @@ fun TestDisplay(
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(top = 70.dp)
+                    .padding(top = 50.dp) // Remonter la colonne des images en ajustant cette valeur
                     .align(Alignment.TopCenter),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                test.image.chunked(2).forEach { rowImages -> // Diviser les images en lignes de 2
+
+            test.image.chunked(2).forEach { rowImages -> // Diviser les images en lignes de 2
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceEvenly
@@ -157,19 +159,28 @@ fun TestDisplay(
             textAlign = TextAlign.Center,
             modifier = Modifier
                 .align(Alignment.BottomCenter)
-                .padding(bottom = 250.dp)
+                .padding(bottom = 280.dp)
         )
 
         if (randomMot.isNotEmpty()) {
-            Text(
-                text = randomMot,
-                style = MaterialTheme.typography.headlineSmall.copy(fontSize = 50.sp),
-                color = motColor,
-                textAlign = TextAlign.Center,
+            val isPhrase = randomMot.trim().contains(" ") // Si contient un espace, on considère que c’est une phrase
+            val fontSize = if (isPhrase) 28.sp else 50.sp
+            val bottomPadding = if (isPhrase) 170.dp else 180.dp
+
+            Box(
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
-                    .padding(bottom = 180.dp)
-            )
+                    .padding(bottom = bottomPadding)
+                    .background(Color.Gray)
+                    .padding(horizontal = 12.dp, vertical = 8.dp)
+            ) {
+                Text(
+                    text = randomMot,
+                    style = MaterialTheme.typography.headlineSmall.copy(fontSize = fontSize),
+                    color = motColor,
+                    textAlign = TextAlign.Center
+                )
+            }
         }
     }
 }
@@ -201,3 +212,4 @@ fun frenchColorToHex(colorName: String): String? {
         else -> null
     }
 }
+

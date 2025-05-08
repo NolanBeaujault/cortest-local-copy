@@ -61,15 +61,36 @@ fun TestDisplay(
         }
 
         // 🎧 Audio auto si caméra frontale
-        if (isFrontCamera && test.audio.isNotEmpty()) {
-            val filename = test.audio.removeSuffix(".m4a")
-            val resId = context.resources.getIdentifier(filename, "raw", context.packageName)
-            if (resId != 0) {
-                mediaPlayer?.release()
-                mediaPlayer = MediaPlayer.create(context, resId)
-                mediaPlayer?.start()
+        if (isFrontCamera) {
+            // Audio pour la consigne
+            if (test.audio.isNotEmpty()) {
+                val filename = test.audio.removeSuffix(".m4a")
+                val resId = context.resources.getIdentifier(filename, "raw", context.packageName)
+                if (resId != 0) {
+                    mediaPlayer?.release()
+                    mediaPlayer = MediaPlayer.create(context, resId)
+                    mediaPlayer?.start()
+                }
+            }
+
+            // ⏳ Attendre la fin de la consigne avant de jouer le mot (optionnel mais recommandé)
+            mediaPlayer?.setOnCompletionListener {
+                // Audio pour le randomMot
+                if (randomMot.isNotEmpty()) {
+                    val motFile = randomMot.lowercase().replace(" ", "_") // en cas de phrases avec espaces
+                    val motResId = context.resources.getIdentifier(motFile, "raw", context.packageName)
+                    if (motResId != 0) {
+                        mediaPlayer?.release()
+                        mediaPlayer = MediaPlayer.create(context, motResId)
+                        mediaPlayer?.start()
+                        sharedViewModel.addInstructionLog(Pair("\uD83C\uDFA7 Audio du mot joué: $motFile", elapsedTime))
+                    } else {
+                        Log.w("TestDisplay", "⚠️ Audio non trouvé pour le mot: $motFile")
+                    }
+                }
             }
         }
+
 
         // ✅ Logique d’image
         if (!test.image.isNullOrEmpty()) {

@@ -5,6 +5,8 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -21,6 +23,7 @@ import com.example.epilepsytestapp.category.LocalCatManager
 import com.example.epilepsytestapp.category.loadCategoriesFromNetwork
 import com.example.epilepsytestapp.category.Test
 import com.example.epilepsytestapp.ui.theme.AppTheme
+import com.example.epilepsytestapp.ui.theme.PrimaryColor
 import kotlinx.coroutines.launch
 
 
@@ -105,6 +108,20 @@ fun ConfigScreen(navController: NavController, cameraViewModel: CameraViewModel 
                     .verticalScroll(scrollState),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
+                IconButton(
+                    onClick = { navController.navigate("testTypeSelectionScreen?from=settings")},
+                    modifier = Modifier
+                        .align(Alignment.Start)
+                        .padding(top = 1.dp, start = 1.dp),
+                ) {
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                        contentDescription = "Retour aux paramètres",
+                        tint = PrimaryColor,
+                        modifier = Modifier.size(50.dp)
+                    )
+                }
+
                 Text(
                     text = "Configuration des tests",
                     style = MaterialTheme.typography.displayLarge,

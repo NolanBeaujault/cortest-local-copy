@@ -143,7 +143,7 @@ fun ProfilePage(navController: NavHostController) {
                             .padding(4.dp)
                     ) {
                         AsyncImage(
-                            model = R.mipmap.ic_profile_foreground, // Image par défaut
+                            model = R.mipmap.ic_user_foreground, // Image par défaut
                             contentDescription = "Photo de profil",
                             modifier = Modifier
                                 .fillMaxSize()

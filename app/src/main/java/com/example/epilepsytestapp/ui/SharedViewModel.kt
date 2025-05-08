@@ -17,6 +17,14 @@ class SharedViewModel : ViewModel() {
     private val _elapsedTime = MutableStateFlow(0)
     val elapsedTime: StateFlow<Int> get() = _elapsedTime
 
+    // Ajout du mot code
+    private val _motCode = MutableStateFlow("")
+    val motCode: StateFlow<String> get() = _motCode
+
+    fun setMotCode(value: String) {
+        _motCode.value = value
+    }
+
     // Mettre à jour l'index courant
     fun updateInstructionIndex(index: Int) {
         _currentInstructionIndex.value = index

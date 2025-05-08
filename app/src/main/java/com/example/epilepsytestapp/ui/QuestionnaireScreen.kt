@@ -112,7 +112,7 @@ fun PostTestQuestionnaireScreen(onSaveTest: () -> Unit) {
                 )
 
                 if (pdfFile != null) {
-                    Toast.makeText(context, "Questionnaire enregistré en PDF : ${pdfFile.name}", Toast.LENGTH_LONG).show()
+                    Toast.makeText(context, "Questionnaire enregistré", Toast.LENGTH_LONG).show()
                 } else {
                     Toast.makeText(context, "Échec de l'enregistrement du PDF", Toast.LENGTH_LONG).show()
                 }
@@ -137,7 +137,7 @@ fun PostTestQuestionnaireScreen(onSaveTest: () -> Unit) {
                 context.getSharedPreferences("AppPrefs", Context.MODE_PRIVATE)
                     .edit().putBoolean("questionnaireFilled", false).apply()
 
-                Toast.makeText(context, "📌 Vous pourrez le remplir plus tard", Toast.LENGTH_SHORT).show()
+                Toast.makeText(context, "Vous pourrez le remplir plus tard", Toast.LENGTH_SHORT).show()
                 onSaveTest()
             },
             modifier = Modifier

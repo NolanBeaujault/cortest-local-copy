@@ -109,7 +109,7 @@ fun ConfigScreen(navController: NavController, cameraViewModel: CameraViewModel 
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 IconButton(
-                    onClick = { navController.navigate("testTypeSelectionScreen?from=settings")},
+                    onClick = {navController.popBackStack()},
                     modifier = Modifier
                         .align(Alignment.Start)
                         .padding(top = 1.dp, start = 1.dp),

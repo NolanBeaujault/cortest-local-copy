@@ -29,6 +29,19 @@ object LocalCatManager {
         }
     }
 
+    // Liste des configurations pour l'historique des fichiers JSON locaux
+    fun listConfigurations(context: Context): List<Pair<String, String>> {
+        val configDir = File(context.getExternalFilesDir(null), "EpilepsyTests/Configurations")
+        if (!configDir.exists()) return emptyList()
+
+        return configDir.listFiles { file -> file.extension == "json" }
+            ?.sortedByDescending { it.lastModified() }
+            ?.map { file ->
+                val date = file.nameWithoutExtension.removePrefix("config_") // supposer que le nom commence par config_yyyy-MM-dd
+                "Configuration du $date" to file.name // Titre affiché + vrai nom de fichier
+            } ?: emptyList()
+    }
+
     // Sauvegarde du fichier json pendant la configuration
     suspend fun saveLocalTests(context: Context, fileName: String, selectedTests: List<Test>, historic : Boolean = false) {
         withContext(Dispatchers.IO) {

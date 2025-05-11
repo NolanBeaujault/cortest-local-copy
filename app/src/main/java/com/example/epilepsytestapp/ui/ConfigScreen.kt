@@ -38,7 +38,11 @@ fun ConfigScreen(navController: NavController, cameraViewModel: CameraViewModel 
     val coroutineScope = rememberCoroutineScope()
     val context = LocalContext.current
 
-    LaunchedEffect(effectiveType) {
+    val filename = navController.currentBackStackEntry
+        ?.savedStateHandle
+        ?.get<String>("configFileToLoad")
+
+    LaunchedEffect(effectiveType, filename) {
 
         coroutineScope.launch {
             Log.d("TestConfig", "🔄 Chargement des catégories depuis l'API...")
@@ -46,7 +50,14 @@ fun ConfigScreen(navController: NavController, cameraViewModel: CameraViewModel 
 
             try {
                 val loadedCategories = loadCategoriesFromNetwork()
-                val localTestConfiguration = LocalCatManager.loadLocalTests(context)
+                val localTestConfiguration = if (!filename.isNullOrBlank()) {
+                    Log.d("TestConfig", "Chargement depuis l'historique : $filename")
+                    navController.currentBackStackEntry?.savedStateHandle?.remove<String>("configFileToLoad")
+                    LocalCatManager.loadLocalTests(context, filename)
+                } else {
+                    Log.d("TestConfig", "Chargement de la configuration locale")
+                    LocalCatManager.loadLocalTests(context)
+                }
 
                 categories.value = loadedCategories
 
@@ -158,6 +169,12 @@ fun ConfigScreen(navController: NavController, cameraViewModel: CameraViewModel 
 
                 Spacer(modifier = Modifier.height(16.dp))
 
+                CustomButton(text = "Historique des configurations") {
+                    navController.navigate("configHistoryScreen")
+                }
+
+                Spacer(modifier = Modifier.height(8.dp))
+
                 CustomButton(text = "Suivant") {
                     navController.currentBackStackEntry?.savedStateHandle?.set(
                         "selectedTests",
@@ -166,9 +183,13 @@ fun ConfigScreen(navController: NavController, cameraViewModel: CameraViewModel 
                     navController.navigate("recapScreen")
                 }
                 Spacer(modifier = Modifier.height(8.dp))
+
                 CustomButton(text = "Annuler") {
                     navController.popBackStack()
                 }
+
+
+
             }
         }
     }

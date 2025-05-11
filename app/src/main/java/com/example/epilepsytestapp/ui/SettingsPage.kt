@@ -412,16 +412,16 @@ fun DeleteAccount(
         text = text,
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 8.dp)
+            .padding(horizontal = 16.dp, vertical = 18.dp)
             .clip(RoundedCornerShape(16.dp))
-            .background(Color(0x99FF0000))
+            .background(Color(0xFFD0EEED))
             .border(
                 width = 2.dp,
-                color = MaterialTheme.colorScheme.primary,
+                color = Color(0x99FF0000),
                 shape = RoundedCornerShape(16.dp)
             )
             .clickable { onClick() }
-            .padding(12.dp),
+            .padding(15.dp),
         style = MaterialTheme.typography.bodyLarge.copy(
             color = MaterialTheme.colorScheme.primary,
             textAlign = TextAlign.Start

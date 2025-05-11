@@ -3,6 +3,8 @@ package com.example.epilepsytestapp.ui
 import android.content.Context
 import android.content.Intent
 import android.provider.Settings
+import android.util.Log
+import android.widget.Toast
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -17,8 +19,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -27,6 +32,8 @@ import androidx.navigation.NavHostController
 import com.example.epilepsytestapp.R
 import com.example.epilepsytestapp.model.Patient
 import com.example.epilepsytestapp.ui.theme.AppTheme
+import com.google.firebase.auth.EmailAuthProvider
+import com.google.firebase.auth.FirebaseAuth
 
 @Composable
 fun SettingsPage(
@@ -39,6 +46,10 @@ fun SettingsPage(
     val isFrontCamera = cameraViewModel.isFrontCamera
     var showDialogConfig by remember { mutableStateOf(false) }
     var showDialogQuestionnaire by remember { mutableStateOf(false) }
+    var showDeleteConfirm by remember { mutableStateOf(false) }
+    var showReauthDialog by remember { mutableStateOf(false) }
+    var email by remember { mutableStateOf("") }
+    var password by remember { mutableStateOf("") }
 
 
     AppTheme {
@@ -153,7 +164,66 @@ fun SettingsPage(
                     }
                 }
 
+                Spacer(modifier = Modifier.height(30.dp))
 
+                DeleteAccount(
+                    text = "Supprimer mon compte",
+                    onClick = { showReauthDialog = true }
+                )
+
+            }
+
+            if (showReauthDialog) {
+                AlertDialog(
+                    onDismissRequest = { showReauthDialog = false },
+                    title = { Text("Vérification requise") },
+                    text = {
+                        Column {
+                            Text("Veuillez entrer vos identifiants pour confirmer la suppression de votre compte.")
+                            Spacer(modifier = Modifier.height(8.dp))
+                            OutlinedTextField(
+                                value = email,
+                                onValueChange = { email = it },
+                                label = { Text("Email") },
+                                singleLine = true
+                            )
+                            Spacer(modifier = Modifier.height(8.dp))
+                            OutlinedTextField(
+                                value = password,
+                                onValueChange = { password = it },
+                                label = { Text("Mot de passe") },
+                                singleLine = true,
+                                visualTransformation = VisualTransformation.None,
+                            )
+                        }
+                    },
+                    confirmButton = {
+                        TextButton(onClick = {
+                            reauthenticateAndDeleteUser(
+                                email = email,
+                                password = password,
+                                onSuccess = {
+                                    Toast.makeText(navController.context, "Compte supprimé", Toast.LENGTH_SHORT).show()
+                                    FirebaseAuth.getInstance().signOut()
+                                    navController.navigate("login") {
+                                        popUpTo(0)
+                                    }
+                                },
+                                onError = {
+                                    Toast.makeText(navController.context, "Erreur : ${it.localizedMessage}", Toast.LENGTH_LONG).show()
+                                }
+                            )
+                            showReauthDialog = false
+                        }) {
+                            Text("Confirmer", color = MaterialTheme.colorScheme.primary)
+                        }
+                    },
+                    dismissButton = {
+                        TextButton(onClick = { showReauthDialog = false }) {
+                            Text("Annuler", color = MaterialTheme.colorScheme.primary)
+                        }
+                    }
+                )
             }
 
             // Affichage de la boite d'alerte avant de naviguer vers la configuration des tests
@@ -240,6 +310,54 @@ fun SettingsPage(
 
             }
 
+            if (showDeleteConfirm) {
+                AlertDialog(
+                    onDismissRequest = { showDeleteConfirm = false },
+                    confirmButton = {
+                        TextButton(onClick = {
+                            deleteFirebaseAccount(
+                                onSuccess = {
+                                    FirebaseAuth.getInstance().signOut()
+                                    Toast.makeText(
+                                        navController.context,
+                                        "Compte supprimé",
+                                        Toast.LENGTH_SHORT
+                                    ).show()
+                                    navController.navigate("login") {
+                                        popUpTo(0)
+                                    }
+                                },
+                                onError = {
+                                    Toast.makeText(
+                                        navController.context,
+                                        "Erreur lors de la suppression",
+                                        Toast.LENGTH_LONG
+                                    ).show()
+                                }
+                            )
+                            showDeleteConfirm = false
+                        }) {
+                            Text("Oui", color = MaterialTheme.colorScheme.primary)
+                        }
+                    },
+                    dismissButton = {
+                        TextButton(onClick = { showDeleteConfirm = false }) {
+                            Text("Non", color = MaterialTheme.colorScheme.primary)
+                        }
+                    },
+                    title = {
+                        Text("Confirmer la suppression")
+                    },
+                    text = {
+                        Text("Êtes-vous sûr de vouloir supprimer votre compte ? Cette action est irréversible.")
+                    },
+                    containerColor = MaterialTheme.colorScheme.surface,
+                    titleContentColor = MaterialTheme.colorScheme.primary,
+                    textContentColor = MaterialTheme.colorScheme.onSurface,
+                )
+            }
+
+
             NavigationBar(
                     navController = navController,
             modifier = Modifier.align(Alignment.BottomCenter) // Fixe la barre en bas
@@ -283,6 +401,74 @@ fun openAppSettings(context: Context) {
         data = android.net.Uri.fromParts("package", context.packageName, null)
     }
     context.startActivity(intent)
+}
+
+@Composable
+fun DeleteAccount(
+    text: String,
+    onClick: () -> Unit
+) {
+    Text(
+        text = text,
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 18.dp)
+            .clip(RoundedCornerShape(16.dp))
+            .background(Color(0xFFD0EEED))
+            .border(
+                width = 2.dp,
+                color = Color(0x99FF0000),
+                shape = RoundedCornerShape(16.dp)
+            )
+            .clickable { onClick() }
+            .padding(15.dp),
+        style = MaterialTheme.typography.bodyLarge.copy(
+            color = MaterialTheme.colorScheme.primary,
+            textAlign = TextAlign.Start
+        )
+    )
+}
+
+fun reauthenticateAndDeleteUser(
+    email: String,
+    password: String,
+    onSuccess: () -> Unit,
+    onError: (Exception) -> Unit
+) {
+    val user = FirebaseAuth.getInstance().currentUser
+    val credential = EmailAuthProvider.getCredential(email, password)
+
+    user?.reauthenticate(credential)?.addOnCompleteListener { task ->
+        if (task.isSuccessful) {
+            user.delete()
+                .addOnCompleteListener { deleteTask ->
+                    if (deleteTask.isSuccessful) {
+                        onSuccess()
+                    } else {
+                        onError(deleteTask.exception ?: Exception("Unknown error"))
+                    }
+                }
+        } else {
+            onError(task.exception ?: Exception("Re-authentication failed"))
+        }
+    }
+}
+
+
+
+fun deleteFirebaseAccount(onSuccess: () -> Unit = {}, onError: (Exception) -> Unit = {}) {
+    val user = FirebaseAuth.getInstance().currentUser
+
+    user?.delete()
+        ?.addOnCompleteListener { task ->
+            if (task.isSuccessful) {
+                Log.d("FirebaseAuth", "Compte supprimé de Firebase")
+                onSuccess()
+            } else {
+                Log.e("FirebaseAuth", "Erreur suppression de compte", task.exception)
+                task.exception?.let { onError(it) }
+            }
+        }
 }
 
 class CameraViewModel : ViewModel() {

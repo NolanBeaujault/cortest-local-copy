@@ -20,7 +20,8 @@ import java.util.Locale
 fun saveTestInstructionsAsPDF(
     context: Context,
     instructionsLog: List<Pair<String, Int>>, // (Consigne, Temps en secondes)
-    finalTimeInSeconds: Int // Temps final du test
+    finalTimeInSeconds: Int, // Temps final du test
+    motCode: String
 ): File? {
     val pdfDocument = PdfDocument()
     val pageInfo = PdfDocument.PageInfo.Builder(595, 842, 1).create()
@@ -40,6 +41,12 @@ fun saveTestInstructionsAsPDF(
         color = TextColor.hashCode()
         typeface = Typeface.create("sans-serif", Typeface.NORMAL)
     }
+
+    val motCodeText = "Mot code : $motCode"
+    val motCodeTextWidth = textPaint.measureText(motCodeText)
+    val xPositionMotCode = pageInfo.pageWidth - motCodeTextWidth - 50f // Marge de 50 à droite
+    canvas.drawText(motCodeText, xPositionMotCode, 60f, textPaint)
+
 
     // Titre du document
     canvas.drawText("Déroulé du Test", 50f, 50f, titlePaint)

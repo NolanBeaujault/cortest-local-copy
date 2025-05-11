@@ -89,7 +89,7 @@ fun ConfirmationScreen(
                                 val elapsedTime = sharedViewModel.elapsedTime.value
 
                                 // Générer le PDF des instructions
-                                val pdfFile = saveTestInstructionsAsPDF(context, instructionsLog, elapsedTime)
+                                val pdfFile = saveTestInstructionsAsPDF(context, instructionsLog, elapsedTime, sharedViewModel.motCode.value)
                                 pdfFile?.let {
                                     Log.d("ConfirmationScreen", "📄 PDF généré : ${it.absolutePath}")
                                 }

@@ -46,6 +46,10 @@ class MainActivity : ComponentActivity() {
             val patients = remember { mutableStateListOf<Patient>() }
             var isLoading by remember { mutableStateOf(true) }
             val scope = rememberCoroutineScope()
+            val sharedViewModel: SharedViewModel = viewModel()
+            val firebaseAuth = FirebaseAuth.getInstance()
+            val currentUser = firebaseAuth.currentUser
+
 
             var isAuthenticated by remember {
                 mutableStateOf(firebaseAuth.currentUser != null)
@@ -86,6 +90,16 @@ class MainActivity : ComponentActivity() {
                 }
             }
 
+            LaunchedEffect(currentUser) {
+                currentUser?.uid?.let { userId ->
+                    try {
+                        val response = com.example.epilepsytestapp.network.RetrofitInstance.api.getUserProfile(userId)
+                        sharedViewModel.setMotCode(response.mot_code ?: "")
+                    } catch (e: Exception) {
+                        Log.e("MainActivity", "Erreur de chargement du mot code : ${e.message}")
+                    }
+                }
+            }
 
 
             LaunchedEffect(Unit) {
@@ -114,6 +128,7 @@ class MainActivity : ComponentActivity() {
                     firebaseAuth.signOut()
                     sharedPreferences.edit().putBoolean("isLoggedIn", false).apply()
                 },
+                sharedViewModel = sharedViewModel,
             )
         }
     }
@@ -168,7 +183,8 @@ fun EpilepsyTestApp(
     startDestination: String,
     onAuthenticate: () -> Unit,
     onRememberMe: (Boolean) -> Unit,
-    onLogout: () -> Unit
+    onLogout: () -> Unit,
+    sharedViewModel: SharedViewModel
 ) {
     val navController = rememberNavController()
 

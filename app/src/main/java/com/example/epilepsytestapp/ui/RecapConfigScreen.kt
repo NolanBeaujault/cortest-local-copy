@@ -1,5 +1,6 @@
 package com.example.epilepsytestapp.ui
 
+import android.content.Context
 import android.util.Log
 import android.widget.Toast
 import androidx.compose.animation.core.animateDpAsState
@@ -118,10 +119,12 @@ fun RecapScreen(navController: NavController) {
                             selectedTests.toList()
                         )
 
-                        // Copie de la configuration actuelle avec sa date pour l'historique des configurations
-                        val dateFormat =
-                            SimpleDateFormat("yyyy-MM-dd_HH:mm:ss", Locale.getDefault())
-                        val timestamp = dateFormat.format(Date())
+                        val timestamp = System.currentTimeMillis()
+                        context.getSharedPreferences("AppPrefsConfig", Context.MODE_PRIVATE)
+                            .edit()
+                            .putLong("lastConfigModification", timestamp)
+                            .apply()
+
                         val fileName = "configuration_$timestamp.json"
 
                         LocalCatManager.saveLocalTests(

@@ -1,5 +1,6 @@
 package com.example.epilepsytestapp.savefiles
 
+import android.content.Context
 import android.widget.Toast
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
@@ -42,6 +43,23 @@ fun SurveyEntryScreen(navController: NavHostController) {
                 .verticalScroll(rememberScrollState())
                 .padding(16.dp)
         ) {
+
+            // Bouton retour vers les paramètres
+            IconButton(
+                onClick = { navController.navigate("settings") },
+                modifier = Modifier
+                    .align(Alignment.Start)
+                    .padding(top = 1.dp, start = 1.dp),
+            ) {
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                    contentDescription = "Retour aux paramètres",
+                    tint = PrimaryColor,
+                    modifier = Modifier.size(50.dp)
+                )
+            }
+
+            // Titre
             Text(
                 text = "Modifier le Questionnaire",
                 style = MaterialTheme.typography.displayLarge,
@@ -52,6 +70,7 @@ fun SurveyEntryScreen(navController: NavHostController) {
                     .fillMaxWidth()
                     .padding(bottom = 24.dp)
             )
+
 
             questions.forEachIndexed { index, question ->
                 Card(
@@ -137,12 +156,14 @@ fun SurveyEntryScreen(navController: NavHostController) {
                 onClick = {
                     val success = SurveyStorage.saveSurvey(context, questions.map { it.toData() })
                     if (success) {
-                        Toast.makeText(
-                            context,
-                            "✅ Questionnaire enregistré localement",
-                            Toast.LENGTH_SHORT
-                        ).show()
-                    } else {
+                        val timestamp = System.currentTimeMillis()
+                        context.getSharedPreferences("AppPrefs", Context.MODE_PRIVATE)
+                            .edit()
+                            .putLong("lastSurveyModification", timestamp)
+                            .apply()
+                        Toast.makeText(context, "✅ Questionnaire enregistré localement", Toast.LENGTH_SHORT).show()
+
+                } else {
                         Toast.makeText(
                             context,
                             "❌ Erreur lors de l'enregistrement",

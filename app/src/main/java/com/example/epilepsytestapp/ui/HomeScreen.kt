@@ -10,6 +10,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -41,7 +42,32 @@ fun HomePage(navController: NavHostController, patient: List<Patient>) {
     }?.size ?: 0
 
     val lastQuestionnaire = questionnaireDir.listFiles()?.maxByOrNull { it.lastModified() }
-    val lastConfig = configDir.listFiles { _, name -> name.startsWith("test_config") }?.maxByOrNull { it.lastModified() }
+    val lastConfig = configDir.listFiles { _, name -> name.startsWith("configuration_") && name.endsWith(".json") }
+        ?.maxByOrNull { it.lastModified() }
+
+
+    val configDate = remember {
+        val prefsConfig = context.getSharedPreferences("AppPrefsConfig", Context.MODE_PRIVATE)
+        val timestampConfig = prefsConfig.getLong("lastConfigModification", -1L)
+        if (timestampConfig != -1L) {
+            SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(Date(timestampConfig))
+        } else {
+            "N/A"
+        }
+    }
+
+
+
+    val lastSurveyModDate = remember {
+        val prefs = context.getSharedPreferences("AppPrefs", Context.MODE_PRIVATE)
+        val timestamp = prefs.getLong("lastSurveyModification", -1L)
+        if (timestamp != -1L) {
+            SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(Date(timestamp))
+        } else {
+            "N/A"
+        }
+    }
+
 
     val videoDate = latestVideo?.let { SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(
         Date(it.lastModified())
@@ -49,7 +75,6 @@ fun HomePage(navController: NavHostController, patient: List<Patient>) {
     val videoTime = latestVideo?.let { SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date(it.lastModified())) } ?: "N/A"
 
     val questionnaireDate = lastQuestionnaire?.let { SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(Date(it.lastModified())) } ?: "N/A"
-    val configDate = lastConfig?.let { SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(Date(it.lastModified())) } ?: "N/A"
 
     val isQuestionnaireFilled = remember {
         context.getSharedPreferences("AppPrefs", Context.MODE_PRIVATE)
@@ -171,7 +196,7 @@ fun HomePage(navController: NavHostController, patient: List<Patient>) {
                 ) {
                     Column {
                         Text(
-                            text = "📝 Questionnaire modifié : $questionnaireDate",
+                            text = "📝 Dernier questionnaire rempli : $questionnaireDate",
                             style = MaterialTheme.typography.bodyLarge.copy(
                                 fontSize = 16.sp,
                                 color = MaterialTheme.colorScheme.onBackground
@@ -185,6 +210,15 @@ fun HomePage(navController: NavHostController, patient: List<Patient>) {
                                 color = MaterialTheme.colorScheme.onBackground
                             )
                         )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            text = "⚙️ Questionnaire modifié : $lastSurveyModDate",
+                            style = MaterialTheme.typography.bodyLarge.copy(
+                                fontSize = 16.sp,
+                                color = MaterialTheme.colorScheme.onBackground
+                            )
+                        )
+
                     }
                 }
 

@@ -33,7 +33,7 @@ fun PostTestQuestionnaireScreen(onSaveTest: () -> Unit) {
     val questionnaireDetails = remember { mutableStateListOf<Pair<String, String>>() }
     var questions by remember { mutableStateOf<List<SurveyQuestion>>(emptyList()) }
 
-    val formatter = SimpleDateFormat("dd-MM-yyyy_HH:mm", Locale.getDefault())
+    val formatter = SimpleDateFormat("yyyy-MM-dd_HH:mm", Locale.getDefault())
     val formattedDate = formatter.format(Date())
     val fileName = "Questionnaire_$formattedDate"
 

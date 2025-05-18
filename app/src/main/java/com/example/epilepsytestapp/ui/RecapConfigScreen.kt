@@ -119,13 +119,9 @@ fun RecapScreen(navController: NavController) {
                             selectedTests.toList()
                         )
 
-                        val timestamp = System.currentTimeMillis()
-                        context.getSharedPreferences("AppPrefsConfig", Context.MODE_PRIVATE)
-                            .edit()
-                            .putLong("lastConfigModification", timestamp)
-                            .apply()
-
-                        val fileName = "configuration_$timestamp.json"
+                        val formatter = SimpleDateFormat("yyyy-MM-dd_HH:mm", Locale.getDefault())
+                        val formattedDate = formatter.format(Date())
+                        val fileName = "configuration_$formattedDate.json"
 
                         LocalCatManager.saveLocalTests(
                             context,

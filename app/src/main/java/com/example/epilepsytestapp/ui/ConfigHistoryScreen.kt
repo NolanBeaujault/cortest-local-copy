@@ -1,5 +1,6 @@
 package com.example.epilepsytestapp.ui
 
+import android.util.Log
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -43,6 +44,7 @@ fun ConfigHistoryScreen(navController: NavController) {
     LaunchedEffect(Unit) {
         configurations.clear()
         configurations.addAll(LocalCatManager.listConfigurations(context))
+        //Log.d("Historique", "Configurations récupérées : ${LocalCatManager.listConfigurations(context)}")
     }
 
     AppTheme {

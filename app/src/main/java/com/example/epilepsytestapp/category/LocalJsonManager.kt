@@ -16,8 +16,20 @@ object LocalCatManager {
     suspend fun loadLocalTests(context: Context, filename: String = "localtestconfiguration.json"): List<Test> {
         return withContext(Dispatchers.IO) {
             try {
-                val file = File(context.filesDir, filename)
-                if (!file.exists()) return@withContext emptyList()
+                val file = if (filename.contains("EpilepsyTests/Configurations")) {
+                    // Cas lecture depuis l'historique → à chercher dans le stockage externe
+                    File(context.getExternalFilesDir(null), filename)
+                } else {
+                    // Cas lecture de la configuration locale par défaut → à chercher dans le stockage interne
+                    File(context.filesDir, filename)
+                }
+
+                // DEBUG : Attention au nom du répertoire : on "superpose" 2 chemins d'accès !!
+                Log.d("LocalCategory", "Nom du fichier lu : ${file}")
+                if (!file.exists()) {
+                    Log.d("LocalCategory", "Configuration non trouvée...")
+                    return@withContext emptyList()
+                }
 
                 val json = file.readText()
                 val type = object : TypeToken<List<Test>>() {}.type
@@ -37,8 +49,8 @@ object LocalCatManager {
         return configDir.listFiles { file -> file.extension == "json" }
             ?.sortedByDescending { it.lastModified() }
             ?.map { file ->
-                val date = file.nameWithoutExtension.removePrefix("config_") // supposer que le nom commence par config_yyyy-MM-dd
-                "Configuration du $date" to file.name // Titre affiché + vrai nom de fichier
+                val date = file.nameWithoutExtension.removePrefix("configuration_") // supposer que le nom commence par config_yyyy-MM-dd
+                "Configuration du $date" to file.name // Affichage des fichiers : on récupère la date dans le nom du fichier
             } ?: emptyList()
     }
 
@@ -80,7 +92,7 @@ object LocalCatManager {
                     val updatedTestsJson = gson.toJson(filteredTests)
                     file.writeText(updatedTestsJson)
 
-                    Log.d("LocalCategory", "Tests enregistrés dans l'historique sous le nom $fileName")
+                    Log.d("LocalCategory", "Tests enregistrés dans l'historique sous $file")
                 }
 
                 else {
@@ -89,7 +101,7 @@ object LocalCatManager {
                     val file = File(context.filesDir, fileName)
                     file.writeText(updatedTestsJson)
 
-                    Log.d("LocalCategory", "Tests enregistrés dans $fileName")
+                    Log.d("LocalCategory", "Tests enregistrés dans $file")
                 }
             } catch (e: Exception) {
                 Log.e("LocalCategory", "Erreur : Sauvegarde du JSON local: ${e.message}")

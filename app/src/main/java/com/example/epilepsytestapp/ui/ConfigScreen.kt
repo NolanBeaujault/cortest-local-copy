@@ -25,6 +25,7 @@ import com.example.epilepsytestapp.category.Test
 import com.example.epilepsytestapp.ui.theme.AppTheme
 import com.example.epilepsytestapp.ui.theme.PrimaryColor
 import kotlinx.coroutines.launch
+import java.io.File
 
 
 @Composable
@@ -37,6 +38,10 @@ fun ConfigScreen(navController: NavController, cameraViewModel: CameraViewModel 
     val loading = remember { mutableStateOf(true) }
     val coroutineScope = rememberCoroutineScope()
     val context = LocalContext.current
+    val configDir = File(context.getExternalFilesDir(null), "EpilepsyTests/Configurations")
+
+    //Log.d("Directory check", "local dir ${context.getExternalFilesDir(null)}")
+    //Log.d("Directory check", "config dir ${configDir}")
 
     val filename = navController.currentBackStackEntry
         ?.savedStateHandle
@@ -45,17 +50,19 @@ fun ConfigScreen(navController: NavController, cameraViewModel: CameraViewModel 
     LaunchedEffect(effectiveType, filename) {
 
         coroutineScope.launch {
-            Log.d("TestConfig", "🔄 Chargement des catégories depuis l'API...")
-            Log.d("TestTypeConfig", "Affichage des tests de type : ${effectiveType}")
+            //Log.d("TestConfig", "🔄 Chargement des catégories depuis l'API...")
+            //Log.d("TestTypeConfig", "Affichage des tests de type : ${effectiveType}")
 
             try {
                 val loadedCategories = loadCategoriesFromNetwork()
                 val localTestConfiguration = if (!filename.isNullOrBlank()) {
-                    Log.d("TestConfig", "Chargement depuis l'historique : $filename")
-                    navController.currentBackStackEntry?.savedStateHandle?.remove<String>("configFileToLoad")
-                    LocalCatManager.loadLocalTests(context, filename)
+                    Log.d("TestConfigHistory", "Chargement depuis l'historique")
+                    //navController.currentBackStackEntry?.savedStateHandle?.remove<String>("configFileToLoad")
+                    val file = File("EpilepsyTests/Configurations",filename).toString()
+                    Log.d("TestConfigHistory", "Path : $file")
+                    LocalCatManager.loadLocalTests(context, file)
                 } else {
-                    Log.d("TestConfig", "Chargement de la configuration locale")
+                    Log.d("TestConfigLocal", "Chargement de la configuration locale")
                     LocalCatManager.loadLocalTests(context)
                 }
 
@@ -85,7 +92,7 @@ fun ConfigScreen(navController: NavController, cameraViewModel: CameraViewModel 
                         Log.d("TestConfig", "Sélection par défaut des tests de la catégorie examen-type : $defaultTests")
                         selectedTests.value.clear()
                         selectedTests.value.addAll(defaultTests)
-                        Log.d("TestConfig", "Contenu de selectedTests : $selectedTests")
+                        //Log.d("TestConfig", "Contenu de selectedTests : $selectedTests")
                     }
                 }
 
@@ -93,12 +100,12 @@ fun ConfigScreen(navController: NavController, cameraViewModel: CameraViewModel 
                     navController.currentBackStackEntry?.savedStateHandle?.get<List<Test>>("selectedTests")
 
                 restoredSelectedTests?.let {
-                    Log.d("TestConfig", "🔄 Écrasement avec restoredSelectedTests : $it")
+                    //Log.d("TestConfig", "🔄 Écrasement avec restoredSelectedTests : $it")
                     selectedTests.value.clear()
                     selectedTests.value.addAll(it)
                 }
 
-                Log.d("TestConfig", "✅ Catégories chargées avec succès : $loadedCategories")
+                //Log.d("TestConfig", "✅ Catégories chargées avec succès : $loadedCategories")
             } catch (e: Exception) {
                 Log.e("TestConfig", "❌ Erreur lors du chargement des catégories : ${e.message}")
             }
@@ -144,7 +151,7 @@ fun ConfigScreen(navController: NavController, cameraViewModel: CameraViewModel 
                 if (loading.value) {
                     CircularProgressIndicator()
                 } else {
-                    Log.d("TestConfig", "📌 Affichage des catégories et tests...")
+                    //Log.d("TestConfig", "📌 Affichage des catégories et tests...")
                     categories.value.forEach { (categoryName, testList) ->
                         val filteredTests = testList.filter {
                             it.type == effectiveType || it.type == "both"

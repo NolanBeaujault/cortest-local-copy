@@ -24,7 +24,7 @@ fun mergeVideos(context: Context, recordedVideos: List<String>): String? {
     val videosDirectory = File(context.getExternalFilesDir(null), "EpilepsyTests/Videos")
     if (!videosDirectory.exists()) videosDirectory.mkdirs()
 
-    val formatter = SimpleDateFormat("dd-MM-yyyy_HH:mm", Locale.getDefault())
+    val formatter = SimpleDateFormat("yyyy-MM-dd_HH:mm", Locale.getDefault())
     val formattedDate = formatter.format(Date())
     val outputFile = File(videosDirectory, "Vidéo_$formattedDate.mp4")
 

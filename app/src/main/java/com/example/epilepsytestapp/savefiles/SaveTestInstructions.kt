@@ -127,7 +127,7 @@ fun saveTestInstructionsAsPDF(
 
     pdfDocument.finishPage(page)
 
-    val formatter = SimpleDateFormat("dd-MM-yyyy_HH:mm", Locale.getDefault())
+    val formatter = SimpleDateFormat("yyyy-MM-dd_HH:mm", Locale.getDefault())
     val formattedDate = formatter.format(Date())
     val fileName = "Instructions_$formattedDate.pdf"
 

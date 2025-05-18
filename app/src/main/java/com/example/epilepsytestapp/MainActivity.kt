@@ -82,6 +82,14 @@ class MainActivity : ComponentActivity() {
                 )
             }
 
+            val widgetStartScreen = remember { mutableStateOf<String?>(null) }
+
+            LaunchedEffect(Unit) {
+                val screenFromIntent = intent.getStringExtra("startScreen")
+                if (!screenFromIntent.isNullOrEmpty()) {
+                    widgetStartScreen.value = screenFromIntent
+                }
+            }
 
             LaunchedEffect(Unit) {
                 firebaseAuth.addAuthStateListener { auth ->
@@ -129,6 +137,7 @@ class MainActivity : ComponentActivity() {
                     sharedPreferences.edit().putBoolean("isLoggedIn", false).apply()
                 },
                 sharedViewModel = sharedViewModel,
+                widgetStartScreen = widgetStartScreen.value
             )
         }
     }
@@ -184,7 +193,8 @@ fun EpilepsyTestApp(
     onAuthenticate: () -> Unit,
     onRememberMe: (Boolean) -> Unit,
     onLogout: () -> Unit,
-    sharedViewModel: SharedViewModel
+    sharedViewModel: SharedViewModel,
+    widgetStartScreen: String? // <-- ADD THIS PARAMETER
 ) {
     val navController = rememberNavController()
 
@@ -205,6 +215,7 @@ fun EpilepsyTestApp(
                         popUpTo("login") { inclusive = true }
                     }
                 },
+                widgetStartScreen = widgetStartScreen
             )
         }
     }
@@ -220,9 +231,23 @@ fun NavigationGraph(
     onRememberMe: (Boolean) -> Unit,
     onLogout: () -> Unit,
     sharedViewModel: SharedViewModel = viewModel(),
+    widgetStartScreen: String?,
 ) {
     val recordedVideos = remember { mutableStateListOf<String>() }
     val cameraViewModel: CameraViewModel = viewModel()
+
+    LaunchedEffect(widgetStartScreen) {
+        widgetStartScreen?.let { target ->
+            if (target.isNotEmpty()) {
+                navController.navigate(target) {
+                    popUpTo(navController.graph.startDestinationId) {
+                        inclusive = true
+                    }
+                    launchSingleTop = true
+                }
+            }
+        }
+    }
 
     NavHost(
         navController = navController,

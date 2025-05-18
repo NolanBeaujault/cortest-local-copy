@@ -13,7 +13,10 @@ object LocalCatManager {
     private val gson = Gson()
 
     // Chargement des données configurées depuis le fichier json local spécifié dans filename
-    suspend fun loadLocalTests(context: Context, filename: String = "localtestconfiguration.json"): List<Test> {
+    suspend fun loadLocalTests(
+        context: Context,
+        filename: String = "localtestconfiguration.json"
+    ): List<Test> {
         return withContext(Dispatchers.IO) {
             try {
                 val file = if (filename.contains("EpilepsyTests/Configurations")) {
@@ -25,9 +28,9 @@ object LocalCatManager {
                 }
 
                 // DEBUG : Attention au nom du répertoire : on "superpose" 2 chemins d'accès !!
-                Log.d("LocalCategory", "Nom du fichier lu : ${file}")
+                Log.i("LocalJsonLoad", "JSON local récupéré : ${file}")
                 if (!file.exists()) {
-                    Log.d("LocalCategory", "Configuration non trouvée...")
+                    Log.w("LocalJsonLoad", "Configuration non trouvée !")
                     return@withContext emptyList()
                 }
 
@@ -35,7 +38,7 @@ object LocalCatManager {
                 val type = object : TypeToken<List<Test>>() {}.type
                 gson.fromJson(json, type) ?: emptyList()
             } catch (e: Exception) {
-                Log.e("LocalCategory", "Erreur : Lecture du JSON local: ${e.message}")
+                Log.e("LocalJsonLoad", "Erreur : Lecture du JSON local: ${e.message}")
                 emptyList()
             }
         }
@@ -49,13 +52,19 @@ object LocalCatManager {
         return configDir.listFiles { file -> file.extension == "json" }
             ?.sortedByDescending { it.lastModified() }
             ?.map { file ->
-                val date = file.nameWithoutExtension.removePrefix("configuration_") // supposer que le nom commence par config_yyyy-MM-dd
-                "Configuration du $date" to file.name // Affichage des fichiers : on récupère la date dans le nom du fichier
+                val date =
+                    file.nameWithoutExtension.removePrefix("configuration_") // le nom du JSON local doit être de la forme configuration_yyyy-MM-dd
+                "Configuration du $date" to file.name // Affichage de la liste des fichiers : on récupère la date depuis le nom du fichier
             } ?: emptyList()
     }
 
     // Sauvegarde du fichier json pendant la configuration
-    suspend fun saveLocalTests(context: Context, fileName: String, selectedTests: List<Test>, historic : Boolean = false) {
+    suspend fun saveLocalTests(
+        context: Context,
+        fileName: String,
+        selectedTests: List<Test>,
+        historic: Boolean = false
+    ) {
         withContext(Dispatchers.IO) {
             try {
                 val filteredTests = selectedTests.map { test ->
@@ -63,7 +72,7 @@ object LocalCatManager {
                     test.copy(
                         a_consigne = test.a_consigne?.takeIf { it.isNotEmpty() },
                         h_consigne = test.h_consigne?.takeIf { it.isNotEmpty() },
-                        affichage = test.affichage?.takeIf{ it.isNotEmpty() },
+                        affichage = test.affichage?.takeIf { it.isNotEmpty() },
                         mot_set = test.mot_set?.takeIf { it.isNotEmpty() },
                         mot_set_audio = test.mot_set_audio?.takeIf { it.isNotEmpty() },
                         image = test.image?.takeIf { it.isNotEmpty() },
@@ -78,12 +87,11 @@ object LocalCatManager {
                         }
                     )
                 }
-                Log.d("LocalCategory", "Affichage : ${filteredTests}")
 
-                if (historic)
-                {
+                if (historic) {
                     // Ajout du test dans le fichier json sous la forme d'une liste de tests, pour l'historique
-                    val configDirectory = File(context.getExternalFilesDir(null), "EpilepsyTests/Configurations")
+                    val configDirectory =
+                        File(context.getExternalFilesDir(null), "EpilepsyTests/Configurations")
                     if (!configDirectory.exists()) {
                         configDirectory.mkdirs() // Création du répertoire s'il n'existe pas
                     }
@@ -92,19 +100,20 @@ object LocalCatManager {
                     val updatedTestsJson = gson.toJson(filteredTests)
                     file.writeText(updatedTestsJson)
 
-                    Log.d("LocalCategory", "Tests enregistrés dans l'historique sous $file")
-                }
-
-                else {
+                    Log.d(
+                        "LocalJsonSave",
+                        "Tests enregistrés dans l'historique sous le chemin suivant : $file"
+                    )
+                } else {
                     // Ajout du test filtré dans le fichier json sous la forme d'une liste de tests
                     val updatedTestsJson = gson.toJson(filteredTests)
                     val file = File(context.filesDir, fileName)
                     file.writeText(updatedTestsJson)
 
-                    Log.d("LocalCategory", "Tests enregistrés dans $file")
+                    Log.d("LocalJsonSave", "Tests enregistrés sous le chemin suivant : $file")
                 }
             } catch (e: Exception) {
-                Log.e("LocalCategory", "Erreur : Sauvegarde du JSON local: ${e.message}")
+                Log.e("LocalJsonSave", "Erreur : Sauvegarde du JSON local: ${e.message}")
             }
         }
     }

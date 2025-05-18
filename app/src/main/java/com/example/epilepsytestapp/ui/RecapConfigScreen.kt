@@ -89,16 +89,16 @@ fun RecapScreen(navController: NavController) {
                         val backStackEntry = navController.previousBackStackEntry
                         if (backStackEntry != null) {
                             val updatedList = selectedTests.toList().map { it.copy() }
-                            Log.d(
+                            Log.i(
                                 "RecapScreen",
-                                "📌 Enregistrement des tests avant retour : $updatedList"
+                                "Enregistrement des tests avant retour vers la config. : $updatedList"
                             )
                             backStackEntry.savedStateHandle["selectedTests"] = updatedList
                             navController.popBackStack()
                         } else {
                             Log.e(
                                 "Navigation",
-                                "Impossible de revenir en arrière, backStackEntry est null"
+                                "Impossible de revenir en arrière, backStackEntry est null !"
                             )
                         }
                     } catch (e: Exception) {
@@ -159,7 +159,13 @@ fun ReorderableList(tests: MutableList<Test>) {
 }
 
 @Composable
-fun TestItem(test: Test, index: Int, tests: MutableList<Test>, versionMap: MutableMap<Test, Int>, onListUpdate: (List<Test>) -> Unit) {
+fun TestItem(
+    test: Test,
+    index: Int,
+    tests: MutableList<Test>,
+    versionMap: MutableMap<Test, Int>,
+    onListUpdate: (List<Test>) -> Unit
+) {
     var animateTrigger by remember { mutableStateOf(false) }
 
     val elevation by animateDpAsState(

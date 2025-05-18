@@ -36,6 +36,7 @@ import com.example.epilepsytestapp.category.LocalCatManager
 import com.example.epilepsytestapp.ui.theme.AppTheme
 import com.example.epilepsytestapp.ui.theme.PrimaryColor
 
+// Fonction composable pour la page listant les configurations enregistrées (historique des configurations)
 @Composable
 fun ConfigHistoryScreen(navController: NavController) {
     val context = LocalContext.current
@@ -51,7 +52,7 @@ fun ConfigHistoryScreen(navController: NavController) {
         Surface(modifier = Modifier.fillMaxSize()) {
             Column(modifier = Modifier.padding(16.dp)) {
                 IconButton(
-                    onClick = {navController.popBackStack()},
+                    onClick = { navController.popBackStack() },
                     modifier = Modifier
                         .align(Alignment.Start)
                         .padding(top = 1.dp, start = 1.dp),

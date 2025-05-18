@@ -38,7 +38,7 @@ suspend fun loadCategoriesFromNetwork(): Map<String, List<Test>> {
             val response = RetrofitClient.apiService.getCategories()
 
             if (!response.isSuccessful) {
-                Log.e("NetworkCategory", "❌ Erreur HTTP : ${response.code()}")
+                Log.e("NetworkCategory", "Erreur HTTP : ${response.code()}")
                 return@withContext emptyMap()
             }
 
@@ -116,10 +116,10 @@ suspend fun loadCategoriesFromNetwork(): Map<String, List<Test>> {
                 categoriesMap[categoryName] = testsList
             }
 
-            //Log.d("NetworkCategory", "✅ Catégories et tests chargés avec succès : $categoriesMap")
+            //Log.d("NetworkCategory", "Catégories et tests chargés avec succès : $categoriesMap")
             return@withContext categoriesMap
         } catch (e: Exception) {
-            Log.e("NetworkCategory", "❌ Erreur lors du chargement des catégories : ${e.message}", e)
+            Log.e("NetworkCategory", "Erreur lors du chargement des catégories : ${e.message}", e)
             emptyMap()
         }
     }

@@ -45,7 +45,6 @@ fun ConfigHistoryScreen(navController: NavController) {
     LaunchedEffect(Unit) {
         configurations.clear()
         configurations.addAll(LocalCatManager.listConfigurations(context))
-        //Log.d("Historique", "Configurations récupérées : ${LocalCatManager.listConfigurations(context)}")
     }
 
     AppTheme {
@@ -77,6 +76,7 @@ fun ConfigHistoryScreen(navController: NavController) {
                     items(configurations) { (displayName, fileName) ->
                         Card(
                             modifier = Modifier
+                                .align(Alignment.CenterHorizontally)
                                 .fillMaxWidth()
                                 .padding(vertical = 4.dp)
                                 .clickable {
@@ -87,12 +87,15 @@ fun ConfigHistoryScreen(navController: NavController) {
                                     navController.popBackStack()
                                 },
                             shape = RoundedCornerShape(12.dp),
+                            elevation = CardDefaults.cardElevation(2.dp),
                             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
                         ) {
                             Text(
                                 text = displayName,
+                                textAlign = TextAlign.Center,
                                 style = MaterialTheme.typography.bodyLarge,
-                                modifier = Modifier.padding(16.dp)
+                                modifier = Modifier
+                                    .padding(24.dp)
                             )
                         }
                     }

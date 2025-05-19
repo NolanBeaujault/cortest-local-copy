@@ -87,7 +87,12 @@ suspend fun loadCategoriesFromNetwork(): Map<String, List<Test>> {
 
                         val groupeData = value["groupe"] as? Map<String, Any>
 
-                        val idGroupe = groupeData?.get("id_groupe") as? Int ?: -1
+                        val idGroupe = when (val id = groupeData?.get("id_groupe")) {
+                            is Int -> id
+                            is Double -> id.toInt()
+                            else -> -1
+                        }
+
                         val nomGroupe = groupeData?.get("nom") as? String ?: ""
 
                         val groupe = Groupe(id_groupe = idGroupe, nom = nomGroupe)

@@ -27,7 +27,6 @@ object LocalCatManager {
                     File(context.filesDir, filename)
                 }
 
-                // DEBUG : Attention au nom du répertoire : on "superpose" 2 chemins d'accès !!
                 Log.i("LocalJsonLoad", "JSON local récupéré : ${file}")
                 if (!file.exists()) {
                     Log.w("LocalJsonLoad", "Configuration non trouvée !")
@@ -79,7 +78,7 @@ object LocalCatManager {
                         couleur = test.couleur?.takeIf { it.isNotEmpty() },
                         mot = test.mot?.takeIf { it.isNotEmpty() },
                         groupe = test.groupe?.let { groupe ->
-                            if (groupe.id_groupe != null && groupe.nom.isNotEmpty()) {
+                            if (groupe.id_groupe != -1 && groupe.nom.isNotEmpty()) {
                                 groupe
                             } else {
                                 null

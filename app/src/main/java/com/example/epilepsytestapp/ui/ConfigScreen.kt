@@ -38,6 +38,7 @@ fun ConfigScreen(navController: NavController, cameraViewModel: CameraViewModel 
     val loading = remember { mutableStateOf(true) }
     val coroutineScope = rememberCoroutineScope()
     val context = LocalContext.current
+    val allTests = remember { mutableStateOf<List<Test>>(emptyList()) }
 
     val filename = navController.currentBackStackEntry
         ?.savedStateHandle
@@ -50,6 +51,8 @@ fun ConfigScreen(navController: NavController, cameraViewModel: CameraViewModel 
             try {
                 // Chargement du JSON serveur pour récupérer les tests à cocher, classés par catégorie
                 val loadedCategories = loadCategoriesFromNetwork()
+
+                allTests.value = loadedCategories.values.flatten()
 
                 // Chargement du JSON local selon la variable filename (s
                 val localTestConfiguration = if (!filename.isNullOrBlank()) {
@@ -157,6 +160,20 @@ fun ConfigScreen(navController: NavController, cameraViewModel: CameraViewModel 
                                 // On stocke les tests cochés dans un set si elles ne sont pas déjà présentes dedans (condition sur l'id_test)
                                 if (checked) {
                                     updatedSet.add(test)
+
+                                    // Logique de sélection des groupes
+                                    test.groupe?.let { groupe ->
+                                        if (groupe.id_groupe != -1) {
+                                            allTests.value
+                                                .filter {
+                                                    it.groupe?.id_groupe == groupe.id_groupe &&
+                                                            (it.type == effectiveType || it.type == "both")
+                                                }
+                                                .forEach { groupTest ->
+                                                    updatedSet.add(groupTest)
+                                                }
+                                        }
+                                    }
                                 } else {
                                     updatedSet.removeIf { it.id_test == test.id_test }
                                 }

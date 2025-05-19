@@ -33,6 +33,7 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
+// Fonction composable pour l'écran récapitulatif de la configuration
 @Composable
 fun RecapScreen(navController: NavController) {
     val selectedTests = remember {
@@ -84,6 +85,7 @@ fun RecapScreen(navController: NavController) {
 
                 Spacer(modifier = Modifier.height(10.dp))
 
+                // Gestion du retour vers l'écran précédant en gardant la configuration en cours
                 CustomButton(text = "Retour") {
                     try {
                         val backStackEntry = navController.previousBackStackEntry
@@ -111,6 +113,8 @@ fun RecapScreen(navController: NavController) {
 
                 Spacer(modifier = Modifier.height(8.dp))
 
+                // Enregistrement de la configuration sous la forme d'un JSON en interne sous le nom "localtestconfiguration.json"
+                // Puis en externe sous le format 'configuration_yyyy-MM-dd_HH:mm.json" pour l'historique
                 CustomButton(text = "Enregistrer la configuration") {
                     coroutineScope.launch {
                         LocalCatManager.saveLocalTests(
@@ -140,6 +144,8 @@ fun RecapScreen(navController: NavController) {
     }
 }
 
+// Fonction composable pour la liste réorganisable des tests
+// Permet de changer l'ordre d'apparition des tests pendant le testing
 @Composable
 fun ReorderableList(tests: MutableList<Test>) {
     val versionMap = remember { mutableStateMapOf<Test, Int>() }

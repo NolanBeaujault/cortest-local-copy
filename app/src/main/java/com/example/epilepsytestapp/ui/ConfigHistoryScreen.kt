@@ -65,6 +65,7 @@ fun ConfigHistoryScreen(navController: NavController) {
                 }
 
                 Text(
+                    modifier = Modifier.align(Alignment.CenterHorizontally),
                     text = "Historique des configurations",
                     style = MaterialTheme.typography.displayLarge,
                     textAlign = TextAlign.Center,
@@ -101,11 +102,7 @@ fun ConfigHistoryScreen(navController: NavController) {
                     }
                 }
 
-                Spacer(modifier = Modifier.height(8.dp))
-
-                Button(onClick = { navController.popBackStack() }) {
-                    Text("Retour")
-                }
+                Spacer(modifier = Modifier.height(16.dp))
             }
         }
     }

@@ -33,20 +33,20 @@ object RetrofitClient {
 suspend fun loadCategoriesFromNetwork(): Map<String, List<Test>> {
     return withContext(Dispatchers.IO) {
         try {
-            Log.d("NetworkCategory", "🔄 Lancement du chargement des catégories...")
+            //Log.d("NetworkCategory", "🔄 Lancement du chargement des catégories...")
 
             val response = RetrofitClient.apiService.getCategories()
 
             if (!response.isSuccessful) {
-                Log.e("NetworkCategory", "❌ Erreur HTTP : ${response.code()}")
+                Log.e("NetworkCategory", "Erreur HTTP : ${response.code()}")
                 return@withContext emptyMap()
             }
 
             val rawJson = response.body()
-            Log.d("NetworkCategory", "📨 Réponse brute reçue : $rawJson")
+            //Log.d("NetworkCategory", "📨 Réponse brute reçue : $rawJson")
 
             if (rawJson.isNullOrEmpty()) {
-                Log.e("NetworkCategory", "⚠ Réponse vide de l'API")
+                Log.e("NetworkCategory", "Réponse vide de l'API")
                 return@withContext emptyMap()
             }
 
@@ -69,7 +69,7 @@ suspend fun loadCategoriesFromNetwork(): Map<String, List<Test>> {
                     if (value is Map<*, *>) {
                         val testName = value["nom"] as? String ?: "Test inconnu"
                         val affichage = value["affichage"] as? String ?: null
-                        Log.d("NetworkCategory", "Affichage récupéré : $affichage")
+                        //Log.d("NetworkCategory", "Affichage récupéré : $affichage")
                         val testType = value["type"] as? String ?: "Type inconnu"
                         val audio = value["audio"] as? String ?: "Audio non-reconnu"
                         val a_consigne = value["a_consigne"] as? String ?: "Consigne Auto inconnue"
@@ -87,7 +87,12 @@ suspend fun loadCategoriesFromNetwork(): Map<String, List<Test>> {
 
                         val groupeData = value["groupe"] as? Map<String, Any>
 
-                        val idGroupe = groupeData?.get("id_groupe") as? Int ?: -1
+                        val idGroupe = when (val id = groupeData?.get("id_groupe")) {
+                            is Int -> id
+                            is Double -> id.toInt()
+                            else -> -1
+                        }
+
                         val nomGroupe = groupeData?.get("nom") as? String ?: ""
 
                         val groupe = Groupe(id_groupe = idGroupe, nom = nomGroupe)
@@ -116,10 +121,10 @@ suspend fun loadCategoriesFromNetwork(): Map<String, List<Test>> {
                 categoriesMap[categoryName] = testsList
             }
 
-            Log.d("NetworkCategory", "✅ Catégories et tests chargés avec succès : $categoriesMap")
+            //Log.d("NetworkCategory", "Catégories et tests chargés avec succès : $categoriesMap")
             return@withContext categoriesMap
         } catch (e: Exception) {
-            Log.e("NetworkCategory", "❌ Erreur lors du chargement des catégories : ${e.message}", e)
+            Log.e("NetworkCategory", "Erreur lors du chargement des catégories : ${e.message}", e)
             emptyMap()
         }
     }

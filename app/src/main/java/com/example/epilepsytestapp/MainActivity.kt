@@ -295,11 +295,16 @@ fun NavigationGraph(
             TypeConfigScreen(navController = navController, from = from, cameraViewModel = cameraViewModel)
         }
 
+
         composable("testConfigScreen") {
             ConfigScreen(
                 navController = navController,
                 cameraViewModel = cameraViewModel
                 )
+        }
+
+        composable("configHistoryScreen") {
+            ConfigHistoryScreen(navController = navController)
         }
 
         composable(route = "profile"){

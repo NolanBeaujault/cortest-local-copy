@@ -25,6 +25,7 @@ import com.example.epilepsytestapp.category.Test
 import com.example.epilepsytestapp.ui.theme.AppTheme
 import com.example.epilepsytestapp.ui.theme.PrimaryColor
 import kotlinx.coroutines.launch
+import java.io.File
 
 
 @Composable
@@ -37,19 +38,35 @@ fun ConfigScreen(navController: NavController, cameraViewModel: CameraViewModel 
     val loading = remember { mutableStateOf(true) }
     val coroutineScope = rememberCoroutineScope()
     val context = LocalContext.current
+    val allTests = remember { mutableStateOf<List<Test>>(emptyList()) }
 
-    LaunchedEffect(effectiveType) {
+    val filename = navController.currentBackStackEntry
+        ?.savedStateHandle
+        ?.get<String>("configFileToLoad")
+
+    LaunchedEffect(effectiveType, filename) {
 
         coroutineScope.launch {
-            Log.d("TestConfig", "🔄 Chargement des catégories depuis l'API...")
-            Log.d("TestTypeConfig", "Affichage des tests de type : ${effectiveType}")
 
             try {
+                // Chargement du JSON serveur pour récupérer les tests à cocher, classés par catégorie
                 val loadedCategories = loadCategoriesFromNetwork()
-                val localTestConfiguration = LocalCatManager.loadLocalTests(context)
+
+                allTests.value = loadedCategories.values.flatten()
+
+                // Chargement du JSON local selon la variable filename (s
+                val localTestConfiguration = if (!filename.isNullOrBlank()) {
+                    // Depuis le stockage externe quand on charge depuis l'historique des configurations
+                    val file = File("EpilepsyTests/Configurations", filename).toString()
+                    LocalCatManager.loadLocalTests(context, file)
+                } else {
+                    // Dans le stockage interne via si filename est vide
+                    LocalCatManager.loadLocalTests(context)
+                }
 
                 categories.value = loadedCategories
 
+                // Pré-sélection des tests selon la configuration précédente, affichage selon le type choisi sur l'écran précédent
                 val preSelectedTests = loadedCategories.values.flatten()
                     .filter { test ->
                         (test.type == effectiveType || test.type == "both") &&
@@ -60,36 +77,31 @@ fun ConfigScreen(navController: NavController, cameraViewModel: CameraViewModel 
                 selectedTests.value.clear()
                 selectedTests.value.addAll(preSelectedTests)
 
-                Log.d("TestConfig", "✅ Tests pré-cochés (local) : $preSelectedTests")
-
+                // Si la pré-sélection des tests est vide, on coche les tests de la catégorie "Examen-type" par défaut
                 if (preSelectedTests.isEmpty()) {
-                    Log.d("TestConfig", "Aucun test n'a été pré-coché")
-                    // On récupère les tests de la catégorie examen-type par défaut
+                    Log.i("TestConfig", "Aucun test n'a été pré-coché")
                     val defaultTests = loadedCategories.entries
                         .firstOrNull { it.key.equals("Examen type", ignoreCase = true) }
                         ?.value
                         ?.toSet() ?: emptySet()
 
                     if (defaultTests.isNotEmpty()) {
-                        Log.d("TestConfig", "Sélection par défaut des tests de la catégorie examen-type : $defaultTests")
                         selectedTests.value.clear()
                         selectedTests.value.addAll(defaultTests)
-                        Log.d("TestConfig", "Contenu de selectedTests : $selectedTests")
                     }
                 }
 
+                // Si on revient depuis la page de récap (page suivante), on reprend la configuration en cours :
                 val restoredSelectedTests =
                     navController.currentBackStackEntry?.savedStateHandle?.get<List<Test>>("selectedTests")
 
                 restoredSelectedTests?.let {
-                    Log.d("TestConfig", "🔄 Écrasement avec restoredSelectedTests : $it")
                     selectedTests.value.clear()
                     selectedTests.value.addAll(it)
                 }
 
-                Log.d("TestConfig", "✅ Catégories chargées avec succès : $loadedCategories")
             } catch (e: Exception) {
-                Log.e("TestConfig", "❌ Erreur lors du chargement des catégories : ${e.message}")
+                Log.e("TestConfig", "Erreur lors du chargement des JSON de tests : ${e.message}")
             }
             loading.value = false
         }
@@ -109,7 +121,7 @@ fun ConfigScreen(navController: NavController, cameraViewModel: CameraViewModel 
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 IconButton(
-                    onClick = { navController.navigate("testTypeSelectionScreen?from=settings")},
+                    onClick = { navController.popBackStack() },
                     modifier = Modifier
                         .align(Alignment.Start)
                         .padding(top = 1.dp, start = 1.dp),
@@ -133,7 +145,7 @@ fun ConfigScreen(navController: NavController, cameraViewModel: CameraViewModel 
                 if (loading.value) {
                     CircularProgressIndicator()
                 } else {
-                    Log.d("TestConfig", "📌 Affichage des catégories et tests...")
+                    // Affichage des tests par catégorie à partir des fichiers JSON chargés
                     categories.value.forEach { (categoryName, testList) ->
                         val filteredTests = testList.filter {
                             it.type == effectiveType || it.type == "both"
@@ -145,8 +157,23 @@ fun ConfigScreen(navController: NavController, cameraViewModel: CameraViewModel 
                                 selectedTests.value
                             ) { test, checked ->
                                 val updatedSet = selectedTests.value.toMutableSet()
+                                // On stocke les tests cochés dans un set si elles ne sont pas déjà présentes dedans (condition sur l'id_test)
                                 if (checked) {
                                     updatedSet.add(test)
+
+                                    // Logique de sélection des groupes
+                                    test.groupe?.let { groupe ->
+                                        if (groupe.id_groupe != -1) {
+                                            allTests.value
+                                                .filter {
+                                                    it.groupe?.id_groupe == groupe.id_groupe &&
+                                                            (it.type == effectiveType || it.type == "both")
+                                                }
+                                                .forEach { groupTest ->
+                                                    updatedSet.add(groupTest)
+                                                }
+                                        }
+                                    }
                                 } else {
                                     updatedSet.removeIf { it.id_test == test.id_test }
                                 }
@@ -158,6 +185,12 @@ fun ConfigScreen(navController: NavController, cameraViewModel: CameraViewModel 
 
                 Spacer(modifier = Modifier.height(16.dp))
 
+                CustomButton(text = "Historique des configurations") {
+                    navController.navigate("configHistoryScreen")
+                }
+
+                Spacer(modifier = Modifier.height(8.dp))
+
                 CustomButton(text = "Suivant") {
                     navController.currentBackStackEntry?.savedStateHandle?.set(
                         "selectedTests",
@@ -166,9 +199,12 @@ fun ConfigScreen(navController: NavController, cameraViewModel: CameraViewModel 
                     navController.navigate("recapScreen")
                 }
                 Spacer(modifier = Modifier.height(8.dp))
+
                 CustomButton(text = "Annuler") {
                     navController.popBackStack()
                 }
+
+
             }
         }
     }

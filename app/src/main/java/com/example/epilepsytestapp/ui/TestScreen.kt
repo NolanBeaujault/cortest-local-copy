@@ -7,11 +7,20 @@ import androidx.camera.core.*
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.video.*
 import androidx.compose.foundation.layout.*
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Warning
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
@@ -51,6 +60,9 @@ fun TestScreen(
 
     val coroutineScope = rememberCoroutineScope()
 
+    var showSafetyDialog by remember { mutableStateOf(true) }
+
+
     BackHandler(enabled = true) {}
 
     // 📂 Charger les tests
@@ -81,6 +93,7 @@ fun TestScreen(
             modifier = Modifier.fillMaxSize(),
             cameraViewModel = cameraViewModel
         )
+
 
         // 🔸 Affichage de la consigne/image/mot
         Box(
@@ -199,6 +212,45 @@ fun TestScreen(
                 .align(Alignment.TopEnd)
                 .size(80.dp)
         )
+
+        if (showSafetyDialog) {
+            AlertDialog(
+                onDismissRequest = { /* Pas de fermeture via clic extérieur */ },
+                confirmButton = {
+                    TextButton(onClick = { showSafetyDialog = false }) {
+                        Text("Continuer", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
+                    }
+                },
+                title = {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Warning,
+                            contentDescription = "Sécurité",
+                            tint = Color(0xFFFFA726),
+                            modifier = Modifier.size(32.dp)
+                        )
+                        Text("Avant de commencer", fontWeight = FontWeight.Bold)
+                    }
+                },
+                text = {
+                    Text(
+                        """
+                - Assurez-vous que le patient est assis ou allongé confortablement, pas debout.
+                - Retirez tout objet dangereux ou pointu autour.
+                - Restez à côté du patient pendant tout le test.
+                - Arrêtez immédiatement en cas de comportement anormal ou inattendu et suivez les consignes d’urgence.
+                """.trimIndent()
+                    )
+                },
+                dismissButton = {}, // Pas de bouton "Retour"
+                containerColor = MaterialTheme.colorScheme.surface,
+                titleContentColor = MaterialTheme.colorScheme.primary,
+                textContentColor = MaterialTheme.colorScheme.onSurface
+            )
+        }
 
         // 🎥 Démarrage de l'enregistrement vidéo
         LaunchedEffect(videoCapture.value, isFrontCamera) {

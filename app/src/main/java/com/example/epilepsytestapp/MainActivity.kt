@@ -19,11 +19,9 @@ import android.Manifest
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.util.Log
-import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
-import androidx.navigation.navArgument
 import com.example.epilepsytestapp.network.loadPatientsFromNetwork
 import com.example.epilepsytestapp.savefiles.SurveyEntryScreen
 import com.google.firebase.auth.FirebaseAuth
@@ -31,7 +29,6 @@ import com.google.firebase.auth.FirebaseAuth
 
 class MainActivity : ComponentActivity() {
     private lateinit var sharedPreferences: SharedPreferences
-    private val firebaseAuth: FirebaseAuth by lazy { FirebaseAuth.getInstance() }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -120,23 +117,14 @@ class MainActivity : ComponentActivity() {
 
             EpilepsyTestApp(
                 patients = patients,
-                context = this,
                 isLoading = isLoading,
                 isAuthenticated = isAuthenticated,
                 startDestination = startDestination.value,
-                onAuthenticate = {
-                    isAuthenticated = true
-                    sharedPreferences.edit().putBoolean("isLoggedIn", true).apply()
-                },
-                onRememberMe = { rememberMe ->
-                    sharedPreferences.edit().putBoolean("isLoggedIn", rememberMe).apply()
-                },
                 onLogout = {
                     isAuthenticated = false
                     firebaseAuth.signOut()
                     sharedPreferences.edit().putBoolean("isLoggedIn", false).apply()
                 },
-                sharedViewModel = sharedViewModel,
                 widgetStartScreen = widgetStartScreen.value
             )
         }
@@ -171,22 +159,18 @@ class MainActivity : ComponentActivity() {
     }
 
     private val requestPermissionsLauncher =
-        registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { permissions ->
-            val deniedPermissions = permissions.filter { !it.value }
+        registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) {
+            }
         }
-}
+
 
 @Composable
 fun EpilepsyTestApp(
     patients: MutableList<Patient>,
-    context: Context,
     isLoading: Boolean,
     isAuthenticated: Boolean,
     startDestination: String,
-    onAuthenticate: () -> Unit,
-    onRememberMe: (Boolean) -> Unit,
     onLogout: () -> Unit,
-    sharedViewModel: SharedViewModel,
     widgetStartScreen: String? // <-- ADD THIS PARAMETER
 ) {
     val navController = rememberNavController()
@@ -200,8 +184,6 @@ fun EpilepsyTestApp(
                 patients = patients,
                 isAuthenticated = isAuthenticated,
                 startDestination = startDestination,
-                onAuthenticated = onAuthenticate,
-                onRememberMe = onRememberMe,
                 onLogout = {
                     onLogout()
                     navController.navigate("login") {
@@ -220,8 +202,6 @@ fun NavigationGraph(
     patients: MutableList<Patient>,
     isAuthenticated: Boolean,
     startDestination: String,
-    onAuthenticated: () -> Unit,
-    onRememberMe: (Boolean) -> Unit,
     onLogout: () -> Unit,
     sharedViewModel: SharedViewModel = viewModel(),
     widgetStartScreen: String?,
@@ -248,7 +228,7 @@ fun NavigationGraph(
     ) {
         composable("home") {
             if (isAuthenticated) {
-                HomePage(navController = navController, patient = patients)
+                HomePage(navController = navController)
             } else {
                 navController.navigate("login") {
                     popUpTo("home") { inclusive = true }
@@ -323,7 +303,6 @@ fun NavigationGraph(
                     onModifyConfiguration = {
                         navController.navigate("testTypeSelectionScreen?from=settings")
                     },
-                    patient = patients,
                     cameraViewModel = cameraViewModel
                 )
             } else {
@@ -375,6 +354,10 @@ fun NavigationGraph(
                     navController.navigate("testEnregistre")
                 }
             )
+        }
+
+        composable("emergency") {
+            EmergencyPage(navController = navController)
         }
 
         composable("survey_entry") {

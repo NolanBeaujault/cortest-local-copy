@@ -173,13 +173,6 @@ class MainActivity : ComponentActivity() {
     private val requestPermissionsLauncher =
         registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { permissions ->
             val deniedPermissions = permissions.filter { !it.value }
-            if (deniedPermissions.isNotEmpty()) {
-                Toast.makeText(
-                    this,
-                    "Certaines autorisations (Caméra et Microphone) sont nécessaires pour utiliser certaines fonctionnalités de l'application.",
-                    Toast.LENGTH_LONG
-                ).show()
-            }
         }
 }
 
@@ -386,6 +379,10 @@ fun NavigationGraph(
 
         composable("survey_entry") {
             SurveyEntryScreen(navController = navController)
+        }
+
+        composable("info") {
+            InfoPage(navController = navController)
         }
 
 

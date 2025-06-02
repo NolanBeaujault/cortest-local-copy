@@ -10,7 +10,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -300,10 +299,10 @@ fun NavigationBar(navController: NavHostController, modifier: Modifier = Modifie
                     .aspectRatio(1f) // Assure un rapport largeur/hauteur carré
             )
         }
-        IconButton(onClick = { navController.navigate("demo/0") }) {
+        IconButton(onClick = { navController.navigate("info") }) {
             Image(
-                painter = painterResource(id = R.mipmap.ic_demo_foreground),
-                contentDescription = "Demo",
+                painter = painterResource(id = R.mipmap.ic_info_foreground),
+                contentDescription = "Info",
                 modifier = Modifier
                     .fillMaxHeight()
                     .aspectRatio(1f)

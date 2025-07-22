@@ -11,6 +11,16 @@ Use the following command line to clone the repository :
 git clone https://gitlab.com/a.baudry/cortest.git
 ```
 
+## Download APK
+
+You can download the latest debug version of the app directly from our CI builds:
+
+👉 [Download the latest APK](https://gitlab.com/a.baudry/cortest/-/jobs/artifacts/main/raw/app/build/outputs/apk/debug/app-debug.apk?job=build)
+
+> This APK is generated automatically by our CI/CD pipeline on every push to the `main` branch.
+> It is intended for testing and demonstration purposes only.
+
+
 ### Prerequisites
 
 Make sure the following is also installed in your development environment:

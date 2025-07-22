@@ -20,10 +20,12 @@ before_script:
   - $ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager --sdk_root=$ANDROID_SDK_ROOT \
       "platform-tools" \
       "platforms;android-${ANDROID_COMPILE_SDK}" \
-      "build-tools;${ANDROID_BUILD_TOOLS}"
+      "build-tools;${ANDROID_BUILD_TOOLS}" \
+      --no_https --verbose
   - export JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64
   - export PATH=$JAVA_HOME/bin:$PATH
   - chmod +x ./gradlew
+
 
 build-apk:
   stage: build

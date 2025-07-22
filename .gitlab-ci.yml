@@ -11,7 +11,7 @@ stages:
   - build
 
 before_script:
-  - echo "Installing Android SDK..."
+  - echo " Installing Android SDK..."
   - mkdir -p "$ANDROID_SDK_ROOT/cmdline-tools"
   - curl -sSLo sdk.zip https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip
   - unzip -q sdk.zip -d "$ANDROID_SDK_ROOT/cmdline-tools"

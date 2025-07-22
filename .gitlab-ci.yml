@@ -11,21 +11,22 @@ stages:
   - build
 
 before_script:
-  - echo " Installing Android SDK..."
+  - echo "Installing Android SDK..."
   - mkdir -p "$ANDROID_SDK_ROOT/cmdline-tools"
   - curl -sSLo sdk.zip https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip
   - unzip -q sdk.zip -d "$ANDROID_SDK_ROOT/cmdline-tools"
   - mv "$ANDROID_SDK_ROOT/cmdline-tools/cmdline-tools" "$ANDROID_SDK_ROOT/cmdline-tools/latest"
-  - yes | $ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager --sdk_root=$ANDROID_SDK_ROOT --licenses
-  - $ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager --sdk_root=$ANDROID_SDK_ROOT \
+  - export JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64
+  - export PATH=$JAVA_HOME/bin:$ANDROID_SDK_ROOT/cmdline-tools/latest/bin:$PATH
+  - yes | sdkmanager --licenses || true
+  - sdkmanager --update || true
+  - sdkmanager --sdk_root=$ANDROID_SDK_ROOT \
       "platform-tools" \
       "platforms;android-${ANDROID_COMPILE_SDK}" \
       "build-tools;${ANDROID_BUILD_TOOLS}" \
       --no_https --verbose
-  - export JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64
-  - export PATH=$JAVA_HOME/bin:$PATH
-  - chmod +x ./gradlew
 
+  - chmod +x ./gradlew
 
 build-apk:
   stage: build

@@ -7,12 +7,6 @@ variables:
   GRADLE_USER_HOME: "$CI_PROJECT_DIR/.gradle"
   GRADLE_OPTS: "-Dorg.gradle.jvmargs=-Xmx2048m"
 
-cache:
-  key: "$CI_JOB_NAME"
-  paths:
-    - .gradle/
-    - app/.cxx/ # pour NDK/Compose s'il y a du cache natif
-
 stages:
   - build
 
@@ -27,12 +21,15 @@ before_script:
       "platform-tools" \
       "platforms;android-${ANDROID_COMPILE_SDK}" \
       "build-tools;${ANDROID_BUILD_TOOLS}"
+  - export JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64
+  - export PATH=$JAVA_HOME/bin:$PATH
+  - chmod +x ./gradlew
 
 build-apk:
   stage: build
   script:
     - echo "Building the APK..."
-    - ./gradlew :app:assembleDebug
+    - ./gradlew :app:assembleDebug --stacktrace
   artifacts:
     paths:
       - app/build/outputs/apk/debug/app-debug.apk

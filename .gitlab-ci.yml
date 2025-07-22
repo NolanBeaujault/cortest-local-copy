@@ -11,17 +11,19 @@ stages:
   - build
 
 before_script:
-  - export GRADLE_USER_HOME=$(pwd)/.gradle
-  - chmod +x ./gradlew
-  - apt-get update -y && apt-get install -y unzip
+  - echo "Installing Android SDK..."
   - mkdir -p "$ANDROID_SDK_ROOT/cmdline-tools"
   - curl -sSLo sdk.zip https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip
   - unzip -q sdk.zip -d "$ANDROID_SDK_ROOT/cmdline-tools"
   - mv "$ANDROID_SDK_ROOT/cmdline-tools/cmdline-tools" "$ANDROID_SDK_ROOT/cmdline-tools/latest"
   - export JAVA_HOME=$(dirname $(dirname $(readlink -f $(which java))))
   - export PATH=$JAVA_HOME/bin:$ANDROID_SDK_ROOT/cmdline-tools/latest/bin:$PATH
-  - yes | sdkmanager --licenses
-  - sdkmanager "platform-tools" "platforms;android-${ANDROID_COMPILE_SDK}" "build-tools;${ANDROID_BUILD_TOOLS}"
+  - yes | sdkmanager --licenses || true
+  - sdkmanager --update || true
+  - sdkmanager "platform-tools" "platforms;android-${ANDROID_COMPILE_SDK}" "build-tools;${ANDROID_BUILD_TOOLS}" --sdk_root=$ANDROID_SDK_ROOT
+  - chmod +x ./gradlew
+
+
 
 build:
   stage: build

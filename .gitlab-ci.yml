@@ -1,0 +1,41 @@
+image: gradle:8.10.2-jdk17
+
+variables:
+  ANDROID_SDK_ROOT: /sdk
+  ANDROID_COMPILE_SDK: "34"
+  ANDROID_BUILD_TOOLS: "34.0.0"
+  GRADLE_USER_HOME: "$CI_PROJECT_DIR/.gradle"
+  GRADLE_OPTS: "-Dorg.gradle.jvmargs=-Xmx2048m"
+
+cache:
+  key: "$CI_JOB_NAME"
+  paths:
+    - .gradle/
+    - app/.cxx/ # pour NDK/Compose s'il y a du cache natif
+
+stages:
+  - build
+
+before_script:
+  - echo "Installing Android SDK..."
+  - mkdir -p "$ANDROID_SDK_ROOT/cmdline-tools"
+  - curl -sSLo sdk.zip https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip
+  - unzip -q sdk.zip -d "$ANDROID_SDK_ROOT/cmdline-tools"
+  - mv "$ANDROID_SDK_ROOT/cmdline-tools/cmdline-tools" "$ANDROID_SDK_ROOT/cmdline-tools/latest"
+  - yes | $ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager --sdk_root=$ANDROID_SDK_ROOT --licenses
+  - $ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager --sdk_root=$ANDROID_SDK_ROOT \
+      "platform-tools" \
+      "platforms;android-${ANDROID_COMPILE_SDK}" \
+      "build-tools;${ANDROID_BUILD_TOOLS}"
+
+build-apk:
+  stage: build
+  script:
+    - echo "Building the APK..."
+    - ./gradlew :app:assembleDebug
+  artifacts:
+    paths:
+      - app/build/outputs/apk/debug/app-debug.apk
+    expire_in: 1 week
+  only:
+    - main

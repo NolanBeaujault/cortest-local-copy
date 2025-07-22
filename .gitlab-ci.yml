@@ -1,7 +1,7 @@
 image: gradle:8.10.2-jdk17
 
 variables:
-  ANDROID_SDK_ROOT: /sdk
+  ANDROID_SDK_ROOT: "/sdk"
   ANDROID_COMPILE_SDK: "34"
   ANDROID_BUILD_TOOLS: "34.0.0"
   GRADLE_USER_HOME: "$CI_PROJECT_DIR/.gradle"
@@ -11,32 +11,25 @@ stages:
   - build
 
 before_script:
-  - echo "Installing dependencies..."
-  - apt-get update -y && apt-get install -y curl unzip openjdk-17-jdk
-  - export JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64
-  - echo "Installing Android SDK..."
+  - export GRADLE_USER_HOME=$(pwd)/.gradle
+  - chmod +x ./gradlew
+  - apt-get update -y && apt-get install -y unzip
   - mkdir -p "$ANDROID_SDK_ROOT/cmdline-tools"
   - curl -sSLo sdk.zip https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip
   - unzip -q sdk.zip -d "$ANDROID_SDK_ROOT/cmdline-tools"
   - mv "$ANDROID_SDK_ROOT/cmdline-tools/cmdline-tools" "$ANDROID_SDK_ROOT/cmdline-tools/latest"
+  - export JAVA_HOME=$(dirname $(dirname $(readlink -f $(which java))))
   - export PATH=$JAVA_HOME/bin:$ANDROID_SDK_ROOT/cmdline-tools/latest/bin:$PATH
-  - yes | sdkmanager --licenses || true
-  - sdkmanager --update || true
-  - sdkmanager --sdk_root=$ANDROID_SDK_ROOT \
-      "platform-tools" \
-      "platforms;android-${ANDROID_COMPILE_SDK}" \
-      "build-tools;${ANDROID_BUILD_TOOLS}" \
-      --no_https --verbose
-  - chmod +x ./gradlew
+  - yes | sdkmanager --licenses
+  - sdkmanager "platform-tools" "platforms;android-${ANDROID_COMPILE_SDK}" "build-tools;${ANDROID_BUILD_TOOLS}"
 
-build-apk:
+build:
   stage: build
   script:
-    - echo "Building the APK..."
-    - ./gradlew :app:assembleDebug --stacktrace
+    - ./gradlew assembleDebug
   artifacts:
     paths:
       - app/build/outputs/apk/debug/app-debug.apk
-    expire_in: 1 week
+    expire_in: 1 year
   only:
     - main

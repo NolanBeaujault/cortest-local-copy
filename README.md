@@ -13,13 +13,12 @@ git clone https://gitlab.com/a.baudry/cortest.git
 
 ## Download APK
 
-You can download the latest debug version of the app directly from our CI builds:
+You can download the latest debug version of the app directly from our CI builds (last update: October 2025):
 
 👉 [Download the latest APK](https://gitlab.com/a.baudry/cortest/-/jobs/artifacts/main/raw/app/build/outputs/apk/debug/app-debug.apk?job=build)
 
 > This APK is generated automatically by our CI/CD pipeline on every push to the `main` branch.
 > It is intended for testing and demonstration purposes only.
-
 
 ### Prerequisites
 
@@ -30,11 +29,11 @@ Make sure the following is also installed in your development environment:
 
 > **Android Studio** will automatically handle SDK and tool installations when you open the project.  
 > For reference, this project uses:
+>
 > - `compileSdk` = 34
 > - `targetSdk` = 34
 > - `minSdk` = 26
 > - JDK 8 or higher
-
 
 ## Usage
 
@@ -43,7 +42,6 @@ Open the project with Android Studio.
 To use the application, you should first build the project in the IDE.  
 Please note that the AGP (Android Gradle Plugin) version must be compatible with your version of Android Studio before building.  
 If it is not the case, you can directly change the AGP version in the file `cortest/gradle/libs.versions.toml`, here is an example of what you may find in it :
-
 
 ```toml title="cortest/gradle/libs.versions.toml"
 # ...
@@ -68,14 +66,15 @@ Running the project will install the app on your device. You will then be able t
 ## Authors and acknowledgment
 
 **Project members:**
+
 - Maïwen Mille
 - Nolan Beaujault
 - Apolline Baudry
 - Berkay Oztas
 
 **Client:**
-- Dr. Lucas Gauer - University Hospital of Strasbourg
 
+- Dr. Lucas Gauer - University Hospital of Strasbourg
 
 ## Contributing
 

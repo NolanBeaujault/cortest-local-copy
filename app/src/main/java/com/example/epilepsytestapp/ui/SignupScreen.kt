@@ -84,6 +84,20 @@ fun SignupScreen(
                     textAlign = TextAlign.Center,
                     color = MaterialTheme.colorScheme.primary
                 )
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                Text(
+                    text = "⚠\uFE0F Version prototype : n’indiquez pas d’informations personnelles (nom, adresse e-mail, etc.). Utilisez des pseudonymes y compris pour l'adresse email (Ex. pseudo@mail.com).",
+                    color = Color(0xFFFFA500), // orange
+                    style = MaterialTheme.typography.bodyLarge,
+                    fontSize = 12.sp,
+                    lineHeight = 16.sp,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 8.dp)
+                )
                 Spacer(modifier = Modifier.height(16.dp))
 
                 // Email

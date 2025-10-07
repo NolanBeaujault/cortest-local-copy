@@ -133,6 +133,11 @@ fun RecapScreen(navController: NavController) {
                             selectedTests.toList(),
                             true
                         )
+                        val prefsConfig = context.getSharedPreferences("AppPrefsConfig", Context.MODE_PRIVATE)
+                        prefsConfig.edit()
+                            .putLong("lastConfigModification", System.currentTimeMillis())
+                            .apply()
+
                     }
                     Toast.makeText(context, "Configuration enregistrée !", Toast.LENGTH_LONG).show()
                     navController.navigate("home") {

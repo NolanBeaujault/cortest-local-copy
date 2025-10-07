@@ -10,7 +10,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -21,7 +20,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
 import com.example.epilepsytestapp.R
-import com.example.epilepsytestapp.model.Patient
 import com.example.epilepsytestapp.ui.theme.AppTheme
 import java.io.File
 import java.text.SimpleDateFormat
@@ -29,12 +27,11 @@ import java.util.Date
 import java.util.Locale
 
 @Composable
-fun HomePage(navController: NavHostController, patient: List<Patient>) {
+fun HomePage(navController: NavHostController) {
 
     val context = LocalContext.current
     val videoDir = File(context.getExternalFilesDir(null), "EpilepsyTests/Videos")
     val questionnaireDir = File(context.getExternalFilesDir(null), "EpilepsyTests/Questionnaires")
-    val configDir = context.filesDir
 
     val latestVideo = videoDir.listFiles()?.maxByOrNull { it.lastModified() }
     val totalTests = videoDir.listFiles { _, name ->
@@ -42,9 +39,6 @@ fun HomePage(navController: NavHostController, patient: List<Patient>) {
     }?.size ?: 0
 
     val lastQuestionnaire = questionnaireDir.listFiles()?.maxByOrNull { it.lastModified() }
-    val lastConfig = configDir.listFiles { _, name -> name.startsWith("configuration_") && name.endsWith(".json") }
-        ?.maxByOrNull { it.lastModified() }
-
 
     val configDate = remember {
         val prefsConfig = context.getSharedPreferences("AppPrefsConfig", Context.MODE_PRIVATE)
@@ -300,10 +294,10 @@ fun NavigationBar(navController: NavHostController, modifier: Modifier = Modifie
                     .aspectRatio(1f) // Assure un rapport largeur/hauteur carré
             )
         }
-        IconButton(onClick = { navController.navigate("demo/0") }) {
+        IconButton(onClick = { navController.navigate("info") }) {
             Image(
-                painter = painterResource(id = R.mipmap.ic_demo_foreground),
-                contentDescription = "Demo",
+                painter = painterResource(id = R.mipmap.ic_info_foreground),
+                contentDescription = "Info",
                 modifier = Modifier
                     .fillMaxHeight()
                     .aspectRatio(1f)

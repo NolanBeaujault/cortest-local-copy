@@ -79,7 +79,7 @@ fun EmergencyPage(navController: NavHostController) {
                         .padding(vertical = 16.dp)
                 ) {
                     Text(
-                        text = "Situations où il faut appeler le SAMU :",
+                        text = "Quand appeler les secours ?",
                         fontWeight = FontWeight.Bold,
                         fontSize = 23.sp,
                         lineHeight = 30.sp,
@@ -89,14 +89,12 @@ fun EmergencyPage(navController: NavHostController) {
                     Spacer(modifier = Modifier.height(8.dp))
 
                     val checklistItems = listOf(
-                        "Toute première crise d'une personne",
-                        "Crise avec convulsions de plus de 5 minutes",
-                        "Une 2ème crise (avec convulsions) survient avant que la personne ait repris connaissance",
-                        "La personne ne reprend pas connaissance et/ou ne reprend pas sa respiration rapidement après la crise",
-                        "La période de confusion suivant la crise persiste plus d'une heure",
-                        "Crise survenue dans l'eau (risque d’ingestion d’eau pouvant provoquer des problèmes cardiaques et respiratoires)",
-                        "La personne est blessée, a vomi, est enceinte, est diabétique ou présente des céphalées très intenses après la crise"
-                    )
+                        "S’il y a des difficultés pour respirer, pour retrouver ses esprits, des blessures.",
+                        "Si la crise est inhabituellement longue.",
+                        "Si une crise récidive rapidement après la première de manière inhabituelle.",
+                        "Si des convulsions surviennent pendant plus que 5 minutes.",
+                        "Si la personne est enceinte ou diabétique.",
+                        )
 
                     checklistItems.forEach { item ->
                         Row(verticalAlignment = Alignment.Top) {
@@ -138,7 +136,7 @@ fun EmergencyPage(navController: NavHostController) {
                             containerColor = Color(0xFFE12222)
                         )
                     ) {
-                        Text("Appeler le SAMU (15)", fontSize = 24.sp)
+                        Text("Appeler le 15", fontSize = 24.sp)
                     }
 
                     Button(

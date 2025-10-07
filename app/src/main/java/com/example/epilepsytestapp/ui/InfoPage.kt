@@ -197,6 +197,14 @@ fun InfoPage(navController: NavHostController) {
                                 color = MaterialTheme.colorScheme.onBackground
                             )
 
+                            Text(
+                                text = "La sécurité prime : si quelque chose d’anormal survient, suivez les consignes d’urgence.",
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 18.sp,
+                                lineHeight = 30.sp,
+                                color = MaterialTheme.colorScheme.onBackground
+                            )
+
                             Row(
                                 modifier = Modifier
                                     .fillMaxWidth()
@@ -215,7 +223,7 @@ fun InfoPage(navController: NavHostController) {
 
                                 Text(
                                     text = """
-            1. Assurez-vous que le patient est en sécurité : assis sur une chaise stable ou allongé confortablement (pas debout ni instable).
+            1. Vérifier que le patient ne risque pas de tomber.
             """.trimIndent(),
                                     fontSize = 18.sp,
                                     lineHeight = 30.sp,
@@ -242,8 +250,8 @@ fun InfoPage(navController: NavHostController) {
 
                                 Text(
                                     text = """
-            2. Vérifiez l’environnement : enlevez tout objet dangereux à proximité, assez d’espace autour.
-            3. Restez toujours à côté du patient, ne le laissez jamais seul.
+            2. Vérifier qu’il n’y ait pas d’objets dangereux à proximité.
+            3. Ne pas laisser le patient seul.
             """.trimIndent(),
                                     fontSize = 18.sp,
                                     lineHeight = 30.sp,

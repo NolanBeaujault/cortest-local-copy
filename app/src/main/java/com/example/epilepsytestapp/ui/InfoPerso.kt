@@ -13,9 +13,11 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
 import com.example.epilepsytestapp.R
 import com.example.epilepsytestapp.ui.theme.AppTheme
@@ -119,6 +121,20 @@ fun InfoPersoScreen(navController: NavHostController, onContinue: () -> Unit) {
                     style = MaterialTheme.typography.headlineSmall,
                     textAlign = TextAlign.Center,
                     color = MaterialTheme.colorScheme.primary
+                )
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                Text(
+                    text = "⚠\uFE0F Version prototype : n’indiquez pas d’informations personnelles (nom, adresse e-mail, etc.). Utilisez des pseudonymes y compris pour l'adresse email (Ex. pseudo@mail.com).",
+                    color = Color(0xFFFFA500), // orange
+                    style = MaterialTheme.typography.bodyLarge,
+                    fontSize = 12.sp,
+                    lineHeight = 16.sp,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 8.dp)
                 )
 
                 Spacer(modifier = Modifier.height(16.dp))

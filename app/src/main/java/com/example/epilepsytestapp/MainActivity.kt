@@ -16,11 +16,14 @@ import kotlinx.coroutines.launch
 import androidx.compose.runtime.rememberCoroutineScope
 import android.content.SharedPreferences
 import android.Manifest
+import android.app.Application
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.util.Log
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.ui.platform.LocalContext
 import androidx.core.content.ContextCompat
+import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.epilepsytestapp.network.loadPatientsFromNetwork
 import com.example.epilepsytestapp.savefiles.SurveyEntryScreen
@@ -207,7 +210,11 @@ fun NavigationGraph(
     widgetStartScreen: String?,
 ) {
     val recordedVideos = remember { mutableStateListOf<String>() }
-    val cameraViewModel: CameraViewModel = viewModel()
+    val context = LocalContext.current.applicationContext as Application
+    val cameraViewModel: CameraViewModel = viewModel(
+        factory = ViewModelProvider.AndroidViewModelFactory.getInstance(context)
+    )
+
 
     LaunchedEffect(widgetStartScreen) {
         widgetStartScreen?.let { target ->

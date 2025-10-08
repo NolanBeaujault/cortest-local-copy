@@ -190,15 +190,13 @@ fun TestScreen(
                     isRecording = false
                 }
 
-                // Ajouter le changement de caméra aux logs
                 val cameraLabel =
                     if (!cameraViewModel.isFrontCamera.value) "Caméra frontale" else "Caméra arrière"
                 sharedViewModel.addInstructionLog(Pair("Changement de caméra : $cameraLabel", elapsedTime))
 
-                // Basculer la caméra
-                cameraViewModel.isFrontCamera.value = !cameraViewModel.isFrontCamera.value
+                // ✅ Appel correct du ViewModel
+                cameraViewModel.toggleCamera()
 
-                // Mettre à jour la consigne en fonction de la nouvelle caméra
                 val consigne = if (cameraViewModel.isFrontCamera.value) {
                     tests.getOrNull(currentInstructionIndex)?.a_consigne
                 } else {
@@ -212,6 +210,7 @@ fun TestScreen(
                 .align(Alignment.TopEnd)
                 .size(80.dp)
         )
+
 
         if (showSafetyDialog) {
             AlertDialog(

@@ -1,5 +1,6 @@
 package com.example.epilepsytestapp.ui
 
+import android.app.Application
 import android.content.Context
 import android.content.Intent
 import android.provider.Settings
@@ -25,12 +26,15 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import androidx.navigation.NavHostController
 import com.example.epilepsytestapp.R
 import com.example.epilepsytestapp.ui.theme.AppTheme
 import com.google.firebase.auth.EmailAuthProvider
 import com.google.firebase.auth.FirebaseAuth
+import kotlinx.coroutines.launch
 
 @Composable
 fun SettingsPage(
@@ -467,6 +471,33 @@ fun deleteFirebaseAccount(onSuccess: () -> Unit = {}, onError: (Exception) -> Un
         }
 }
 
-class CameraViewModel : ViewModel() {
+class CameraViewModel(application: Application) : AndroidViewModel(application) {
+
     var isFrontCamera = mutableStateOf(true)
+        private set
+
+    private val prefs = application.getSharedPreferences("camera_prefs", Context.MODE_PRIVATE)
+
+    init {
+        // 🔄 Charger la dernière orientation sauvegardée
+        val saved = prefs.getBoolean("isFrontCamera", true)
+        isFrontCamera.value = saved
+    }
+
+    fun toggleCamera() {
+        val newValue = !isFrontCamera.value
+        isFrontCamera.value = newValue
+
+        // 💾 Sauvegarder immédiatement la préférence
+        viewModelScope.launch {
+            prefs.edit().putBoolean("isFrontCamera", newValue).apply()
+        }
+    }
+
+    fun setCamera(front: Boolean) {
+        isFrontCamera.value = front
+        viewModelScope.launch {
+            prefs.edit().putBoolean("isFrontCamera", front).apply()
+        }
+    }
 }
